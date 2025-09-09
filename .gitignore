@@ -1,4 +1,9 @@
+# Ignorar todos los .js
 *.js
+
+# Pero no ignorar los .js dentro de la carpeta lambdas
+!lambdas/**/*.js
+
 !jest.config.js
 *.d.ts
 node_modules
