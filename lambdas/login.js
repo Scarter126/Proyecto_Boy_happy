@@ -1,38 +1,39 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
-const handler = async (event) => {
-    try {
-        const { CLIENT_ID, REDIRECT_URI } = process.env;
-        if (!CLIENT_ID || !REDIRECT_URI) {
-            console.error("Missing CLIENT_ID or REDIRECT_URI");
-            return {
-                statusCode: 500,
-                body: JSON.stringify({ message: "Missing environment variables" }),
-            };
-        }
 
-        const COGNITO_DOMAIN = ''; //Colocar dominio
-        const loginUrl = `https://${COGNITO_DOMAIN}/oauth2/authorize?` +
-            `response_type=code&` +
-            `client_id=${encodeURIComponent(CLIENT_ID)}&` +
-            `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-            `scope=openid+email+profile`;
-        console.log("Redirecting to:", loginUrl);
-        return {
-            statusCode: 302,
-            headers: {
-                Location: loginUrl,
-            },
-        };
+const handler = async (event) => {
+  try {
+    const { CLIENT_ID, REDIRECT_URI, COGNITO_DOMAIN } = process.env;
+    if (!CLIENT_ID || !REDIRECT_URI || !COGNITO_DOMAIN) {
+      console.error("Missing environment variables");
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: "Missing environment variables" }),
+      };
     }
-    catch (error) {
-        console.error("Error generating login URL:", error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ message: "Internal Server Error", error: error.message }),
-        };
-    }
+
+    const loginUrl = `${COGNITO_DOMAIN}/login?` +
+      `response_type=code&` +
+      `client_id=${encodeURIComponent(CLIENT_ID)}&` +
+      `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+      `scope=openid+email+profile`;
+
+    console.log("Redirecting to:", loginUrl);
+
+    return {
+      statusCode: 302,
+      headers: {
+        Location: loginUrl,
+      },
+    };
+  } catch (error) {
+    console.error("Error generating login URL:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server Error", error: error.message }),
+    };
+  }
 };
+
 exports.handler = handler;
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoibG9naW4uanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyJsb2dpbi50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7QUFFTyxNQUFNLE9BQU8sR0FBRyxLQUFLLEVBQUUsS0FBNkIsRUFBb0MsRUFBRTtJQUMvRixJQUFJLENBQUM7UUFDSCxNQUFNLEVBQUUsU0FBUyxFQUFFLFlBQVksRUFBRSxHQUFHLE9BQU8sQ0FBQyxHQUFHLENBQUM7UUFFaEQsSUFBSSxDQUFDLFNBQVMsSUFBSSxDQUFDLFlBQVksRUFBRSxDQUFDO1lBQ2hDLE9BQU8sQ0FBQyxLQUFLLENBQUMsbUNBQW1DLENBQUMsQ0FBQztZQUNuRCxPQUFPO2dCQUNMLFVBQVUsRUFBRSxHQUFHO2dCQUNmLElBQUksRUFBRSxJQUFJLENBQUMsU0FBUyxDQUFDLEVBQUUsT0FBTyxFQUFFLCtCQUErQixFQUFFLENBQUM7YUFDbkUsQ0FBQztRQUNKLENBQUM7UUFFRCxNQUFNLGNBQWMsR0FBRyxxREFBcUQsQ0FBQztRQUU3RSxNQUFNLFFBQVEsR0FBRyxXQUFXLGNBQWMsb0JBQW9CO1lBQzVELHFCQUFxQjtZQUNyQixhQUFhLGtCQUFrQixDQUFDLFNBQVMsQ0FBQyxHQUFHO1lBQzdDLGdCQUFnQixrQkFBa0IsQ0FBQyxZQUFZLENBQUMsR0FBRztZQUNuRCw0QkFBNEIsQ0FBQztRQUUvQixPQUFPLENBQUMsR0FBRyxDQUFDLGlCQUFpQixFQUFFLFFBQVEsQ0FBQyxDQUFDO1FBRXpDLE9BQU87WUFDTCxVQUFVLEVBQUUsR0FBRztZQUNmLE9BQU8sRUFBRTtnQkFDUCxRQUFRLEVBQUUsUUFBUTthQUNuQjtTQUNGLENBQUM7SUFDSixDQUFDO0lBQUMsT0FBTyxLQUFVLEVBQUUsQ0FBQztRQUNwQixPQUFPLENBQUMsS0FBSyxDQUFDLDZCQUE2QixFQUFFLEtBQUssQ0FBQyxDQUFDO1FBQ3BELE9BQU87WUFDTCxVQUFVLEVBQUUsR0FBRztZQUNmLElBQUksRUFBRSxJQUFJLENBQUMsU0FBUyxDQUFDLEVBQUUsT0FBTyxFQUFFLHVCQUF1QixFQUFFLEtBQUssRUFBRSxLQUFLLENBQUMsT0FBTyxFQUFFLENBQUM7U0FDakYsQ0FBQztJQUNKLENBQUM7QUFDSCxDQUFDLENBQUM7QUFuQ1csUUFBQSxPQUFPLFdBbUNsQiIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IEFQSUdhdGV3YXlQcm94eUV2ZW50VjIsIEFQSUdhdGV3YXlQcm94eVJlc3VsdFYyIH0gZnJvbSAnYXdzLWxhbWJkYSc7XHJcblxyXG5leHBvcnQgY29uc3QgaGFuZGxlciA9IGFzeW5jIChldmVudDogQVBJR2F0ZXdheVByb3h5RXZlbnRWMik6IFByb21pc2U8QVBJR2F0ZXdheVByb3h5UmVzdWx0VjI+ID0+IHtcclxuICB0cnkge1xyXG4gICAgY29uc3QgeyBDTElFTlRfSUQsIFJFRElSRUNUX1VSSSB9ID0gcHJvY2Vzcy5lbnY7XHJcblxyXG4gICAgaWYgKCFDTElFTlRfSUQgfHwgIVJFRElSRUNUX1VSSSkge1xyXG4gICAgICBjb25zb2xlLmVycm9yKFwiTWlzc2luZyBDTElFTlRfSUQgb3IgUkVESVJFQ1RfVVJJXCIpO1xyXG4gICAgICByZXR1cm4ge1xyXG4gICAgICAgIHN0YXR1c0NvZGU6IDUwMCxcclxuICAgICAgICBib2R5OiBKU09OLnN0cmluZ2lmeSh7IG1lc3NhZ2U6IFwiTWlzc2luZyBlbnZpcm9ubWVudCB2YXJpYWJsZXNcIiB9KSxcclxuICAgICAgfTtcclxuICAgIH1cclxuXHJcbiAgICBjb25zdCBDT0dOSVRPX0RPTUFJTiA9ICd1cy1lYXN0LTFscDhpbGdjYnMuYXV0aC51cy1lYXN0LTEuYW1hem9uY29nbml0by5jb20nO1xyXG5cclxuICAgIGNvbnN0IGxvZ2luVXJsID0gYGh0dHBzOi8vJHtDT0dOSVRPX0RPTUFJTn0vb2F1dGgyL2F1dGhvcml6ZT9gICtcclxuICAgICAgYHJlc3BvbnNlX3R5cGU9Y29kZSZgICtcclxuICAgICAgYGNsaWVudF9pZD0ke2VuY29kZVVSSUNvbXBvbmVudChDTElFTlRfSUQpfSZgICtcclxuICAgICAgYHJlZGlyZWN0X3VyaT0ke2VuY29kZVVSSUNvbXBvbmVudChSRURJUkVDVF9VUkkpfSZgICtcclxuICAgICAgYHNjb3BlPW9wZW5pZCtlbWFpbCtwcm9maWxlYDtcclxuXHJcbiAgICBjb25zb2xlLmxvZyhcIlJlZGlyZWN0aW5nIHRvOlwiLCBsb2dpblVybCk7XHJcblxyXG4gICAgcmV0dXJuIHtcclxuICAgICAgc3RhdHVzQ29kZTogMzAyLFxyXG4gICAgICBoZWFkZXJzOiB7XHJcbiAgICAgICAgTG9jYXRpb246IGxvZ2luVXJsLFxyXG4gICAgICB9LFxyXG4gICAgfTtcclxuICB9IGNhdGNoIChlcnJvcjogYW55KSB7XHJcbiAgICBjb25zb2xlLmVycm9yKFwiRXJyb3IgZ2VuZXJhdGluZyBsb2dpbiBVUkw6XCIsIGVycm9yKTtcclxuICAgIHJldHVybiB7XHJcbiAgICAgIHN0YXR1c0NvZGU6IDUwMCxcclxuICAgICAgYm9keTogSlNPTi5zdHJpbmdpZnkoeyBtZXNzYWdlOiBcIkludGVybmFsIFNlcnZlciBFcnJvclwiLCBlcnJvcjogZXJyb3IubWVzc2FnZSB9KSxcclxuICAgIH07XHJcbiAgfVxyXG59O1xyXG4iXX0=
