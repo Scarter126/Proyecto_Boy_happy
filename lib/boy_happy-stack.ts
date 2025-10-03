@@ -137,6 +137,17 @@ export class BoyHappyStack extends cdk.Stack {
     });
     eventosTable.grantReadWriteData(eventosLambda);
 
+    // Lambda de Notificaciones (Commit 1.3.4)
+    const notificacionesLambda = createLambda('NotificacionesLambda', 'notificaciones', {
+      USUARIOS_TABLE: usuariosTable.tableName,
+      SOURCE_EMAIL: 'noreply@boyhappy.cl',
+    });
+    usuariosTable.grantReadData(notificacionesLambda);
+    notificacionesLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+      resources: ['*'],
+    }));
+
     const tomaHoraLambda = createLambda('TomaHoraLambda', 'toma_hora');
 
     const reservarEvaluacionLambda = createLambda('ReservarEvaluacionLambda', 'reservar-evaluacion', {
@@ -207,6 +218,10 @@ export class BoyHappyStack extends cdk.Stack {
     eventos.addMethod('GET', new apigateway.LambdaIntegration(eventosLambda));
     eventos.addMethod('DELETE', new apigateway.LambdaIntegration(eventosLambda));
     eventos.addMethod('PUT', new apigateway.LambdaIntegration(eventosLambda));
+
+    // --- Rutas de notificaciones (Commit 1.3.4) ---
+    const notificaciones = api.root.addResource('notificaciones');
+    notificaciones.addMethod('POST', new apigateway.LambdaIntegration(notificacionesLambda));
 
     // --- Rutas fonoaudiología ---
     const tomaHora = api.root.addResource('toma-hora');
