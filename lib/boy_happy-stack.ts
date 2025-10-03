@@ -58,6 +58,14 @@ export class BoyHappyStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // GSI para filtrar eventos por tipo y fecha (Commit 1.3.1)
+    eventosTable.addGlobalSecondaryIndex({
+      indexName: 'TipoIndex',
+      partitionKey: { name: 'tipo', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const evaluacionesTable = new dynamodb.Table(this, 'EvaluacionesTable', {
       tableName: 'EvaluacionesFonoaudiologia',
       partitionKey: { name: 'fechaHora', type: dynamodb.AttributeType.STRING },
