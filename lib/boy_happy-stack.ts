@@ -108,6 +108,22 @@ export class BoyHappyStack extends cdk.Stack {
     });
     anunciosTable.grantReadWriteData(anunciosLambda);
 
+    // Lambda de Usuarios (Commit 1.2.3)
+    const usuariosLambda = createLambda('UsuariosLambda', 'usuarios', {
+      USUARIOS_TABLE: usuariosTable.tableName,
+      USER_POOL_ID: process.env.USER_POOL_ID ?? '',
+    });
+    usuariosTable.grantReadWriteData(usuariosLambda);
+    usuariosLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminAddUserToGroup'
+      ],
+      resources: [
+        `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${process.env.USER_POOL_ID}`,
+      ],
+    }));
+
     const eventosLambda = createLambda('EventosLambda', 'eventos', {
       TABLE_NAME: eventosTable.tableName,
     });
@@ -169,6 +185,13 @@ export class BoyHappyStack extends cdk.Stack {
     anuncios.addMethod('POST', new apigateway.LambdaIntegration(anunciosLambda));
     anuncios.addMethod('GET', new apigateway.LambdaIntegration(anunciosLambda));
     anuncios.addMethod('DELETE', new apigateway.LambdaIntegration(anunciosLambda));
+
+    // --- Rutas de usuarios (Commit 1.2.3) ---
+    const usuarios = api.root.addResource('usuarios');
+    usuarios.addMethod('POST', new apigateway.LambdaIntegration(usuariosLambda));
+    usuarios.addMethod('GET', new apigateway.LambdaIntegration(usuariosLambda));
+    usuarios.addMethod('PUT', new apigateway.LambdaIntegration(usuariosLambda));
+    usuarios.addMethod('DELETE', new apigateway.LambdaIntegration(usuariosLambda));
 
     // --- Rutas de eventos ---
     const eventos = api.root.addResource('eventos');
