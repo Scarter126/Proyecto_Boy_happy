@@ -9,8 +9,8 @@ exports.handler = async () => {
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <style>
       body { font-family: Arial, sans-serif; margin:0; background:#f4f8fb; color:#333; }
-      header { background:#004080; color:white; padding:1em; text-align:center; }
-      nav ul { list-style:none; display:flex; justify-content:center; gap:1.5em; padding:0; margin:0.5em 0 0 0; }
+      header { background:#004080; color:white; padding:1em; text-align:center; display:flex; justify-content: space-between; align-items:center; }
+      nav ul { list-style:none; display:flex; justify-content:center; gap:1.5em; padding:0; margin:0; }
       nav a { color:white; text-decoration:none; font-weight:bold; }
       main { padding:2em; }
       h2 { color:#004080; }
@@ -32,11 +32,11 @@ exports.handler = async () => {
       <nav>
         <ul>
           <li><a href="/prod/">Inicio</a></li>
-          <li><a href="/prod/imagenes">Galería</a></li>
-          <li><a href="/prod/matriculas">Matrícula</a></li>
-          <li><a href="/prod/login/admin">Login Admin</a></li>
+          <li><a href="/prod/galeria">Galería</a></li>
+          <li><a href="/prod/toma-hora">Toma Hora</a></li>
         </ul>
       </nav>
+      <a href="/prod/login"><button>Iniciar Sesión</button></a>
     </header>
 
     <main>
@@ -54,17 +54,8 @@ exports.handler = async () => {
 
       <section>
         <h2>Explora más</h2>
-        <a href="/prod/imagenes"><button>📷 Galería de Imágenes</button></a>
-        <a href="/prod/matriculas"><button>📝 Matricúlate</button></a>
-      </section>
-
-      <section>
-        <h2>Iniciar Sesión</h2>
-        <div class="login-group">
-          <a href="/prod/login/admin"><button>🔑 Rectora / Admin</button></a>
-          <a href="/prod/login/profesores"><button>👩‍🏫 Profesores</button></a>
-          <a href="/prod/login/alumnos"><button>🎓 Alumnos</button></a>
-        </div>
+        <a href="/prod/galeria"><button>📷 Galería de Imágenes</button></a>
+        <a href="/prod/toma-hora"><button>📝 Toma Hora</button></a>
       </section>
     </main>
 

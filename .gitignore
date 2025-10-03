@@ -4,10 +4,22 @@
 # Pero no ignorar los .js dentro de la carpeta lambdas
 !lambdas/**/*.js
 
-!jest.config.js
+# Ignorar archivos de configuración o compilación
+jest.config.js
 *.d.ts
+
+# Ignorar directorios comunes de Node.js
 node_modules
 
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# Ignorar el archivo de configuración de variables de entorno (config.env)
+config.env
+
+# Ignorar archivos de log
+*.log
+
+# Otros archivos comunes que no deberían subirse
+.DS_Store
