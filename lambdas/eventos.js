@@ -42,20 +42,39 @@ exports.handler = async (event) => {
       if (httpMethod === "PUT") {
         const { id } = event.queryStringParameters;
         const data = JSON.parse(event.body);
+
+        // Validar que el evento existe (Commit 1.3.2)
+        const existing = await docClient.get({
+          TableName: EVENTOS_TABLE,
+          Key: { id }
+        }).promise();
+
+        if (!existing.Item) {
+          return {
+            statusCode: 404,
+            body: JSON.stringify({ error: 'Evento no encontrado' })
+          };
+        }
+
+        // Actualizar evento
         await docClient.update({
           TableName: EVENTOS_TABLE,
           Key: { id },
           UpdateExpression: "set titulo=:t, descripcion=:d, fecha=:f, hora=:h, tipo=:tp, curso=:c",
           ExpressionAttributeValues: {
             ":t": data.titulo,
-            ":d": data.descripcion,
+            ":d": data.descripcion || existing.Item.descripcion,
             ":f": data.fecha,
             ":h": data.hora || "",
             ":tp": data.tipo,
             ":c": data.curso
           }
         }).promise();
-        return { statusCode: 200, body: JSON.stringify({ message: "Evento actualizado" }) };
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ message: "Evento actualizado correctamente" })
+        };
       }
     }
 
