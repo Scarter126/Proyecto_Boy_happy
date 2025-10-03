@@ -31,6 +31,7 @@ exports.handler = async () => {
 <aside>
   <h2>Menú Admin</h2>
   <ul>
+    <li onclick="showSection('anuncios')">📢 Anuncios</li>
     <li onclick="showSection('calendario')">📅 Calendario</li>
     <li onclick="showSection('aceptados')">✅ Aceptados</li>
     <li onclick="showSection('cursos')">📚 Cursos</li>
@@ -41,6 +42,24 @@ exports.handler = async () => {
 </aside>
 <main>
   <button class="logout-btn" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
+
+  <!-- Anuncios (Commit 1.1.4) -->
+  <div id="anuncios" class="section">
+    <h1>📢 Gestión de Anuncios</h1>
+    <form id="anuncioForm" style="margin-bottom: 20px;">
+      <input type="text" id="titulo" placeholder="Título" required style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      <textarea id="contenido" placeholder="Contenido del anuncio" required style="width: 100%; padding: 8px; margin-bottom: 10px; height: 100px;"></textarea>
+      <select id="destinatarios" style="padding: 8px; margin-right: 10px;">
+        <option value="todos">Todos</option>
+        <option value="profesores">Solo Profesores</option>
+        <option value="alumnos">Solo Alumnos</option>
+      </select>
+      <button type="submit" class="btn">Publicar Anuncio</button>
+    </form>
+
+    <h2>Anuncios Publicados</h2>
+    <div id="listaAnuncios"></div>
+  </div>
 
   <!-- Calendario -->
   <div id="calendario" class="section active">
@@ -317,7 +336,72 @@ document.addEventListener('DOMContentLoaded', async function() {
   loadAceptados();
   loadCursos();
   loadProfesores();
+  cargarAnuncios(); // Cargar anuncios al iniciar
 });
+
+// ----------------------
+// Gestión de Anuncios (Commit 1.1.4)
+// ----------------------
+const anunciosUrl = window.location.origin + '/anuncios';
+
+async function cargarAnuncios() {
+  try {
+    const res = await fetch(anunciosUrl);
+    const anuncios = await res.json();
+
+    document.getElementById('listaAnuncios').innerHTML = anuncios.map(a => \`
+      <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 5px;">
+        <h3 style="margin-top: 0;">\${a.titulo}</h3>
+        <p>\${a.contenido}</p>
+        <small style="color: #666;">
+          Para: <strong>\${a.destinatarios}</strong> |
+          Fecha: \${new Date(a.fecha).toLocaleDateString()} |
+          Autor: \${a.autor}
+        </small>
+        <button class="btn" style="background: #c00; margin-top: 10px;" onclick="eliminarAnuncio('\${a.id}')">🗑️ Eliminar</button>
+      </div>
+    \`).join('');
+  } catch(err) {
+    console.error('Error cargando anuncios:', err);
+  }
+}
+
+document.getElementById('anuncioForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  try {
+    await fetch(anunciosUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo: document.getElementById('titulo').value,
+        contenido: document.getElementById('contenido').value,
+        destinatarios: document.getElementById('destinatarios').value,
+        autor: 'Admin'
+      })
+    });
+
+    document.getElementById('anuncioForm').reset();
+    cargarAnuncios();
+    alert('Anuncio publicado exitosamente');
+  } catch(err) {
+    console.error('Error publicando anuncio:', err);
+    alert('Error al publicar el anuncio');
+  }
+});
+
+async function eliminarAnuncio(id) {
+  if (!confirm('¿Estás seguro de eliminar este anuncio?')) return;
+
+  try {
+    await fetch(\`\${anunciosUrl}?id=\${id}\`, { method: 'DELETE' });
+    cargarAnuncios();
+    alert('Anuncio eliminado');
+  } catch(err) {
+    console.error('Error eliminando anuncio:', err);
+    alert('Error al eliminar el anuncio');
+  }
+}
 
 // ----------------------
 // Subida de imágenes a S3

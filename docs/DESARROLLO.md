@@ -12,7 +12,7 @@
 - [x] **Commit 1.1.1:** Crear tabla DynamoDB para anuncios
 - [x] **Commit 1.1.2:** Lambda CRUD de anuncios (crear, listar, editar, eliminar)
 - [x] **Commit 1.1.3:** Integrar anuncios en portal Admin
-- [ ] **Commit 1.1.4:** Mostrar anuncios en portal Apoderado
+- [x] **Commit 1.1.4:** Mostrar anuncios en portal Apoderado
 - [ ] **Commit 1.1.5:** Mostrar anuncios en landing page pública
 - [ ] **Testing:** Verificar CRUD completo y visualización
 
