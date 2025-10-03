@@ -13,21 +13,56 @@ exports.handler = async (event) => {
     if (httpMethod === 'POST') {
       const data = JSON.parse(body);
 
-      // Validar RUT
+      // Validaciones (Commit 1.2.5)
+
+      // Validar campos requeridos
+      if (!data.rut || !data.nombre || !data.correo || !data.rol) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Faltan campos requeridos: rut, nombre, correo, rol' })
+        };
+      }
+
+      // Validar RUT chileno
       if (!validarRUT(data.rut)) {
         return {
           statusCode: 400,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'RUT inválido' })
+          body: JSON.stringify({ error: 'RUT inválido. Formato: 12345678-9' })
         };
       }
 
-      // Validar email
+      // Validar formato de email
       if (!data.correo.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
         return {
           statusCode: 400,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ error: 'Email inválido' })
+        };
+      }
+
+      // Validar rol permitido
+      const rolesPermitidos = ['admin', 'profesor', 'fono', 'alumno'];
+      if (!rolesPermitidos.includes(data.rol)) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Rol inválido. Debe ser: admin, profesor, fono o alumno' })
+        };
+      }
+
+      // Validar que el RUT no exista ya en DynamoDB
+      const existente = await docClient.get({
+        TableName: TABLE_NAME,
+        Key: { rut: data.rut }
+      }).promise();
+
+      if (existente.Item && existente.Item.activo) {
+        return {
+          statusCode: 409,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Ya existe un usuario con este RUT' })
         };
       }
 
