@@ -25,6 +25,15 @@ exports.handler = async () => {
   select, input { padding: 4px; }
   .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; }
   .modal-content { background: #fff; padding: 20px; margin: 5% auto; width: 420px; border-radius: 8px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+  .matricula-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #fff; }
+  .matricula-card.pendiente { border-left: 4px solid orange; }
+  .matricula-card.aprobada { border-left: 4px solid green; }
+  .matricula-card.rechazada { border-left: 4px solid red; }
+  .matricula-card h3 { margin-top: 0; color: #004080; }
+  .matricula-card .estado { padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; }
+  .matricula-card .estado.pendiente { background: #fff3cd; color: #856404; }
+  .matricula-card .estado.aprobada { background: #d4edda; color: #155724; }
+  .matricula-card .estado.rechazada { background: #f8d7da; color: #721c24; }
 </style>
 </head>
 <body>
@@ -33,6 +42,7 @@ exports.handler = async () => {
   <ul>
     <li onclick="showSection('anuncios')">📢 Anuncios</li>
     <li onclick="showSection('notificaciones')">📧 Notificaciones</li>
+    <li onclick="showSection('matriculas')">📝 Matrículas</li>
     <li onclick="showSection('calendario')">📅 Calendario</li>
     <li onclick="showSection('aceptados')">✅ Aceptados</li>
     <li onclick="showSection('cursos')">📚 Cursos</li>
@@ -91,6 +101,12 @@ exports.handler = async () => {
     </form>
 
     <div id="notifStatus" style="max-width: 700px; margin: 20px auto; padding: 15px; display: none; border-radius: 5px;"></div>
+  </div>
+
+  <!-- Matrículas (Commit 1.4.4) -->
+  <div id="matriculas" class="section">
+    <h1>📝 Solicitudes de Matrícula</h1>
+    <div id="listaMatriculas"></div>
   </div>
 
   <!-- Calendario -->
@@ -243,6 +259,7 @@ const profesoresUrl = '/prod/profesores';
 const imagenesUrl = '/prod/imagenes';
 const crearUsuarioUrl = '/prod/crear-usuario';
 const notificacionesUrl = window.location.origin + '/notificaciones';
+const matriculasUrl = window.location.origin + '/matriculas';
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
@@ -780,6 +797,89 @@ document.getElementById('notifForm').addEventListener('submit', async (e) => {
     statusDiv.innerHTML = `❌ <strong>Error al enviar emails:</strong><br>${err.message}`;
   }
 });
+
+// ----------------------
+// Matrículas (Commit 1.4.4)
+// ----------------------
+async function cargarMatriculas() {
+  try {
+    const res = await fetch(matriculasUrl);
+    const matriculas = await res.json();
+
+    const container = document.getElementById('listaMatriculas');
+    container.innerHTML = matriculas.map(m => `
+      <div class="matricula-card ${m.estado}">
+        <h3>${m.nombre}</h3>
+        <p><strong>RUT:</strong> ${m.rut}</p>
+        <p><strong>Fecha Nacimiento:</strong> ${m.fechaNacimiento}</p>
+        <p><strong>Último Curso:</strong> ${m.ultimoCurso}</p>
+        <p><strong>Email:</strong> ${m.correo} | <strong>Tel:</strong> ${m.telefono}</p>
+        <p><strong>Fecha Registro:</strong> ${new Date(m.fechaRegistro).toLocaleDateString()}</p>
+        <p><strong>Estado:</strong> <span class="estado ${m.estado}">${m.estado.toUpperCase()}</span></p>
+        ${m.motivo ? `<p><strong>Motivo:</strong> ${m.motivo}</p>` : ''}
+        ${m.estado === 'pendiente' ? `
+          <button class="btn" style="background: green;" onclick="aprobarMatricula('${m.id}')">✅ Aprobar</button>
+          <button class="btn" style="background: red;" onclick="rechazarMatricula('${m.id}')">❌ Rechazar</button>
+        ` : ''}
+      </div>
+    `).join('');
+  } catch(err) {
+    console.error('Error cargando matrículas:', err);
+  }
+}
+
+async function aprobarMatricula(id) {
+  if (!confirm('¿Aprobar esta matrícula?')) return;
+
+  try {
+    const res = await fetch(`${matriculasUrl}?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ estado: 'aprobada' })
+    });
+
+    if (res.ok) {
+      alert('Matrícula aprobada correctamente');
+      cargarMatriculas();
+    } else {
+      alert('Error al aprobar matrícula');
+    }
+  } catch(err) {
+    console.error('Error aprobando matrícula:', err);
+    alert('Error al aprobar matrícula');
+  }
+}
+
+async function rechazarMatricula(id) {
+  const motivo = prompt('Motivo del rechazo:');
+  if (!motivo) return;
+
+  try {
+    const res = await fetch(`${matriculasUrl}?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        estado: 'rechazada',
+        motivo
+      })
+    });
+
+    if (res.ok) {
+      alert('Matrícula rechazada');
+      cargarMatriculas();
+    } else {
+      alert('Error al rechazar matrícula');
+    }
+  } catch(err) {
+    console.error('Error rechazando matrícula:', err);
+    alert('Error al rechazar matrícula');
+  }
+}
+
+// Cargar matrículas al mostrar la sección
+if (document.getElementById('matriculas')) {
+  cargarMatriculas();
+}
 
 // ----------------------
 // Subida de imágenes a S3
