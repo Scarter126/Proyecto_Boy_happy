@@ -32,6 +32,7 @@ exports.handler = async () => {
   <h2>Menú Admin</h2>
   <ul>
     <li onclick="showSection('anuncios')">📢 Anuncios</li>
+    <li onclick="showSection('notificaciones')">📧 Notificaciones</li>
     <li onclick="showSection('calendario')">📅 Calendario</li>
     <li onclick="showSection('aceptados')">✅ Aceptados</li>
     <li onclick="showSection('cursos')">📚 Cursos</li>
@@ -59,6 +60,37 @@ exports.handler = async () => {
 
     <h2>Anuncios Publicados</h2>
     <div id="listaAnuncios"></div>
+  </div>
+
+  <!-- Notificaciones (Commit 1.3.5) -->
+  <div id="notificaciones" class="section">
+    <h1>📧 Enviar Notificaciones por Email</h1>
+    <form id="notifForm" style="max-width: 700px; margin: 20px auto; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+      <div style="margin-bottom: 15px;">
+        <label for="destNotif" style="display: block; margin-bottom: 5px; font-weight: bold;">Destinatarios:</label>
+        <select id="destNotif" style="width: 100%; padding: 10px; font-size: 14px;">
+          <option value="todos">Todos los usuarios</option>
+          <option value="admin">Solo Administradores</option>
+          <option value="profesor">Solo Profesores</option>
+          <option value="fono">Solo Fonoaudiólogos</option>
+          <option value="alumno">Solo Alumnos/Apoderados</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label for="asuntoNotif" style="display: block; margin-bottom: 5px; font-weight: bold;">Asunto:</label>
+        <input type="text" id="asuntoNotif" placeholder="Asunto del correo" required style="width: 100%; padding: 10px; font-size: 14px; box-sizing: border-box;">
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label for="mensajeNotif" style="display: block; margin-bottom: 5px; font-weight: bold;">Mensaje:</label>
+        <textarea id="mensajeNotif" placeholder="Contenido del mensaje..." required style="width: 100%; padding: 10px; font-size: 14px; height: 200px; box-sizing: border-box;"></textarea>
+      </div>
+
+      <button type="submit" class="btn" style="width: 100%; padding: 12px; font-size: 16px;">📤 Enviar Email</button>
+    </form>
+
+    <div id="notifStatus" style="max-width: 700px; margin: 20px auto; padding: 15px; display: none; border-radius: 5px;"></div>
   </div>
 
   <!-- Calendario -->
@@ -210,6 +242,7 @@ const cursosUrl = '/prod/cursos';
 const profesoresUrl = '/prod/profesores';
 const imagenesUrl = '/prod/imagenes';
 const crearUsuarioUrl = '/prod/crear-usuario';
+const notificacionesUrl = window.location.origin + '/notificaciones';
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
@@ -683,6 +716,70 @@ async function eliminarUsuario(rut) {
 if (document.getElementById('usuarios')) {
   cargarUsuarios();
 }
+
+// ----------------------
+// Notificaciones (Commit 1.3.5)
+// ----------------------
+document.getElementById('notifForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const destinatarios = document.getElementById('destNotif').value;
+  const asunto = document.getElementById('asuntoNotif').value;
+  const mensaje = document.getElementById('mensajeNotif').value;
+  const statusDiv = document.getElementById('notifStatus');
+
+  if (!asunto || !mensaje) {
+    alert('Por favor completa todos los campos');
+    return;
+  }
+
+  // Mostrar estado de envío
+  statusDiv.style.display = 'block';
+  statusDiv.style.background = '#fff3cd';
+  statusDiv.style.color = '#856404';
+  statusDiv.innerHTML = '📤 Enviando emails, por favor espera...';
+
+  try {
+    const res = await fetch(notificacionesUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        destinatarios,
+        asunto,
+        mensaje
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      statusDiv.style.background = '#d4edda';
+      statusDiv.style.color = '#155724';
+      statusDiv.innerHTML = `
+        ✅ <strong>Emails enviados exitosamente</strong><br>
+        📧 Enviados: ${data.enviados}<br>
+        ${data.errores > 0 ? `⚠️ Errores: ${data.errores}` : ''}
+      `;
+
+      // Limpiar formulario
+      document.getElementById('notifForm').reset();
+
+      // Ocultar mensaje después de 10 segundos
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 10000);
+    } else {
+      statusDiv.style.background = '#f8d7da';
+      statusDiv.style.color = '#721c24';
+      statusDiv.innerHTML = `❌ <strong>Error al enviar emails:</strong><br>${data.error || 'Error desconocido'}`;
+    }
+  } catch(err) {
+    console.error('Error enviando notificación:', err);
+    statusDiv.style.background = '#f8d7da';
+    statusDiv.style.color = '#721c24';
+    statusDiv.innerHTML = `❌ <strong>Error al enviar emails:</strong><br>${err.message}`;
+  }
+});
 
 // ----------------------
 // Subida de imágenes a S3
