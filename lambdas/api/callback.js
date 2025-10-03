@@ -10,15 +10,13 @@ exports.handler = async (event) => {
 
     const clientId = process.env.CLIENT_ID;
     const clientSecret = process.env.CLIENT_SECRET;
-    const redirectUri = process.env.REDIRECT_URI;
-    const domain = 'https://us-east-1ivdbbm6bv.auth.us-east-1.amazoncognito.com';
+    const domain = process.env.COGNITO_DOMAIN;
 
     const tokenUrl = `${domain}/oauth2/token`;
     const body = querystring.stringify({
       grant_type: 'authorization_code',
       client_id: clientId,
-      code,
-      redirect_uri: redirectUri
+      code
     });
 
     const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
@@ -48,12 +46,13 @@ exports.handler = async (event) => {
     const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
 
     const groups = payload['cognito:groups'] || [];
-    let redirectTo = '/prod/';
+    const prefix = process.env.CALLBACK_PREFIX || '';
+    let redirectTo = `${prefix}/`;
 
-    if (groups.includes('admin')) redirectTo = '/prod/login/admin';
-    else if (groups.includes('fono')) redirectTo = '/prod/login/fono';
-    else if (groups.includes('profesor')) redirectTo = '/prod/login/profesores';
-    else redirectTo = '/prod/login/alumnos';
+    if (groups.includes('admin')) redirectTo = `${prefix}/login/admin`;
+    else if (groups.includes('fono')) redirectTo = `${prefix}/login/fono`;
+    else if (groups.includes('profesor')) redirectTo = `${prefix}/login/profesores`;
+    else redirectTo = `${prefix}/login/alumnos`;
 
     return {
       statusCode: 302,

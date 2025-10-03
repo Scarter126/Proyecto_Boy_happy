@@ -4,8 +4,8 @@ exports.handler = void 0;
 
 const handler = async (event) => {
   try {
-    const { CLIENT_ID, REDIRECT_URI, COGNITO_DOMAIN } = process.env;
-    if (!CLIENT_ID || !REDIRECT_URI || !COGNITO_DOMAIN) {
+    const { CLIENT_ID, COGNITO_DOMAIN, API_URL, CALLBACK_PREFIX } = process.env;
+    if (!CLIENT_ID || !COGNITO_DOMAIN || !API_URL) {
       console.error("Missing environment variables");
       return {
         statusCode: 500,
@@ -13,10 +13,13 @@ const handler = async (event) => {
       };
     }
 
+    const prefix = CALLBACK_PREFIX || '';
+    const redirectUri = `${API_URL}${prefix}/callback`;
+
     const loginUrl = `${COGNITO_DOMAIN}/login?` +
       `response_type=code&` +
       `client_id=${encodeURIComponent(CLIENT_ID)}&` +
-      `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `scope=openid+email+profile`;
 
     console.log("Redirecting to:", loginUrl);

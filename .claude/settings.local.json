@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for file in lambdas/frontend/*.js)",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(del \"c:\\Users\\thoma\\OneDrive\\Escritorio\\u\\Ingenieria de software II\\Proyecto_Boy_happy\\templates\\pages\\admin.js\")",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(node -e \"require(''dotenv'').config({path:''./.env''}); console.log(''CALLBACK_PREFIX:'', JSON.stringify(process.env.CALLBACK_PREFIX));\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -2,12 +2,12 @@ import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import { Construct } from 'constructs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { Construct } from 'constructs';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: './.env' });
 
 export class BoyHappyStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -17,14 +17,14 @@ export class BoyHappyStack extends cdk.Stack {
     // Buckets S3
     // ----------------------------
     const imagesBucket = new s3.Bucket(this, 'ImagesBucket', {
-      bucketName: 'boyhappy-images-bucket',
+      bucketName: `boyhappy-images-${this.account}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
     const eduBucket = new s3.Bucket(this, 'EduBucket', {
-      bucketName: 'boyhappy-edu-bucket',
+      bucketName: `boyhappy-edu-${this.account}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -33,11 +33,38 @@ export class BoyHappyStack extends cdk.Stack {
     // ----------------------------
     // Tablas DynamoDB
     // ----------------------------
+    const anunciosTable = new dynamodb.Table(this, 'AnunciosTable', {
+      tableName: 'Anuncios',
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const usuariosTable = new dynamodb.Table(this, 'UsuariosTable', {
+      tableName: 'Usuarios',
+      partitionKey: { name: 'rut', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    usuariosTable.addGlobalSecondaryIndex({
+      indexName: 'EmailIndex',
+      partitionKey: { name: 'correo', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const eventosTable = new dynamodb.Table(this, 'EventosTable', {
       tableName: 'Eventos',
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    eventosTable.addGlobalSecondaryIndex({
+      indexName: 'TipoIndex',
+      partitionKey: { name: 'tipo', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     const evaluacionesTable = new dynamodb.Table(this, 'EvaluacionesTable', {
@@ -54,100 +81,134 @@ export class BoyHappyStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    const asistenciasTable = new dynamodb.Table(this, 'AsistenciasTable', {
-      tableName: 'Asistencias',
+    const asistenciaTable = new dynamodb.Table(this, 'AsistenciaTable', {
+      tableName: 'Asistencia',
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    asistenciaTable.addGlobalSecondaryIndex({
+      indexName: 'CursoFechaIndex',
+      partitionKey: { name: 'curso', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    asistenciaTable.addGlobalSecondaryIndex({
+      indexName: 'AlumnoIndex',
+      partitionKey: { name: 'rutAlumno', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     // ----------------------------
     // Helper para crear Lambdas
     // ----------------------------
-    const createLambda = (name: string, handlerFile: string, environment: Record<string, string> = {}) => {
-      return new lambda.Function(this, `${name}Lambda`, {
+    const createLambda = (
+      name: string,
+      handlerFile: string,
+      handlerName: string = 'handler',
+      environment: Record<string, string> = {}
+    ) => {
+      const relativeHandler = handlerFile.startsWith('lambdas/')
+        ? handlerFile.substring('lambdas/'.length)
+        : handlerFile;
+
+      return new lambda.Function(this, name, {
         runtime: lambda.Runtime.NODEJS_18_X,
-        handler: `${handlerFile}.handler`,
+        handler: `${relativeHandler}.${handlerName}`,
         code: lambda.Code.fromAsset('lambdas'),
-        environment,
+        environment: {
+          ...environment,
+          LAST_DEPLOY: new Date().toISOString(),
+        },
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
       });
     };
 
-    const createS3Lambda = (name: string, handlerFile: string, bucket: s3.Bucket) => {
-      const l = createLambda(name, handlerFile, { BUCKET_NAME: bucket.bucketName });
-      bucket.grantReadWrite(l);
-      return l;
-    };
-
-    const createDynamoLambda = (name: string, handlerFile: string, table: dynamodb.Table) => {
-      const l = createLambda(name, handlerFile, { TABLE_NAME: table.tableName });
-      table.grantReadWriteData(l);
-      return l;
+    const frontendEnv = {
+      CALLBACK_PREFIX: process.env.CALLBACK_PREFIX || '',
+      CLIENT_ID: process.env.CLIENT_ID || '',
+      COGNITO_DOMAIN: process.env.COGNITO_DOMAIN || '',
+      API_URL: process.env.API_URL || '',
     };
 
     // ----------------------------
-    // Lambdas principales
+    // Lambdas Frontend
     // ----------------------------
-    const homeLambda = createLambda('Home', 'home');
-    const alumnosLambda = createLambda('Alumnos', 'alumnos');
-    const profesoresLambda = createLambda('Profesores', 'profesores');
-    const adminLambda = createLambda('Admin', 'admin');
-    const fonoLambda = createLambda('Fono', 'fono');
+    const homeLambda = createLambda('HomeLambda', 'lambdas/frontend/handlers', 'homeHandler', frontendEnv);
+    const alumnosLambda = createLambda('AlumnosLambda', 'lambdas/frontend/handlers', 'alumnosHandler', frontendEnv);
+    const profesoresLambda = createLambda('ProfesoresLambda', 'lambdas/frontend/handlers', 'profesoresHandler', frontendEnv);
+    const adminLambda = createLambda('AdminLambda', 'lambdas/frontend/handlers', 'adminHandler', frontendEnv);
+    const fonoLambda = createLambda('FonoLambda', 'lambdas/frontend/handlers', 'fonoHandler', frontendEnv);
+    const tomaHoraLambda = createLambda('TomaHoraLambda', 'lambdas/frontend/handlers', 'tomaHoraHandler', frontendEnv);
+    const galeriaLambda = createLambda('GaleriaLambda', 'lambdas/frontend/handlers', 'galeriaHandler', {
+      BUCKET_NAME: imagesBucket.bucketName,
+      ...frontendEnv,
+    });
+    imagesBucket.grantRead(galeriaLambda);
 
     // ----------------------------
-    // Lambdas con S3 (imagenes)
+    // Lambdas Backend
     // ----------------------------
-    const imagesLambda = createS3Lambda('Images', 'images', imagesBucket);
-    const galeriaLambda = createS3Lambda('Galeria', 'galeria', imagesBucket);
+    const imagesLambda = createLambda('ImagesLambda', 'lambdas/api/images', 'handler', {
+      BUCKET_NAME: imagesBucket.bucketName,
+    });
+    imagesBucket.grantReadWrite(imagesLambda);
 
-    // ----------------------------
-    // Lambdas con Dynamo (eventos y evaluaciones)
-    // ----------------------------
-    const eventosLambda = createDynamoLambda('Eventos', 'eventos', eventosTable);
-    const tomarHoraLambda = createLambda('TomaHora', 'toma_hora');
-    const reservarEvaluacionLambda = createDynamoLambda('ReservarEvaluacion', 'reservar-evaluacion', evaluacionesTable);
+    const contenidoEducativoLambda = createLambda('ContenidoEducativoLambda', 'lambdas/api/contenido_educativo', 'handler', {
+      BUCKET_NAME: eduBucket.bucketName,
+    });
+    eduBucket.grantReadWrite(contenidoEducativoLambda);
 
-    // ----------------------------
-    // Lambdas educativos
-    // ----------------------------
-    const cursoLambda = createDynamoLambda('Curso', 'curso', cursosTable);
-    const asistenciaLambda = createDynamoLambda('Asistencia', 'asistencia', asistenciasTable);
-    const contenidoEducativoLambda = createS3Lambda('ContenidoEducativo', 'contenido_educativo', eduBucket);
+    const anunciosLambda = createLambda('AnunciosLambda', 'lambdas/api/anuncios', 'handler', {
+      ANUNCIOS_TABLE: anunciosTable.tableName,
+    });
+    anunciosTable.grantReadWriteData(anunciosLambda);
 
-    // ----------------------------
-    // Lambda de usuarios (crear, editar, eliminar)
-    // ----------------------------
-    const crearUsuarioLambda = createLambda('CrearUsuario', 'crear_usuario', {
+    const usuariosLambda = createLambda('UsuariosLambda', 'lambdas/api/usuarios', 'handler', {
+      USUARIOS_TABLE: usuariosTable.tableName,
       USER_POOL_ID: process.env.USER_POOL_ID ?? '',
     });
-    crearUsuarioLambda.addToRolePolicy(new iam.PolicyStatement({
+    usuariosTable.grantReadWriteData(usuariosLambda);
+    usuariosLambda.addToRolePolicy(new iam.PolicyStatement({
       actions: [
         'cognito-idp:AdminCreateUser',
         'cognito-idp:AdminAddUserToGroup',
-        'cognito-idp:AdminUpdateUserAttributes',
-        'cognito-idp:AdminRemoveUserFromGroup',
-        'cognito-idp:AdminDeleteUser'
       ],
-      resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${process.env.USER_POOL_ID}`],
+      resources: [
+        `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${process.env.USER_POOL_ID}`,
+      ],
     }));
 
-    // ----------------------------
-    // Lambdas Hosted UI / Callback
-    // ----------------------------
-    const hostedLoginLambda = createLambda('HostedLogin', 'login', {
-      CLIENT_ID: process.env.CLIENT_ID ?? '',
-      CLIENT_SECRET: process.env.CLIENT_SECRET ?? '',
-      REDIRECT_URI: process.env.REDIRECT_URI ?? '',
-      COGNITO_DOMAIN: process.env.COGNITO_DOMAIN ?? '',
+    const eventosLambda = createLambda('EventosLambda', 'lambdas/api/eventos', 'handler', {
+      TABLE_NAME: eventosTable.tableName,
+      SOURCE_EMAIL: 'noreply@boyhappy.cl',
     });
+    eventosTable.grantReadWriteData(eventosLambda);
 
-    const callbackLambda = createLambda('Callback', 'callback', {
-      CLIENT_ID: process.env.CLIENT_ID ?? '',
-      CLIENT_SECRET: process.env.CLIENT_SECRET ?? '',
-      REDIRECT_URI: process.env.REDIRECT_URI ?? '',
-      COGNITO_DOMAIN: process.env.COGNITO_DOMAIN ?? '',
+    const notificacionesLambda = createLambda('NotificacionesLambda', 'lambdas/api/notificaciones', 'handler', {
+      USUARIOS_TABLE: usuariosTable.tableName,
+      SOURCE_EMAIL: 'noreply@boyhappy.cl',
     });
+    usuariosTable.grantReadData(notificacionesLambda);
+
+    const evaluacionesLambda = createLambda('EvaluacionesLambda', 'lambdas/api/evaluaciones', 'handler', {
+      TABLE_NAME: evaluacionesTable.tableName,
+    });
+    evaluacionesTable.grantReadWriteData(evaluacionesLambda);
+
+    const cursoLambda = createLambda('CursoLambda', 'lambdas/api/curso', 'handler', {
+      TABLE_NAME: cursosTable.tableName,
+    });
+    cursosTable.grantReadWriteData(cursoLambda);
+
+    const asistenciaLambda = createLambda('AsistenciaLambda', 'lambdas/api/asistencia', 'handler', {
+      TABLE_NAME: asistenciaTable.tableName,
+    });
+    asistenciaTable.grantReadWriteData(asistenciaLambda);
 
     // ----------------------------
     // API Gateway
@@ -161,79 +222,65 @@ export class BoyHappyStack extends cdk.Stack {
       },
     });
 
-    // --- Rutas educativas ---
+    const addLambdaRoute = (resource: apigateway.Resource, method: string, lambdaFn: lambda.IFunction) => {
+      resource.addMethod(method, new apigateway.LambdaIntegration(lambdaFn));
+    };
+
+    // --- Home
+    api.root.addMethod('GET', new apigateway.LambdaIntegration(homeLambda));
+
+    // --- /imagenes
+    const imagenesResource = api.root.addResource('imagenes');
+    ['GET', 'POST'].forEach(method => addLambdaRoute(imagenesResource, method, imagesLambda));
+
+    // --- /galeria
+    const galeriaResource = api.root.addResource('galeria');
+    addLambdaRoute(galeriaResource, 'GET', galeriaLambda);
+
+    // --- /usuarios
+    const usuariosResource = api.root.addResource('usuarios');
+    ['GET', 'POST', 'PUT', 'DELETE'].forEach(method => addLambdaRoute(usuariosResource, method, usuariosLambda));
+
+    // --- /eventos
+    const eventosResource = api.root.addResource('eventos');
+    ['GET', 'POST', 'PUT', 'DELETE'].forEach(method => addLambdaRoute(eventosResource, method, eventosLambda));
+
+    // --- /evaluaciones
+    const evaluacionesResource = api.root.addResource('evaluaciones');
+    ['GET', 'POST', 'PUT', 'DELETE'].forEach(method => addLambdaRoute(evaluacionesResource, method, evaluacionesLambda));
+
+    // --- /notificaciones
+    const notificacionesResource = api.root.addResource('notificaciones');
+    ['POST'].forEach(method => addLambdaRoute(notificacionesResource, method, notificacionesLambda));
+
+    // --- /educativo
     const educativoResource = api.root.addResource('educativo');
 
     const cursosResource = educativoResource.addResource('cursos');
-    cursosResource.addMethod('POST', new apigateway.LambdaIntegration(cursoLambda));
-    cursosResource.addMethod('PUT', new apigateway.LambdaIntegration(cursoLambda));
-    cursosResource.addMethod('DELETE', new apigateway.LambdaIntegration(cursoLambda));
-    cursosResource.addMethod('GET', new apigateway.LambdaIntegration(cursoLambda));
+    ['GET', 'POST', 'PUT', 'DELETE'].forEach(method => addLambdaRoute(cursosResource, method, cursoLambda));
 
-    const asistenciasResource = educativoResource.addResource('asistencias');
-    asistenciasResource.addMethod('POST', new apigateway.LambdaIntegration(asistenciaLambda));
-    asistenciasResource.addMethod('PUT', new apigateway.LambdaIntegration(asistenciaLambda));
-    asistenciasResource.addMethod('DELETE', new apigateway.LambdaIntegration(asistenciaLambda));
-    asistenciasResource.addMethod('GET', new apigateway.LambdaIntegration(asistenciaLambda));
+    const asistenciaResource = educativoResource.addResource('asistencia');
+    ['GET', 'POST', 'PUT', 'DELETE'].forEach(method => addLambdaRoute(asistenciaResource, method, asistenciaLambda));
 
     const contenidoResource = educativoResource.addResource('contenido');
-    contenidoResource.addMethod('POST', new apigateway.LambdaIntegration(contenidoEducativoLambda));
-    contenidoResource.addMethod('PUT', new apigateway.LambdaIntegration(contenidoEducativoLambda));
-    contenidoResource.addMethod('DELETE', new apigateway.LambdaIntegration(contenidoEducativoLambda));
-    contenidoResource.addMethod('GET', new apigateway.LambdaIntegration(contenidoEducativoLambda));
+    ['GET', 'POST', 'PUT', 'DELETE'].forEach(method => addLambdaRoute(contenidoResource, method, contenidoEducativoLambda));
 
-    // --- Rutas de eventos ---
-    const eventosResource = api.root.addResource('eventos');
-    eventosResource.addMethod('POST', new apigateway.LambdaIntegration(eventosLambda));
-    eventosResource.addMethod('GET', new apigateway.LambdaIntegration(eventosLambda));
-    eventosResource.addMethod('DELETE', new apigateway.LambdaIntegration(eventosLambda));
-    eventosResource.addMethod('PUT', new apigateway.LambdaIntegration(eventosLambda));
-
-    // --- Rutas fonoaudiología ---
-    const tomaHoraResource = api.root.addResource('toma-hora');
-    tomaHoraResource.addMethod('GET', new apigateway.LambdaIntegration(tomarHoraLambda));
-
-    const reservarEvaluacionResource = api.root.addResource('reservar-evaluacion');
-    reservarEvaluacionResource.addMethod('GET', new apigateway.LambdaIntegration(reservarEvaluacionLambda));
-    reservarEvaluacionResource.addMethod('POST', new apigateway.LambdaIntegration(reservarEvaluacionLambda));
-    reservarEvaluacionResource.addMethod('DELETE', new apigateway.LambdaIntegration(reservarEvaluacionLambda));
-
-    // --- Rutas generales ---
-    api.root.addMethod('GET', new apigateway.LambdaIntegration(homeLambda));
-
-    const imagenesResource = api.root.addResource('imagenes');
-    imagenesResource.addMethod('POST', new apigateway.LambdaIntegration(imagesLambda));
-    imagenesResource.addMethod('GET', new apigateway.LambdaIntegration(imagesLambda));
-
-    const galeriaResource = api.root.addResource('galeria');
-    galeriaResource.addMethod('GET', new apigateway.LambdaIntegration(galeriaLambda));
-
-    // --- Rutas de login Hosted UI ---
+    // --- /login/roles
     const loginResource = api.root.addResource('login');
-    loginResource.addMethod('GET', new apigateway.LambdaIntegration(hostedLoginLambda));
-
-    const callbackResource = api.root.addResource('callback');
-    callbackResource.addMethod('GET', new apigateway.LambdaIntegration(callbackLambda));
-
-    // --- Rutas de usuarios ---
-    const usuarioResource = api.root.addResource('crear-usuario');
-    usuarioResource.addMethod('POST', new apigateway.LambdaIntegration(crearUsuarioLambda));
-    usuarioResource.addMethod('PUT', new apigateway.LambdaIntegration(crearUsuarioLambda));
-    usuarioResource.addMethod('DELETE', new apigateway.LambdaIntegration(crearUsuarioLambda));
-
-    // --- Rutas de páginas según rol ---
     loginResource.addResource('admin').addMethod('GET', new apigateway.LambdaIntegration(adminLambda));
     loginResource.addResource('profesores').addMethod('GET', new apigateway.LambdaIntegration(profesoresLambda));
     loginResource.addResource('alumnos').addMethod('GET', new apigateway.LambdaIntegration(alumnosLambda));
     loginResource.addResource('fono').addMethod('GET', new apigateway.LambdaIntegration(fonoLambda));
 
+    // --- /toma-hora
+    const tomaHoraResource = api.root.addResource('toma-hora');
+    tomaHoraResource.addMethod('GET', new apigateway.LambdaIntegration(tomaHoraLambda));
+
     // ----------------------------
     // Outputs
     // ----------------------------
-    new cdk.CfnOutput(this, 'ImagesBucketName', { value: imagesBucket.bucketName });
-    new cdk.CfnOutput(this, 'EduBucketName', { value: eduBucket.bucketName });
-    new cdk.CfnOutput(this, 'WebsiteURL', { value: api.url ?? 'No URL created' });
+    new cdk.CfnOutput(this, 'API Gateway URL', { value: api.url ?? 'NO URL' });
+    new cdk.CfnOutput(this, 'ImagesBucket', { value: imagesBucket.bucketName });
+    new cdk.CfnOutput(this, 'EduBucket', { value: eduBucket.bucketName });
   }
 }
-
-//Hacer el envio de correos. agendar hora, asistencia critica, creacion de usuario, avisos y subida de informes

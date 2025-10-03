@@ -3,7 +3,7 @@
 
 # Pero no ignorar los .js dentro de la carpeta lambdas
 !lambdas/**/*.js
-
+!templates/**/*.js
 # Ignorar archivos de configuración o compilación
 jest.config.js
 *.d.ts

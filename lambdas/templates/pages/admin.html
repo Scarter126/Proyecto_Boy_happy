@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Admin - Boy Happy</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<!-- STYLES -->
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <i class="fas fa-graduation-cap"></i>
+    <span>Boy Happy</span>
+  </div>
+  <ul class="sidebar-menu">
+    <li><a href="#" onclick="showSection('anuncios'); return false;"><i class="fas fa-bullhorn"></i> Anuncios</a></li>
+    <li><a href="#" onclick="showSection('notificaciones'); return false;"><i class="fas fa-envelope"></i> Notificaciones</a></li>
+    <li><a href="#" onclick="showSection('matriculas'); return false;"><i class="fas fa-file-alt"></i> Matrículas</a></li>
+    <li><a href="#" onclick="showSection('calendario'); return false;" class="active"><i class="fas fa-calendar"></i> Calendario</a></li>
+    <li><a href="#" onclick="showSection('aceptados'); return false;"><i class="fas fa-check-circle"></i> Aceptados</a></li>
+    <li><a href="#" onclick="showSection('cursos'); return false;"><i class="fas fa-book"></i> Cursos</a></li>
+    <li><a href="#" onclick="showSection('profesores'); return false;"><i class="fas fa-chalkboard-teacher"></i> Profesores</a></li>
+    <li><a href="#" onclick="showSection('imagenes'); return false;"><i class="fas fa-images"></i> Imágenes</a></li>
+    <li><a href="#" onclick="showSection('usuarios'); return false;"><i class="fas fa-users"></i> Usuarios</a></li>
+  </ul>
+  <button class="logout-btn" onclick="cerrarSesion()">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Cerrar Sesión</span>
+  </button>
+</aside>
+
+<main class="main-content">
+  <!-- Anuncios Section -->
+  <div id="anuncios" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-bullhorn"></i> Gestión de Anuncios</h1>
+    </div>
+    <div class="form-container">
+      <form id="anuncioForm">
+        <div class="form-group">
+          <label for="titulo">Título del Anuncio</label>
+          <input type="text" id="titulo" placeholder="Título" required>
+        </div>
+        <div class="form-group">
+          <label for="contenido">Contenido</label>
+          <textarea id="contenido" placeholder="Contenido del anuncio" required style="height: 120px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="destinatarios">Destinatarios</label>
+          <select id="destinatarios">
+            <option value="todos">Todos</option>
+            <option value="profesores">Solo Profesores</option>
+            <option value="alumnos">Solo Alumnos</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Publicar Anuncio</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Anuncios Publicados</h3>
+      <div id="listaAnuncios"></div>
+    </div>
+  </div>
+
+  <!-- Notificaciones Section -->
+  <div id="notificaciones" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-envelope"></i> Enviar Notificaciones por Email</h1>
+    </div>
+    <div class="form-container">
+      <form id="notifForm">
+        <div class="form-group">
+          <label for="destNotif">Destinatarios:</label>
+          <select id="destNotif">
+            <option value="todos">Todos los usuarios</option>
+            <option value="admin">Solo Administradores</option>
+            <option value="profesor">Solo Profesores</option>
+            <option value="fono">Solo Fonoaudiólogos</option>
+            <option value="alumno">Solo Alumnos/Apoderados</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="asuntoNotif">Asunto:</label>
+          <input type="text" id="asuntoNotif" placeholder="Asunto del correo" required>
+        </div>
+
+        <div class="form-group">
+          <label for="mensajeNotif">Mensaje:</label>
+          <textarea id="mensajeNotif" placeholder="Contenido del mensaje..." required style="height: 200px;"></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Enviar Email</button>
+      </form>
+
+      <div id="notifStatus" style="margin-top: 20px; padding: 15px; display: none; border-radius: 12px;"></div>
+    </div>
+  </div>
+
+  <!-- Matrículas Section -->
+  <div id="matriculas" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-file-alt"></i> Solicitudes de Matrícula</h1>
+    </div>
+    <div id="listaMatriculas"></div>
+  </div>
+
+  <!-- Calendario Section -->
+  <div id="calendario" class="section active">
+    <div class="content-header">
+      <h1><i class="fas fa-calendar"></i> Calendario General</h1>
+      <button class="btn btn-primary" onclick="openModal()"><i class="fas fa-plus"></i> Añadir Evento</button>
+    </div>
+    <div id="calendar"></div>
+  </div>
+
+  <!-- Aceptados Section -->
+  <div id="aceptados" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-check-circle"></i> Alumnos Aceptados</h1>
+    </div>
+    <div class="card">
+      <table id="aceptadosTable">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>RUT</th>
+            <th>Fecha Nacimiento</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+            <th>Curso</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Cursos Section -->
+  <div id="cursos" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-book"></i> Cursos</h1>
+      <button class="btn btn-primary" onclick="nuevoCurso()"><i class="fas fa-plus"></i> Añadir Curso</button>
+    </div>
+    <div class="card">
+      <table id="cursosTable">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Profesor a cargo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Profesores Section -->
+  <div id="profesores" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-chalkboard-teacher"></i> Profesores</h1>
+      <button class="btn btn-primary" onclick="nuevoProfesor()"><i class="fas fa-plus"></i> Añadir Profesor</button>
+    </div>
+    <div class="card">
+      <table id="profesoresTable">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Teléfono</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Imágenes Section -->
+  <div id="imagenes" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-images"></i> Gestión de Imágenes</h1>
+    </div>
+    <div class="form-container">
+      <form id="imageUploadForm">
+        <div class="form-group">
+          <label for="grupo">Grupo:</label>
+          <select id="grupo" name="grupo" onchange="toggleAlbumOptions()">
+            <option value="public">Público</option>
+            <option value="private">Privado</option>
+          </select>
+        </div>
+
+        <div id="albumOptions" style="display: none;">
+          <div class="form-group">
+            <label for="albumSelect">Álbum existente:</label>
+            <select id="albumSelect"><option value="">-- Selecciona --</option></select>
+          </div>
+          <div class="form-group">
+            <label for="nuevoAlbum">O crear nuevo álbum:</label>
+            <input type="text" id="nuevoAlbum" placeholder="Nombre del nuevo álbum" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="imagenesInput">Seleccionar imágenes:</label>
+          <input type="file" id="imagenesInput" multiple accept="image/*" />
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Subir Imágenes</button>
+      </form>
+      <div id="uploadStatus" style="margin-top: 15px;"></div>
+    </div>
+  </div>
+
+  <!-- Usuarios Section -->
+  <div id="usuarios" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-users"></i> Gestión de Usuarios</h1>
+      <button class="btn btn-primary" onclick="mostrarFormularioUsuario()"><i class="fas fa-plus"></i> Nuevo Usuario</button>
+    </div>
+
+    <div id="formUsuario" class="form-container" style="display:none;">
+      <h3>Crear Nuevo Usuario</h3>
+      <div class="form-group">
+        <label for="rutUsuario">RUT</label>
+        <input type="text" id="rutUsuario" placeholder="12345678-9" required>
+      </div>
+      <div class="form-group">
+        <label for="nombreUsuario">Nombre completo</label>
+        <input type="text" id="nombreUsuario" placeholder="Nombre completo" required>
+      </div>
+      <div class="form-group">
+        <label for="correoUsuario">Email</label>
+        <input type="email" id="correoUsuario" placeholder="correo@ejemplo.com" required>
+      </div>
+      <div class="form-group">
+        <label for="telefonoUsuario">Teléfono</label>
+        <input type="tel" id="telefonoUsuario" placeholder="+56 9 1234 5678">
+      </div>
+      <div class="form-group">
+        <label for="rolUsuario">Rol</label>
+        <select id="rolUsuario">
+          <option value="admin">Administrador</option>
+          <option value="profesor">Profesor</option>
+          <option value="fono">Fonoaudiólogo</option>
+          <option value="alumno">Alumno/Apoderado</option>
+        </select>
+      </div>
+      <button class="btn btn-success" onclick="crearUsuario()">Guardar Usuario</button>
+      <button class="btn btn-secondary" onclick="ocultarFormularioUsuario()">Cancelar</button>
+    </div>
+
+    <div class="card">
+      <h3>Lista de Usuarios</h3>
+      <table id="tablaUsuarios">
+        <thead>
+          <tr>
+            <th>RUT</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Rol</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Modal eventos -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2 id="modalTitle">Nuevo Evento/Evaluación</h2>
+    <form id="eventForm">
+      <input type="hidden" id="eventId">
+      <div class="form-group">
+        <label for="tituloEvento">Título</label>
+        <input id="tituloEvento" type="text" name="titulo" required>
+      </div>
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="fecha">Fecha</label>
+        <input id="fecha" type="date" name="fecha" required>
+      </div>
+      <div class="form-group">
+        <label for="hora">Hora</label>
+        <input id="hora" type="time" name="hora">
+      </div>
+      <div class="form-group">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">
+          <option value="evento">Evento</option>
+          <option value="evaluacion">Evaluación</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="curso">Curso</label>
+        <select id="curso" name="curso">
+          <option value="todos">Todos</option>
+          <option value="medio-mayor">Medio Mayor</option>
+          <option value="prekinder-a">Prekínder A</option>
+          <option value="prekinder-b">Prekínder B</option>
+          <option value="kinder">Kínder</option>
+          <option value="extension">Extensión Horaria</option>
+        </select>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-danger" onclick="deleteEvent()">Eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SCRIPT -->
+</body>
+</html>

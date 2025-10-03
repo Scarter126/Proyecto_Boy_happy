@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boy Happy - Escuela de Lenguaje</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- STYLES -->
 </head>
 <body>
     <!-- Navigation -->
@@ -108,55 +108,13 @@
     <section id="profesionales" class="professionals-section">
         <div class="container">
             <h2 class="section-title">Nuestro Equipo de Profesionales</h2>
-            <div class="professionals-grid">
+            <div id="professionalsGrid" class="professionals-grid">
+                <!-- Cargado dinámicamente desde API -->
                 <div class="professional-card">
                     <div class="professional-avatar">
-                        <i class="fas fa-user-md"></i>
+                        <i class="fas fa-spinner fa-spin"></i>
                     </div>
-                    <h3>Dra. Ana Martínez</h3>
-                    <p class="professional-title">Fonoaudióloga Jefe</p>
-                    <p class="professional-desc">Especialista en trastornos del lenguaje con 15 años de experiencia</p>
-                    <div class="professional-badges">
-                        <span class="badge">TEL</span>
-                        <span class="badge">Autismo</span>
-                        <span class="badge">Disfasia</span>
-                    </div>
-                </div>
-                <div class="professional-card">
-                    <div class="professional-avatar">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <h3>Lic. Carlos Rodríguez</h3>
-                    <p class="professional-title">Terapeuta del Lenguaje</p>
-                    <p class="professional-desc">Experto en desarrollo del habla en primera infancia</p>
-                    <div class="professional-badges">
-                        <span class="badge">Habla</span>
-                        <span class="badge">Pronunciación</span>
-                    </div>
-                </div>
-                <div class="professional-card">
-                    <div class="professional-avatar">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <h3>Dra. María González</h3>
-                    <p class="professional-title">Fonoaudióloga</p>
-                    <p class="professional-desc">Especialista en terapia miofuncional y deglución</p>
-                    <div class="professional-badges">
-                        <span class="badge">Deglución</span>
-                        <span class="badge">Voz</span>
-                    </div>
-                </div>
-                <div class="professional-card">
-                    <div class="professional-avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <h3>Lic. Patricia Silva</h3>
-                    <p class="professional-title">Psicopedagoga</p>
-                    <p class="professional-desc">Apoyo integral en el proceso de aprendizaje</p>
-                    <div class="professional-badges">
-                        <span class="badge">Aprendizaje</span>
-                        <span class="badge">Lectoescritura</span>
-                    </div>
+                    <p>Cargando equipo profesional...</p>
                 </div>
             </div>
         </div>
@@ -171,17 +129,17 @@
                     <div class="info-card">
                         <i class="fas fa-map-marker-alt"></i>
                         <h3>Dirección</h3>
-                        <p>Av. Providencia 1234, Oficina 567<br>Providencia, Santiago</p>
+                        <p>Los Jardines 727<br>Ñuñoa, Santiago<br>Región Metropolitana</p>
                     </div>
                     <div class="info-card">
                         <i class="fas fa-clock"></i>
                         <h3>Horario</h3>
-                        <p>Lunes a Viernes: 9:00 - 19:00<br>Sábados: 9:00 - 13:00</p>
+                        <p>Lunes a Viernes<br>Cierra a las 7:00 PM</p>
                     </div>
                     <div class="info-card">
                         <i class="fas fa-phone"></i>
                         <h3>Contacto</h3>
-                        <p>+56 2 2345 6789<br>info@pequeñoslinguistas.cl</p>
+                        <p>+56 9 8668 1455<br><a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank" style="color: var(--burgundy-main); text-decoration: none;">@escuelaboyhappy</a></p>
                     </div>
                 </div>
                 <div id="map" class="map-container"></div>
@@ -220,12 +178,9 @@
                         </div>
                         <div class="form-group">
                             <label>Profesional</label>
-                            <select id="professional">
+                            <select id="professional" required>
                                 <option value="">Seleccionar profesional</option>
-                                <option value="ana">Dra. Ana Martínez</option>
-                                <option value="carlos">Lic. Carlos Rodríguez</option>
-                                <option value="maria">Dra. María González</option>
-                                <option value="patricia">Lic. Patricia Silva</option>
+                                <!-- Opciones cargadas dinámicamente -->
                             </select>
                         </div>
                         <div class="form-group">
@@ -265,9 +220,7 @@
                     <h3>Boy Happy</h3>
                     <p>Ayudando a los niños a comunicarse mejor desde 2010</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-whatsapp"></i></a>
+                        <a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
@@ -276,7 +229,6 @@
                         <li><a href="#inicio">Inicio</a></li>
                         <li><a href="#profesionales">Equipo</a></li>
                         <li><a href="#reservas">Reservas</a></li>
-                        <li><a href="backoffice.html">Backoffice</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -312,47 +264,9 @@
                     <label>Contraseña</label>
                     <input type="password" id="loginPassword" placeholder="••••••••" required>
                 </div>
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox"> Recordarme
-                    </label>
-                </div>
+
                 <button type="submit" class="btn-primary">Ingresar</button>
                 <p class="modal-footer-text">
-                    ¿No tienes cuenta? <a href="#" onclick="openRegisterModal()">Regístrate aquí</a>
-                </p>
-            </form>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div id="registerModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeRegisterModal()">&times;</span>
-            <div class="modal-header">
-                <h2>Crear Cuenta</h2>
-                <p>Únete a nuestra comunidad</p>
-            </div>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" id="registerName" placeholder="Juan Pérez" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="registerEmail" placeholder="correo@ejemplo.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="registerPassword" placeholder="••••••••" required>
-                </div>
-                <div class="form-group">
-                    <label>Confirmar Contraseña</label>
-                    <input type="password" id="confirmPassword" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn-primary">Registrarse</button>
-                <p class="modal-footer-text">
-                    ¿Ya tienes cuenta? <a href="#" onclick="openLoginModal()">Inicia sesión</a>
                 </p>
             </form>
         </div>
@@ -369,15 +283,15 @@
             <form id="contactForm">
                 <div class="form-group">
                     <label>Nombre</label>
-                    <input type="text" placeholder="Tu nombre" required>
+                    <input type="text" name="nombre" placeholder="Tu nombre" required>
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" placeholder="tu@email.com" required>
+                    <input type="email" name="email" placeholder="tu@email.com" required>
                 </div>
                 <div class="form-group">
                     <label>Mensaje</label>
-                    <textarea rows="4" placeholder="¿En qué podemos ayudarte?" required></textarea>
+                    <textarea name="mensaje" rows="4" placeholder="¿En qué podemos ayudarte?" required></textarea>
                 </div>
                 <button type="submit" class="btn-primary">Enviar Mensaje</button>
             </form>
@@ -394,7 +308,63 @@
         </div>
     </div>
 
+    <!-- Confirmation Booking Modal -->
+    <div id="confirmBookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeConfirmModal()">&times;</span>
+            <div class="modal-header">
+                <h2>Confirmar Reserva</h2>
+                <p>Por favor verifica los datos de tu reserva</p>
+            </div>
+            <div class="booking-summary">
+                <div class="summary-item">
+                    <i class="fas fa-calendar"></i>
+                    <div>
+                        <strong>Fecha:</strong>
+                        <span id="confirmDate"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <strong>Horario:</strong>
+                        <span id="confirmTime"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-user-md"></i>
+                    <div>
+                        <strong>Profesional:</strong>
+                        <span id="confirmProfessional"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-user"></i>
+                    <div>
+                        <strong>Paciente:</strong>
+                        <span id="confirmPatient"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-phone"></i>
+                    <div>
+                        <strong>Teléfono:</strong>
+                        <span id="confirmPhone"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="submitReservation()">
+                    <i class="fas fa-check"></i> Confirmar Reserva
+                </button>
+                <button class="btn-secondary" onclick="closeConfirmModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="script.js"></script>
+    <!-- SCRIPT -->
 </body>
 </html>
