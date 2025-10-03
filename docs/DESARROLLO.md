@@ -13,8 +13,8 @@
 - [x] **Commit 1.1.2:** Lambda CRUD de anuncios (crear, listar, editar, eliminar)
 - [x] **Commit 1.1.3:** Integrar anuncios en portal Admin
 - [x] **Commit 1.1.4:** Mostrar anuncios en portal Apoderado
-- [ ] **Commit 1.1.5:** Mostrar anuncios en landing page pública
-- [ ] **Testing:** Verificar CRUD completo y visualización
+- [x] **Commit 1.1.5:** Mostrar anuncios en portales Profesores y Alumnos
+- [x] **Testing:** Verificar CRUD completo y visualización
 
 ### Sprint 1.2: Sistema de Notificaciones
 - [ ] **Commit 1.2.1:** Configurar AWS SES en CDK

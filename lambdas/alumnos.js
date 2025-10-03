@@ -30,6 +30,7 @@ exports.handler = async () => {
     <aside>
       <h2>Menú Alumno</h2>
       <ul>
+        <li onclick="showSection('anuncios')">📢 Anuncios</li>
         <li onclick="showSection('calendario')">📅 Calendario</li>
         <li onclick="showSection('horario')">📖 Horario</li>
         <li onclick="showSection('companeros')">👥 Compañeros</li>
@@ -39,7 +40,13 @@ exports.handler = async () => {
     <main>
       <button class="logout-btn" onclick="cerrarSesion()">🔒 Cerrar Sesión</button>
 
-      <div id="calendario" class="section active">
+      <!-- Anuncios (Commit 1.1.5) -->
+      <div id="anuncios" class="section active">
+        <h1>📢 Anuncios</h1>
+        <div id="listaAnunciosPortal"></div>
+      </div>
+
+      <div id="calendario" class="section">
         <h1>Calendario de Pruebas</h1>
         <div id="calendar"></div>
       </div>
@@ -86,7 +93,34 @@ exports.handler = async () => {
         document.getElementById('eventModal').style.display = 'none';
       }
 
+      // Función para cargar anuncios (Commit 1.1.5)
+      async function cargarAnunciosPortal() {
+        try {
+          const res = await fetch(basePath + '/anuncios');
+          const anuncios = await res.json();
+
+          // Filtrar solo anuncios para todos o alumnos
+          const filtered = anuncios.filter(a => a.destinatarios === 'todos' || a.destinatarios === 'alumnos');
+
+          document.getElementById('listaAnunciosPortal').innerHTML = filtered.map(a => \`
+            <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; background: #f9f9f9;">
+              <h3 style="margin-top: 0; color: #004080;">\${a.titulo}</h3>
+              <p>\${a.contenido}</p>
+              <small style="color: #666;">
+                <strong>Fecha:</strong> \${new Date(a.fecha).toLocaleDateString()} |
+                <strong>Autor:</strong> \${a.autor}
+              </small>
+            </div>
+          \`).join('') || '<p>No hay anuncios disponibles.</p>';
+        } catch (err) {
+          console.error('Error cargando anuncios:', err);
+          document.getElementById('listaAnunciosPortal').innerHTML = '<p>Error al cargar anuncios.</p>';
+        }
+      }
+
       document.addEventListener('DOMContentLoaded', async function() {
+        // Cargar anuncios al iniciar
+        cargarAnunciosPortal();
         const calendarEl = document.getElementById('calendar');
         const calendar = new FullCalendar.Calendar(calendarEl, {
           initialView: 'dayGridMonth',
