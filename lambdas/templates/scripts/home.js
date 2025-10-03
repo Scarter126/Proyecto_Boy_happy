@@ -230,49 +230,9 @@ window.onclick = function(event) {
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    // Detectar ambiente (desarrollo vs producción)
-    const isDevelopment = window.location.hostname === 'localhost' ||
-                          window.location.hostname === '127.0.0.1';
-
-    if (isDevelopment) {
-        // LOGIN MOCK para desarrollo
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Login exitoso:', data.user);
-
-                // Redirigir según rol
-                const redirects = {
-                    'admin': '/admin',
-                    'profesor': '/profesores',
-                    'fono': '/fono',
-                    'alumno': '/alumnos'
-                };
-
-                const redirectUrl = redirects[data.user.rol] || '/';
-                window.location.href = redirectUrl;
-            } else {
-                const error = await response.json();
-                alert(error.error || 'Credenciales inválidas');
-            }
-        } catch (error) {
-            console.error('Error de login:', error);
-            alert('Error al iniciar sesión');
-        }
-    } else {
-        // LOGIN COGNITO para producción
-        const loginUrl = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+phone&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
-        window.location.href = loginUrl;
-    }
+    // LOGIN COGNITO
+    const loginUrl = `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}&response_type=code&scope=email+openid+phone&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+    window.location.href = loginUrl;
 });
 
 document.getElementById('contactForm').addEventListener('submit', async function(e) {

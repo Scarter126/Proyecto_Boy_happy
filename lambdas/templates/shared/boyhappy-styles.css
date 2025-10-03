@@ -425,6 +425,42 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 2rem;
     margin-top: 3rem;
+    max-height: 800px;
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+/* Scrollbar personalizado */
+.professionals-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.professionals-grid::-webkit-scrollbar-track {
+    background: var(--gray-lighter);
+    border-radius: 10px;
+}
+
+.professionals-grid::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--burgundy-main), var(--pink-main));
+    border-radius: 10px;
+}
+
+.professionals-grid::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--burgundy-dark), var(--burgundy-main));
+}
+
+/* Límite de 2 filas (6 cards en desktop) */
+@media (min-width: 1024px) {
+    .professionals-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .professionals-grid {
+        grid-template-columns: 1fr;
+        max-height: 600px;
+    }
 }
 
 .professional-card {
@@ -439,7 +475,7 @@ body {
     overflow: hidden;
 }
 
-.professional-card:nth-child(1)::before {
+.professional-card:nth-child(4n+1)::before {
     content: '';
     position: absolute;
     top: 0;
@@ -449,7 +485,7 @@ body {
     background: linear-gradient(90deg, var(--burgundy-main), var(--pink-main));
 }
 
-.professional-card:nth-child(2)::before {
+.professional-card:nth-child(4n+2)::before {
     content: '';
     position: absolute;
     top: 0;
@@ -459,7 +495,7 @@ body {
     background: linear-gradient(90deg, var(--blue-main), var(--cyan-main));
 }
 
-.professional-card:nth-child(3)::before {
+.professional-card:nth-child(4n+3)::before {
     content: '';
     position: absolute;
     top: 0;
@@ -469,7 +505,7 @@ body {
     background: linear-gradient(90deg, var(--green-main), var(--yellow-main));
 }
 
-.professional-card:nth-child(4)::before {
+.professional-card:nth-child(4n+4)::before {
     content: '';
     position: absolute;
     top: 0;
@@ -497,19 +533,19 @@ body {
     font-size: 3rem;
 }
 
-.professional-card:nth-child(1) .professional-avatar {
+.professional-card:nth-child(4n+1) .professional-avatar {
     background: linear-gradient(135deg, var(--burgundy-main), var(--pink-main));
 }
 
-.professional-card:nth-child(2) .professional-avatar {
+.professional-card:nth-child(4n+2) .professional-avatar {
     background: linear-gradient(135deg, var(--blue-main), var(--cyan-main));
 }
 
-.professional-card:nth-child(3) .professional-avatar {
+.professional-card:nth-child(4n+3) .professional-avatar {
     background: linear-gradient(135deg, var(--green-main), var(--yellow-main));
 }
 
-.professional-card:nth-child(4) .professional-avatar {
+.professional-card:nth-child(4n+4) .professional-avatar {
     background: linear-gradient(135deg, var(--orange-main), var(--gold-main));
 }
 
@@ -538,7 +574,7 @@ body {
     justify-content: center;
 }
 
-.professional-card:nth-child(1) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
+.professional-card:nth-child(4n+1) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
     background: linear-gradient(90deg, var(--burgundy-main), var(--pink-main));
     color: var(--white);
     padding: 0.3rem 0.8rem;
@@ -547,7 +583,7 @@ body {
     font-weight: 500;
 }
 
-.professional-card:nth-child(2) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
+.professional-card:nth-child(4n+2) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
     background: linear-gradient(90deg, var(--blue-main), var(--cyan-main));
     color: var(--white);
     padding: 0.3rem 0.8rem;
@@ -556,7 +592,7 @@ body {
     font-weight: 500;
 }
 
-.professional-card:nth-child(3) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
+.professional-card:nth-child(4n+3) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
     background: linear-gradient(90deg, var(--green-main), var(--yellow-main));
     color: var(--white);
     padding: 0.3rem 0.8rem;
@@ -565,7 +601,7 @@ body {
     font-weight: 500;
 }
 
-.professional-card:nth-child(4) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
+.professional-card:nth-child(4n+4) .badge:not(.pendiente):not(.aprobada):not(.rechazada) {
     background: linear-gradient(90deg, var(--orange-main), var(--gold-main));
     color: var(--white);
     padding: 0.3rem 0.8rem;

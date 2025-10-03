@@ -19,7 +19,7 @@ export class BoyHappyStack extends cdk.Stack {
     // Bucket de imágenes
     // ----------------------------
     const imagesBucket = new s3.Bucket(this, 'ImagesBucket', {
-      bucketName: 'boyhappy-images-bucket',
+      bucketName: `boyhappy-images-${this.account}`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -89,18 +89,50 @@ export class BoyHappyStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    // Tabla de Asistencia (Commit 2.1.1)
+    const asistenciaTable = new dynamodb.Table(this, 'AsistenciaTable', {
+      tableName: 'Asistencia',
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // GSI para buscar por curso y fecha
+    asistenciaTable.addGlobalSecondaryIndex({
+      indexName: 'CursoFechaIndex',
+      partitionKey: { name: 'curso', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // GSI para buscar por alumno
+    asistenciaTable.addGlobalSecondaryIndex({
+      indexName: 'AlumnoIndex',
+      partitionKey: { name: 'rutAlumno', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fecha', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // ----------------------------
     // Helper para crear Lambdas
     // ----------------------------
     const createLambda = (name: string, handlerFile: string, handlerName: string = 'handler', environment: Record<string, string> = {}) => {
+      // Si el asset es 'lambdas/', entonces el handler debe ser relativo a esa carpeta
+      // Ejemplo: si handlerFile='lambdas/frontend/handlers', debe ser 'frontend/handlers'
+      const relativeHandler = handlerFile.startsWith('lambdas/')
+        ? handlerFile.substring('lambdas/'.length)
+        : handlerFile;
+
       return new lambda.Function(this, name, {
         runtime: lambda.Runtime.NODEJS_18_X,
-        handler: `${handlerFile}.${handlerName}`,
-        code: lambda.Code.fromAsset('.', {
-          exclude: ['node_modules', 'cdk.out', 'test', '.git', 'docs', 'mock', '.claude', '*.md', '.env'],
-          // templates/ se incluirá automáticamente
-        }),
-        environment,
+        handler: `${relativeHandler}.${handlerName}`,
+        code: lambda.Code.fromAsset('lambdas'),
+        environment: {
+          ...environment,
+          LAST_DEPLOY: new Date().toISOString(), // Forzar re-deploy
+        },
+        timeout: cdk.Duration.seconds(30),
+        memorySize: 512,
       });
     };
 
@@ -189,6 +221,12 @@ export class BoyHappyStack extends cdk.Stack {
     });
     evaluacionesTable.grantReadWriteData(reservarEvaluacionLambda);
 
+    // Lambda de Asistencia (DynamoDB) - Commit 2.1.2
+    const asistenciaLambda = createLambda('AsistenciaLambda', 'lambdas/api/asistencia', 'handler', {
+      ASISTENCIA_TABLE: asistenciaTable.tableName,
+    });
+    asistenciaTable.grantReadWriteData(asistenciaLambda);
+
     // ----------------------------
     // Lambdas Hosted UI / Callback
     // ----------------------------
@@ -262,6 +300,13 @@ export class BoyHappyStack extends cdk.Stack {
     matriculas.addMethod('POST', new apigateway.LambdaIntegration(eventosLambda));
     matriculas.addMethod('GET', new apigateway.LambdaIntegration(eventosLambda));
     matriculas.addMethod('PUT', new apigateway.LambdaIntegration(eventosLambda));
+
+    // --- Rutas de asistencia (Commit 2.1.3) ---
+    const asistencia = api.root.addResource('asistencia');
+    asistencia.addMethod('POST', new apigateway.LambdaIntegration(asistenciaLambda));
+    asistencia.addMethod('GET', new apigateway.LambdaIntegration(asistenciaLambda));
+    asistencia.addMethod('PUT', new apigateway.LambdaIntegration(asistenciaLambda));
+    asistencia.addMethod('DELETE', new apigateway.LambdaIntegration(asistenciaLambda));
 
     // --- Rutas fonoaudiología ---
     const tomaHora = api.root.addResource('toma-hora');
