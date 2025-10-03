@@ -127,24 +127,41 @@ exports.handler = async () => {
     <div id="uploadStatus" style="margin-top: 15px;"></div>
   </div>
 
-  <!-- Usuarios -->
+  <!-- Usuarios (Commit 1.2.4) -->
   <div id="usuarios" class="section">
-    <h1>Gestión de Usuarios</h1>
-    <form id="userForm">
-      <label for="rut">RUT</label>
-      <input type="text" id="rut" required>
-      <label for="email">Correo</label>
-      <input type="email" id="email" required>
-      <label for="group">Grupo</label>
-      <select id="group" required>
-        <option value="admin">Admin</option>
+    <h1>👥 Gestión de Usuarios</h1>
+    <button class="btn" onclick="mostrarFormularioUsuario()">➕ Nuevo Usuario</button>
+
+    <div id="formUsuario" style="display:none; background: #f9f9f9; padding: 15px; margin: 15px 0; border-radius: 5px;">
+      <h3>Crear Nuevo Usuario</h3>
+      <input type="text" id="rutUsuario" placeholder="RUT (ej: 12345678-9)" required style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      <input type="text" id="nombreUsuario" placeholder="Nombre completo" required style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      <input type="email" id="correoUsuario" placeholder="Email" required style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      <input type="tel" id="telefonoUsuario" placeholder="Teléfono" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      <select id="rolUsuario" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+        <option value="admin">Administrador</option>
         <option value="profesor">Profesor</option>
-        <option value="fono">Fono</option>
-        <option value="alumno">Alumno</option>
+        <option value="fono">Fonoaudiólogo</option>
+        <option value="alumno">Alumno/Apoderado</option>
       </select>
-      <button type="submit" class="btn">➕ Crear Usuario</button>
-    </form>
-    <div id="userStatus" style="margin-top:15px;"></div>
+      <button class="btn" onclick="crearUsuario()">Guardar Usuario</button>
+      <button class="btn" style="background: #999;" onclick="ocultarFormularioUsuario()">Cancelar</button>
+    </div>
+
+    <h2>Lista de Usuarios</h2>
+    <table id="tablaUsuarios">
+      <thead>
+        <tr>
+          <th>RUT</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Teléfono</th>
+          <th>Rol</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 </main>
 
@@ -401,6 +418,146 @@ async function eliminarAnuncio(id) {
     console.error('Error eliminando anuncio:', err);
     alert('Error al eliminar el anuncio');
   }
+}
+
+// ----------------------
+// Gestión de Usuarios (Commit 1.2.4)
+// ----------------------
+const usuariosUrl = window.location.origin + '/usuarios';
+
+function mostrarFormularioUsuario() {
+  document.getElementById('formUsuario').style.display = 'block';
+}
+
+function ocultarFormularioUsuario() {
+  document.getElementById('formUsuario').style.display = 'none';
+  document.getElementById('rutUsuario').value = '';
+  document.getElementById('nombreUsuario').value = '';
+  document.getElementById('correoUsuario').value = '';
+  document.getElementById('telefonoUsuario').value = '';
+  document.getElementById('rolUsuario').value = 'alumno';
+}
+
+async function cargarUsuarios() {
+  try {
+    const res = await fetch(usuariosUrl);
+    const usuarios = await res.json();
+
+    const tbody = document.querySelector('#tablaUsuarios tbody');
+    tbody.innerHTML = usuarios.map(u => `
+      <tr>
+        <td>${u.rut}</td>
+        <td>${u.nombre}</td>
+        <td>${u.correo}</td>
+        <td>${u.telefono || '-'}</td>
+        <td>${u.rol}</td>
+        <td>
+          <button class="btn" onclick="editarUsuario('${u.rut}')">✏️ Editar</button>
+          <button class="btn" style="background: #c00;" onclick="eliminarUsuario('${u.rut}')">🗑️ Eliminar</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch(err) {
+    console.error('Error cargando usuarios:', err);
+  }
+}
+
+async function crearUsuario() {
+  const rut = document.getElementById('rutUsuario').value;
+  const nombre = document.getElementById('nombreUsuario').value;
+  const correo = document.getElementById('correoUsuario').value;
+  const telefono = document.getElementById('telefonoUsuario').value;
+  const rol = document.getElementById('rolUsuario').value;
+
+  if (!rut || !nombre || !correo) {
+    alert('Por favor completa todos los campos obligatorios');
+    return;
+  }
+
+  try {
+    // Generar password temporal de 8 caracteres
+    const passwordTemporal = Math.random().toString(36).slice(-8).toUpperCase();
+
+    const res = await fetch(usuariosUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rut,
+        nombre,
+        correo,
+        telefono,
+        rol,
+        passwordTemporal
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(\`Usuario creado exitosamente.\\n\\nPassword temporal: \${passwordTemporal}\\n\\nNOTA: Guarda este password, el usuario debe cambiarlo en su primer inicio de sesión.\`);
+      ocultarFormularioUsuario();
+      cargarUsuarios();
+    } else {
+      alert('Error al crear usuario: ' + (data.error || 'Error desconocido'));
+    }
+  } catch(err) {
+    console.error('Error creando usuario:', err);
+    alert('Error al crear usuario: ' + err.message);
+  }
+}
+
+async function editarUsuario(rut) {
+  const nuevoNombre = prompt('Nuevo nombre:');
+  const nuevoTelefono = prompt('Nuevo teléfono:');
+
+  if (!nuevoNombre) return;
+
+  try {
+    const res = await fetch(\`\${usuariosUrl}?rut=\${encodeURIComponent(rut)}\`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: nuevoNombre,
+        telefono: nuevoTelefono || '',
+        rol: 'alumno' // Por simplicidad, mantener rol actual
+      })
+    });
+
+    if (res.ok) {
+      alert('Usuario actualizado correctamente');
+      cargarUsuarios();
+    } else {
+      alert('Error al actualizar usuario');
+    }
+  } catch(err) {
+    console.error('Error editando usuario:', err);
+    alert('Error al editar usuario: ' + err.message);
+  }
+}
+
+async function eliminarUsuario(rut) {
+  if (!confirm(\`¿Estás seguro de eliminar el usuario con RUT \${rut}?\\n\\nEsto desactivará el usuario.\`)) return;
+
+  try {
+    const res = await fetch(\`\${usuariosUrl}?rut=\${encodeURIComponent(rut)}\`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      alert('Usuario desactivado correctamente');
+      cargarUsuarios();
+    } else {
+      alert('Error al eliminar usuario');
+    }
+  } catch(err) {
+    console.error('Error eliminando usuario:', err);
+    alert('Error al eliminar usuario: ' + err.message);
+  }
+}
+
+// Cargar usuarios al mostrar la sección
+if (document.getElementById('usuarios')) {
+  cargarUsuarios();
 }
 
 // ----------------------
