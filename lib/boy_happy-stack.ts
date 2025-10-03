@@ -241,6 +241,12 @@ export class BoyHappyStack extends cdk.Stack {
     const notificaciones = api.root.addResource('notificaciones');
     notificaciones.addMethod('POST', new apigateway.LambdaIntegration(notificacionesLambda));
 
+    // --- Rutas de matrículas (Commit 1.4.3) ---
+    const matriculas = api.root.addResource('matriculas');
+    matriculas.addMethod('POST', new apigateway.LambdaIntegration(eventosLambda));
+    matriculas.addMethod('GET', new apigateway.LambdaIntegration(eventosLambda));
+    matriculas.addMethod('PUT', new apigateway.LambdaIntegration(eventosLambda));
+
     // --- Rutas fonoaudiología ---
     const tomaHora = api.root.addResource('toma-hora');
     tomaHora.addMethod('GET', new apigateway.LambdaIntegration(tomaHoraLambda));
