@@ -151,9 +151,15 @@ export class BoyHappyStack extends cdk.Stack {
     const eventosLambda = createLambda('EventosLambda', 'eventos', {
       TABLE_NAME: eventosTable.tableName,
       MATRICULAS_TABLE: matriculasTable.tableName,
+      SOURCE_EMAIL: 'noreply@boyhappy.cl', // Commit 1.4.5: Para notificaciones de matrícula
     });
     eventosTable.grantReadWriteData(eventosLambda);
     matriculasTable.grantReadWriteData(eventosLambda);
+    // Commit 1.4.5: Permisos SES para enviar emails de notificación de matrícula
+    eventosLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+      resources: ['*'],
+    }));
 
     // Lambda de Notificaciones (Commit 1.3.4)
     const notificacionesLambda = createLambda('NotificacionesLambda', 'notificaciones', {

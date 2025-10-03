@@ -107,6 +107,7 @@ exports.handler = async (event) => {
         const { id } = event.queryStringParameters;
         const data = JSON.parse(event.body);
 
+        // Actualizar estado
         await docClient.update({
           TableName: MATRICULAS_TABLE,
           Key: { id },
@@ -117,9 +118,104 @@ exports.handler = async (event) => {
           }
         }).promise();
 
+        // Commit 1.4.5: Obtener datos de la matrícula para enviar email
+        const result = await docClient.get({
+          TableName: MATRICULAS_TABLE,
+          Key: { id }
+        }).promise();
+
+        const matricula = result.Item;
+
+        // Enviar email automático
+        const ses = new AWS.SES();
+        const SOURCE_EMAIL = process.env.SOURCE_EMAIL || 'noreply@boyhappy.cl';
+
+        let mensaje;
+        let asunto;
+
+        if (data.estado === 'aprobada') {
+          asunto = '¡Felicidades! Tu matrícula ha sido aprobada';
+          mensaje = `Estimado/a ${matricula.nombre},
+
+Nos complace informarte que tu solicitud de matrícula ha sido APROBADA.
+
+Pronto nos contactaremos contigo para coordinar los siguientes pasos del proceso de matrícula.
+
+Datos de tu solicitud:
+- Nombre: ${matricula.nombre}
+- RUT: ${matricula.rut}
+- Último curso: ${matricula.ultimoCurso}
+
+¡Bienvenido/a a Boy Happy!
+
+Atentamente,
+Equipo Boy Happy`;
+        } else if (data.estado === 'rechazada') {
+          asunto = 'Estado de tu solicitud de matrícula';
+          mensaje = `Estimado/a ${matricula.nombre},
+
+Lamentamos informarte que tu solicitud de matrícula no ha podido ser aprobada en este momento.
+
+Motivo: ${data.motivo || 'No especificado'}
+
+Si tienes dudas o deseas más información, no dudes en contactarnos.
+
+Atentamente,
+Equipo Boy Happy`;
+        }
+
+        if (mensaje) {
+          try {
+            await ses.sendEmail({
+              Source: SOURCE_EMAIL,
+              Destination: { ToAddresses: [matricula.correo] },
+              Message: {
+                Subject: { Data: asunto, Charset: 'UTF-8' },
+                Body: {
+                  Text: { Data: mensaje, Charset: 'UTF-8' },
+                  Html: {
+                    Data: `
+                      <!DOCTYPE html>
+                      <html>
+                      <head>
+                        <meta charset="UTF-8">
+                        <style>
+                          body { font-family: Arial, sans-serif; line-height: 1.6; }
+                          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                          .header { background: ${data.estado === 'aprobada' ? '#155724' : '#721c24'}; color: white; padding: 15px; text-align: center; }
+                          .content { padding: 20px; background: #f9f9f9; white-space: pre-line; }
+                          .footer { text-align: center; padding: 10px; font-size: 12px; color: #666; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="container">
+                          <div class="header">
+                            <h2>Boy Happy - Centro Educativo</h2>
+                          </div>
+                          <div class="content">
+                            ${mensaje.replace(/\n/g, '<br>')}
+                          </div>
+                          <div class="footer">
+                            <p>Este es un mensaje automático, por favor no responder.</p>
+                          </div>
+                        </div>
+                      </body>
+                      </html>
+                    `,
+                    Charset: 'UTF-8'
+                  }
+                }
+              }
+            }).promise();
+          } catch (emailError) {
+            console.error('Error enviando email de notificación:', emailError);
+            // No fallar el request si falla el email
+          }
+        }
+
         return {
           statusCode: 200,
-          body: JSON.stringify({ message: 'Estado de matrícula actualizado' })
+          body: JSON.stringify({ message: 'Estado de matrícula actualizado y email enviado' })
         };
       }
     }
