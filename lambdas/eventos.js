@@ -90,6 +90,7 @@ exports.handler = async (event) => {
           ultimoCurso: data.ultimoCurso,
           correo: data.correo,
           telefono: data.telefono,
+          estado: 'pendiente', // Commit 1.4.2: Estado inicial
           fechaRegistro: new Date().toISOString()
         };
         await docClient.put({ TableName: MATRICULAS_TABLE, Item: item }).promise();
@@ -99,6 +100,27 @@ exports.handler = async (event) => {
       if (httpMethod === "GET") {
         const result = await docClient.scan({ TableName: MATRICULAS_TABLE }).promise();
         return { statusCode: 200, body: JSON.stringify(result.Items) };
+      }
+
+      // Commit 1.4.2: PUT para cambiar estado de matrícula
+      if (httpMethod === "PUT") {
+        const { id } = event.queryStringParameters;
+        const data = JSON.parse(event.body);
+
+        await docClient.update({
+          TableName: MATRICULAS_TABLE,
+          Key: { id },
+          UpdateExpression: 'SET estado = :e, motivo = :m',
+          ExpressionAttributeValues: {
+            ':e': data.estado,
+            ':m': data.motivo || ''
+          }
+        }).promise();
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ message: 'Estado de matrícula actualizado' })
+        };
       }
     }
 
