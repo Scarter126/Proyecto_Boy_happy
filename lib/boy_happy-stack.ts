@@ -87,6 +87,12 @@ export class BoyHappyStack extends cdk.Stack {
     // ----------------------------
     // Lambdas con Dynamo
     // ----------------------------
+    // Lambda de Anuncios (Commit 1.1.3)
+    const anunciosLambda = createLambda('AnunciosLambda', 'anuncios', {
+      ANUNCIOS_TABLE: anunciosTable.tableName,
+    });
+    anunciosTable.grantReadWriteData(anunciosLambda);
+
     const eventosLambda = createLambda('EventosLambda', 'eventos', {
       TABLE_NAME: eventosTable.tableName,
     });
@@ -142,6 +148,12 @@ export class BoyHappyStack extends cdk.Stack {
         allowHeaders: ['Content-Type'],
       },
     });
+
+    // --- Rutas de anuncios (Commit 1.1.3) ---
+    const anuncios = api.root.addResource('anuncios');
+    anuncios.addMethod('POST', new apigateway.LambdaIntegration(anunciosLambda));
+    anuncios.addMethod('GET', new apigateway.LambdaIntegration(anunciosLambda));
+    anuncios.addMethod('DELETE', new apigateway.LambdaIntegration(anunciosLambda));
 
     // --- Rutas de eventos ---
     const eventos = api.root.addResource('eventos');
