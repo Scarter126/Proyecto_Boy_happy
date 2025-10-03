@@ -36,6 +36,21 @@ export class BoyHappyStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // En producción usar RETAIN
     });
 
+    // Tabla de Usuarios (Commit 1.2.1)
+    const usuariosTable = new dynamodb.Table(this, 'UsuariosTable', {
+      tableName: 'Usuarios',
+      partitionKey: { name: 'rut', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // En producción usar RETAIN
+    });
+
+    // GSI para búsqueda por email
+    usuariosTable.addGlobalSecondaryIndex({
+      indexName: 'EmailIndex',
+      partitionKey: { name: 'correo', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const eventosTable = new dynamodb.Table(this, 'EventosTable', {
       tableName: 'Eventos',
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
@@ -212,6 +227,11 @@ export class BoyHappyStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'AnunciosTableName', {
       value: anunciosTable.tableName,
       description: 'Nombre de la tabla de Anuncios',
+    });
+
+    new cdk.CfnOutput(this, 'UsuariosTableName', {
+      value: usuariosTable.tableName,
+      description: 'Nombre de la tabla de Usuarios',
     });
   }
 }
