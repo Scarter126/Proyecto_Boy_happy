@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluación Fonoaudiológica - Boy Happy</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- STYLES -->
+<style>
+/* Ajustes específicos para esta página */
+body {
+  display: block;
+  background: linear-gradient(135deg, rgba(173, 20, 87, 0.05) 0%, rgba(255, 107, 53, 0.05) 100%);
+}
+
+.page-header {
+  background: linear-gradient(135deg, var(--burgundy-main), var(--burgundy-dark));
+  color: var(--white);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.page-header h1 {
+  color: var(--white);
+  margin: 0;
+  font-size: 2rem;
+}
+
+.form-container {
+  max-width: 600px;
+  margin: 30px auto;
+}
+
+.back-link {
+  text-align: center;
+  margin: 30px;
+}
+
+.link-button {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--white);
+  background: var(--burgundy-main);
+  padding: 12px 30px;
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.link-button:hover {
+  background: var(--gold-main);
+  color: var(--burgundy-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+</style>
+</head>
+<body>
+<header class="page-header">
+  <i class="fas fa-stethoscope" style="font-size: 3rem; margin-bottom: 10px;"></i>
+  <h1>Solicitar Evaluación Fonoaudiológica</h1>
+  <p>Complete el formulario para agendar su evaluación</p>
+</header>
+
+<div class="form-container">
+  <form id="evaluacionForm">
+    <div class="form-group">
+      <label for="nombreAlumno"><i class="fas fa-user"></i> Nombre del alumno</label>
+      <input type="text" name="nombreAlumno" id="nombreAlumno" required>
+    </div>
+
+    <div class="form-group">
+      <label for="rutAlumno"><i class="fas fa-id-card"></i> RUT del alumno</label>
+      <input type="text" name="rutAlumno" id="rutAlumno" required placeholder="12345678-9">
+    </div>
+
+    <div class="form-group">
+      <label for="fechaNacimiento"><i class="fas fa-birthday-cake"></i> Fecha de nacimiento</label>
+      <input type="date" name="fechaNacimiento" id="fechaNacimiento" required>
+    </div>
+
+    <div class="form-group">
+      <label for="telefono"><i class="fas fa-phone"></i> Teléfono de contacto</label>
+      <input type="tel" name="telefono" id="telefono" required placeholder="+56 9 1234 5678">
+    </div>
+
+    <div class="form-group">
+      <label for="correo"><i class="fas fa-envelope"></i> Correo electrónico</label>
+      <input type="email" name="correo" id="correo" required placeholder="ejemplo@correo.com">
+    </div>
+
+    <div class="form-group">
+      <label for="nombreApoderado"><i class="fas fa-user-tie"></i> Nombre del apoderado</label>
+      <input type="text" name="nombreApoderado" id="nombreApoderado" required>
+    </div>
+
+    <div class="form-group">
+      <label for="rutApoderado"><i class="fas fa-id-card"></i> RUT del apoderado</label>
+      <input type="text" name="rutApoderado" id="rutApoderado" required placeholder="12345678-9">
+    </div>
+
+    <div class="form-group">
+      <label for="horarios"><i class="fas fa-clock"></i> Seleccione fecha y hora para la evaluación</label>
+      <select name="fechaHora" id="horarios" required>
+        <option>Cargando horarios disponibles...</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+      <i class="fas fa-check-circle"></i> Reservar Evaluación
+    </button>
+  </form>
+</div>
+
+<div class="back-link">
+  <a class="link-button" href="./">
+    <i class="fas fa-arrow-left"></i> Volver al inicio
+  </a>
+</div>
+
+<!-- SCRIPT -->
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galería - Boy Happy</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- STYLES -->
+<style>
+/* Ajustes específicos para galería */
+body {
+  display: block;
+  background: linear-gradient(135deg, rgba(173, 20, 87, 0.05) 0%, rgba(255, 107, 53, 0.05) 100%);
+}
+
+.page-header {
+  background: linear-gradient(135deg, var(--burgundy-main), var(--burgundy-dark));
+  color: var(--white);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.page-header h1 {
+  color: var(--white);
+  margin: 0;
+  font-size: 2rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 30px auto;
+  max-width: 1200px;
+  padding: 0 20px;
+}
+
+.gallery img {
+  width: 100%;
+  height: 250px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  object-fit: cover;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.gallery img:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+}
+
+.back-link {
+  text-align: center;
+  margin: 30px;
+}
+
+.link-button {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--white);
+  background: var(--burgundy-main);
+  padding: 12px 30px;
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.link-button:hover {
+  background: var(--gold-main);
+  color: var(--burgundy-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.no-images {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.no-images i {
+  font-size: 5rem;
+  color: var(--burgundy-main);
+  opacity: 0.3;
+  margin-bottom: 20px;
+}
+
+.no-images p {
+  font-size: 1.2rem;
+  color: var(--gray);
+}
+</style>
+</head>
+<body>
+<header class="page-header">
+  <i class="fas fa-images" style="font-size: 3rem; margin-bottom: 10px;"></i>
+  <h1>Galería Boy Happy</h1>
+  <p>Momentos especiales de nuestra escuela</p>
+</header>
+
+<div class="gallery" id="gallery">
+  <!-- IMAGES -->
+</div>
+
+<div class="back-link">
+  <a class="link-button" href="./">
+    <i class="fas fa-arrow-left"></i> Volver al inicio
+  </a>
+</div>
+
+</body>
+</html>

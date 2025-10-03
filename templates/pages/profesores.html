@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Profesores - Boy Happy</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<!-- STYLES -->
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <i class="fas fa-graduation-cap"></i>
+    <span>Boy Happy</span>
+  </div>
+  <ul class="sidebar-menu">
+    <li><a href="#" onclick="showSection('anuncios'); return false;" class="active"><i class="fas fa-bullhorn"></i> Anuncios</a></li>
+    <li><a href="#" onclick="showSection('calendario'); return false;"><i class="fas fa-calendar"></i> Calendario</a></li>
+    <li><a href="#" onclick="showSection('cursos'); return false;"><i class="fas fa-book"></i> Mis Cursos</a></li>
+  </ul>
+  <button class="logout-btn" onclick="cerrarSesion()">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Cerrar Sesión</span>
+  </button>
+</aside>
+
+<main class="main-content">
+  <!-- Anuncios Section -->
+  <div id="anuncios" class="section active">
+    <div class="content-header">
+      <h1><i class="fas fa-bullhorn"></i> Anuncios</h1>
+    </div>
+    <div id="listaAnunciosPortal"></div>
+  </div>
+
+  <!-- Calendario Section -->
+  <div id="calendario" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-calendar"></i> Calendario General</h1>
+      <button class="btn btn-primary" onclick="openModal()">
+        <i class="fas fa-plus"></i> Añadir Evento/Evaluación
+      </button>
+    </div>
+    <div id="calendar"></div>
+  </div>
+
+  <!-- Cursos Section -->
+  <div id="cursos" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-book"></i> Mis Cursos</h1>
+    </div>
+    <div class="card">
+      <p>Lista de cursos asignados.</p>
+    </div>
+  </div>
+</main>
+
+<!-- Modal eventos -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h2>Nuevo Evento/Evaluación</h2>
+    <form id="eventForm">
+      <div class="form-group">
+        <label for="titulo">Título</label>
+        <input id="titulo" type="text" name="titulo" required>
+      </div>
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="fecha">Fecha</label>
+        <input id="fecha" type="date" name="fecha" required>
+      </div>
+      <div class="form-group">
+        <label for="hora">Hora</label>
+        <input id="hora" type="time" name="hora">
+      </div>
+      <div class="form-group">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">
+          <option value="evento">Evento</option>
+          <option value="evaluacion">Evaluación</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="curso">Curso</label>
+        <select id="curso" name="curso">
+          <option value="todos">Todos</option>
+          <option value="medio-mayor">Medio Mayor</option>
+          <option value="prekinder-a">Prekínder A</option>
+          <option value="prekinder-b">Prekínder B</option>
+          <option value="kinder">Kínder</option>
+          <option value="extension">Extensión Horaria</option>
+        </select>
+      </div>
+      <div style="text-align:center; margin-top:20px;">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SCRIPT -->
+</body>
+</html>

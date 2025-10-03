@@ -8,7 +8,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dotenv from 'dotenv';
 
 
-dotenv.config({ path: './config.env' });
+dotenv.config({ path: './.env' });
 
 
 export class BoyHappyStack extends cdk.Stack {
@@ -92,48 +92,58 @@ export class BoyHappyStack extends cdk.Stack {
     // ----------------------------
     // Helper para crear Lambdas
     // ----------------------------
-    const createLambda = (name: string, handlerFile: string, environment: Record<string, string> = {}) => {
+    const createLambda = (name: string, handlerFile: string, handlerName: string = 'handler', environment: Record<string, string> = {}) => {
       return new lambda.Function(this, name, {
         runtime: lambda.Runtime.NODEJS_18_X,
-        handler: `${handlerFile}.handler`,
-        code: lambda.Code.fromAsset('lambdas'),
+        handler: `${handlerFile}.${handlerName}`,
+        code: lambda.Code.fromAsset('.', {
+          exclude: ['node_modules', 'cdk.out', 'test', '.git', 'docs', 'mock', '.claude', '*.md', '.env'],
+          // templates/ se incluirá automáticamente
+        }),
         environment,
       });
     };
 
     // ----------------------------
-    // Lambdas principales
+    // Frontend Lambdas (Sirven HTML) - Todos usan handlers.js
     // ----------------------------
-    const homeLambda = createLambda('HomeLambda', 'home');
-    const alumnosLambda = createLambda('AlumnosLambda', 'alumnos');
-    const profesoresLambda = createLambda('ProfesoresLambda', 'profesores');
-    const adminLambda = createLambda('AdminLambda', 'admin');
-    const fonoLambda = createLambda('FonoLambda', 'fono');
+    // Variables de entorno comunes para todas las lambdas frontend
+    const frontendEnv = {
+      CALLBACK_PREFIX: process.env.CALLBACK_PREFIX || '',
+      CLIENT_ID: process.env.CLIENT_ID || '',
+      COGNITO_DOMAIN: process.env.COGNITO_DOMAIN || '',
+      API_URL: process.env.API_URL || '',
+    };
 
-    // ----------------------------
-    // Lambdas con S3
-    // ----------------------------
-    const imagesLambda = createLambda('ImagesLambda', 'images', {
+    const homeLambda = createLambda('HomeLambda', 'lambdas/frontend/handlers', 'homeHandler', frontendEnv);
+    const alumnosLambda = createLambda('AlumnosLambda', 'lambdas/frontend/handlers', 'alumnosHandler', frontendEnv);
+    const profesoresLambda = createLambda('ProfesoresLambda', 'lambdas/frontend/handlers', 'profesoresHandler', frontendEnv);
+    const adminLambda = createLambda('AdminLambda', 'lambdas/frontend/handlers', 'adminHandler', frontendEnv);
+    const fonoLambda = createLambda('FonoLambda', 'lambdas/frontend/handlers', 'fonoHandler', frontendEnv);
+    const tomaHoraLambda = createLambda('TomaHoraLambda', 'lambdas/frontend/handlers', 'tomaHoraHandler', frontendEnv);
+    const galeriaLambda = createLambda('GaleriaLambda', 'lambdas/frontend/handlers', 'galeriaHandler', {
       BUCKET_NAME: imagesBucket.bucketName,
-    });
-    imagesBucket.grantReadWrite(imagesLambda);
-
-    const galeriaLambda = createLambda('GaleriaLambda', 'galeria', {
-      BUCKET_NAME: imagesBucket.bucketName,
+      ...frontendEnv,
     });
     imagesBucket.grantRead(galeriaLambda);
 
     // ----------------------------
-    // Lambdas con Dynamo
+    // Backend API Lambdas
     // ----------------------------
-    // Lambda de Anuncios (Commit 1.1.3)
-    const anunciosLambda = createLambda('AnunciosLambda', 'anuncios', {
+    // Lambda de Imágenes (S3)
+    const imagesLambda = createLambda('ImagesLambda', 'lambdas/api/images', 'handler', {
+      BUCKET_NAME: imagesBucket.bucketName,
+    });
+    imagesBucket.grantReadWrite(imagesLambda);
+
+    // Lambda de Anuncios (DynamoDB)
+    const anunciosLambda = createLambda('AnunciosLambda', 'lambdas/api/anuncios', 'handler', {
       ANUNCIOS_TABLE: anunciosTable.tableName,
     });
     anunciosTable.grantReadWriteData(anunciosLambda);
 
-    // Lambda de Usuarios (Commit 1.2.3)
-    const usuariosLambda = createLambda('UsuariosLambda', 'usuarios', {
+    // Lambda de Usuarios (DynamoDB + Cognito)
+    const usuariosLambda = createLambda('UsuariosLambda', 'lambdas/api/usuarios', 'handler', {
       USUARIOS_TABLE: usuariosTable.tableName,
       USER_POOL_ID: process.env.USER_POOL_ID ?? '',
     });
@@ -148,7 +158,8 @@ export class BoyHappyStack extends cdk.Stack {
       ],
     }));
 
-    const eventosLambda = createLambda('EventosLambda', 'eventos', {
+    // Lambda de Eventos (DynamoDB)
+    const eventosLambda = createLambda('EventosLambda', 'lambdas/api/eventos', 'handler', {
       TABLE_NAME: eventosTable.tableName,
       MATRICULAS_TABLE: matriculasTable.tableName,
       SOURCE_EMAIL: 'noreply@boyhappy.cl', // Commit 1.4.5: Para notificaciones de matrícula
@@ -161,8 +172,8 @@ export class BoyHappyStack extends cdk.Stack {
       resources: ['*'],
     }));
 
-    // Lambda de Notificaciones (Commit 1.3.4)
-    const notificacionesLambda = createLambda('NotificacionesLambda', 'notificaciones', {
+    // Lambda de Notificaciones (SES)
+    const notificacionesLambda = createLambda('NotificacionesLambda', 'lambdas/api/notificaciones', 'handler', {
       USUARIOS_TABLE: usuariosTable.tableName,
       SOURCE_EMAIL: 'noreply@boyhappy.cl',
     });
@@ -172,9 +183,8 @@ export class BoyHappyStack extends cdk.Stack {
       resources: ['*'],
     }));
 
-    const tomaHoraLambda = createLambda('TomaHoraLambda', 'toma_hora');
-
-    const reservarEvaluacionLambda = createLambda('ReservarEvaluacionLambda', 'reservar-evaluacion', {
+    // Lambda de Reservar Evaluación (DynamoDB)
+    const reservarEvaluacionLambda = createLambda('ReservarEvaluacionLambda', 'lambdas/api/reservar-evaluacion', 'handler', {
       TABLE_NAME: evaluacionesTable.tableName,
     });
     evaluacionesTable.grantReadWriteData(reservarEvaluacionLambda);
@@ -182,7 +192,7 @@ export class BoyHappyStack extends cdk.Stack {
     // ----------------------------
     // Lambdas Hosted UI / Callback
     // ----------------------------
-    const crearUsuarioLambda = createLambda('CrearUsuarioLambda', 'crear_usuario', {
+    const crearUsuarioLambda = createLambda('CrearUsuarioLambda', 'lambdas/api/crear_usuario', 'handler', {
       USER_POOL_ID: process.env.USER_POOL_ID ?? '',
     });
 
@@ -197,18 +207,18 @@ export class BoyHappyStack extends cdk.Stack {
     }));
 
 
-    const hostedLoginLambda = createLambda('HostedLoginLambda', 'login', {
+    const hostedLoginLambda = createLambda('HostedLoginLambda', 'lambdas/api/login', 'handler', {
       CLIENT_ID: process.env.CLIENT_ID ?? '',
-      CLIENT_SECRET: process.env.CLIENT_SECRET ?? '',
-      REDIRECT_URI: process.env.REDIRECT_URI ?? '',
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN ?? '',
+      API_URL: process.env.API_URL ?? '',
+      CALLBACK_PREFIX: process.env.CALLBACK_PREFIX || '',
     });
 
-    const callbackLambda = createLambda('CallbackLambda', 'callback', {
+    const callbackLambda = createLambda('CallbackLambda', 'lambdas/api/callback', 'handler', {
       CLIENT_ID: process.env.CLIENT_ID ?? '',
       CLIENT_SECRET: process.env.CLIENT_SECRET ?? '',
-      REDIRECT_URI: process.env.REDIRECT_URI ?? '',
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN ?? '',
+      CALLBACK_PREFIX: process.env.CALLBACK_PREFIX || '',
     });
 
     // ----------------------------

@@ -10,9 +10,11 @@
     "test": "jest",
     "cdk": "cdk",
     "commit": "node scripts/commit.js",
-    "verify": "node scripts/verify.js"
+    "verify": "node scripts/verify.js",
+    "dev": "node full-dev-server.js"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
     "@types/jest": "^29.5.14",
     "@types/node": "22.7.9",
     "aws-cdk": "2.1020.2",
@@ -25,6 +27,7 @@
     "aws-cdk-lib": "2.202.0",
     "constructs": "^10.0.0",
     "dotenv": "^17.2.3",
-    "openid-client": "^6.8.1"
+    "openid-client": "^6.8.1",
+    "uuid": "^9.0.1"
   }
 }
