@@ -310,11 +310,84 @@ function nuevoProfesor() { alert("👩‍🏫 Agregar profesor (pendiente backen
 // FullCalendar
 // ----------------------
 function openModal() { document.getElementById('modal').style.display = 'block'; }
-function closeModal() { 
-  document.getElementById('modal').style.display = 'none'; 
-  document.getElementById('eventForm').reset(); 
-  document.getElementById('eventId').value = ''; 
-  document.getElementById('modalTitle').innerText = 'Nuevo Evento/Evaluación'; 
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  document.getElementById('eventForm').reset();
+  document.getElementById('eventId').value = '';
+  document.getElementById('modalTitle').innerText = 'Nuevo Evento/Evaluación';
+}
+
+// Commit 1.3.3: Handler para crear/editar eventos
+document.getElementById('eventForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const eventId = document.getElementById('eventId').value;
+  const titulo = document.getElementById('titulo').value;
+  const descripcion = document.getElementById('descripcion').value;
+  const fecha = document.getElementById('fecha').value;
+  const hora = document.getElementById('hora').value;
+  const tipo = document.getElementById('tipo').value;
+  const curso = document.getElementById('curso').value;
+
+  const eventoData = { titulo, descripcion, fecha, hora, tipo, curso };
+
+  try {
+    let res;
+    if (eventId) {
+      // Editar evento existente
+      res = await fetch(\`\${apiUrl}?id=\${eventId}\`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventoData)
+      });
+    } else {
+      // Crear nuevo evento
+      res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventoData)
+      });
+    }
+
+    if (res.ok) {
+      alert(eventId ? 'Evento actualizado correctamente' : 'Evento creado correctamente');
+      closeModal();
+      calendar.refetchEvents();
+    } else {
+      const error = await res.json();
+      alert('Error: ' + (error.error || 'No se pudo guardar el evento'));
+    }
+  } catch(err) {
+    console.error('Error guardando evento:', err);
+    alert('Error al guardar el evento');
+  }
+});
+
+async function deleteEvent() {
+  const eventId = document.getElementById('eventId').value;
+  if (!eventId) {
+    alert('No hay evento seleccionado para eliminar');
+    return;
+  }
+
+  if (!confirm('¿Estás seguro de eliminar este evento?')) return;
+
+  try {
+    const res = await fetch(\`\${apiUrl}?id=\${eventId}\`, {
+      method: 'DELETE'
+    });
+
+    if (res.ok) {
+      alert('Evento eliminado correctamente');
+      closeModal();
+      calendar.refetchEvents();
+    } else {
+      alert('Error al eliminar el evento');
+    }
+  } catch(err) {
+    console.error('Error eliminando evento:', err);
+    alert('Error al eliminar el evento');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -323,6 +396,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     initialView: 'dayGridMonth',
     locale: 'es',
     height: 600,
+    editable: true,  // Commit 1.3.3: Permitir arrastrar eventos
+    selectable: true,  // Commit 1.3.3: Permitir seleccionar rango de fechas
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
     events: async function(fetchInfo, successCallback, failureCallback) {
       try {
@@ -333,20 +408,69 @@ document.addEventListener('DOMContentLoaded', async function() {
          title: e.titulo,
          start: e.fecha + (e.hora ? 'T' + e.hora : ''),
          extendedProps: { curso: e.curso, tipo: e.tipo, description: e.descripcion }
-        }))); 
+        })));
       } catch(err) { console.error(err); failureCallback(err); }
     },
+    // Commit 1.3.3: Seleccionar rango para crear evento
+    select: function(info) {
+      document.getElementById('eventId').value = '';
+      document.getElementById('titulo').value = '';
+      document.getElementById('descripcion').value = '';
+      document.getElementById('fecha').value = info.startStr;
+      document.getElementById('hora').value = '';
+      document.getElementById('tipo').value = 'evento';
+      document.getElementById('curso').value = 'todos';
+      document.getElementById('modalTitle').innerText = 'Nuevo Evento/Evaluación';
+      openModal();
+    },
+    // Commit 1.3.3: Click en evento para editar
     eventClick: function(info) {
       const e = info.event;
       document.getElementById('eventId').value = e.id;
       document.getElementById('titulo').value = e.title;
       document.getElementById('descripcion').value = e.extendedProps.description || '';
       document.getElementById('fecha').value = e.startStr.split('T')[0];
-      document.getElementById('hora').value = e.startStr.split('T')[1] || '';
+      document.getElementById('hora').value = e.startStr.split('T')[1]?.substring(0, 5) || '';
       document.getElementById('tipo').value = e.extendedProps.tipo || 'evento';
       document.getElementById('curso').value = e.extendedProps.curso || 'todos';
       document.getElementById('modalTitle').innerText = 'Editar Evento/Evaluación';
       openModal();
+    },
+    // Commit 1.3.3: Arrastrar evento para cambiar fecha
+    eventDrop: async function(info) {
+      const eventoId = info.event.id;
+      const nuevaFecha = info.event.startStr.split('T')[0];
+
+      if (!confirm('¿Mover este evento a ' + nuevaFecha + '?')) {
+        info.revert();
+        return;
+      }
+
+      try {
+        const res = await fetch(\`\${apiUrl}?id=\${eventoId}\`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            titulo: info.event.title,
+            descripcion: info.event.extendedProps.description || '',
+            fecha: nuevaFecha,
+            hora: info.event.startStr.split('T')[1]?.substring(0, 5) || '',
+            tipo: info.event.extendedProps.tipo,
+            curso: info.event.extendedProps.curso
+          })
+        });
+
+        if (res.ok) {
+          alert('Evento actualizado correctamente');
+        } else {
+          alert('Error al actualizar evento');
+          info.revert();
+        }
+      } catch(err) {
+        console.error('Error moviendo evento:', err);
+        alert('Error al mover el evento');
+        info.revert();
+      }
     }
   });
   calendar.render();
