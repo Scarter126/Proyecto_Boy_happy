@@ -73,6 +73,22 @@ export class BoyHappyStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // Tabla de Matrículas (Commit 1.4.1)
+    const matriculasTable = new dynamodb.Table(this, 'MatriculasTable', {
+      tableName: 'Matriculas',
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // GSI para filtrar por estado de matrícula (pendiente/aprobada/rechazada)
+    matriculasTable.addGlobalSecondaryIndex({
+      indexName: 'EstadoIndex',
+      partitionKey: { name: 'estado', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'fechaRegistro', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     // ----------------------------
     // Helper para crear Lambdas
     // ----------------------------
@@ -134,8 +150,10 @@ export class BoyHappyStack extends cdk.Stack {
 
     const eventosLambda = createLambda('EventosLambda', 'eventos', {
       TABLE_NAME: eventosTable.tableName,
+      MATRICULAS_TABLE: matriculasTable.tableName,
     });
     eventosTable.grantReadWriteData(eventosLambda);
+    matriculasTable.grantReadWriteData(eventosLambda);
 
     // Lambda de Notificaciones (Commit 1.3.4)
     const notificacionesLambda = createLambda('NotificacionesLambda', 'notificaciones', {
