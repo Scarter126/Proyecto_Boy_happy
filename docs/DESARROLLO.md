@@ -10,7 +10,7 @@
 
 ### Sprint 1.1: Sistema de Anuncios
 - [x] **Commit 1.1.1:** Crear tabla DynamoDB para anuncios
-- [ ] **Commit 1.1.2:** Lambda CRUD de anuncios (crear, listar, editar, eliminar)
+- [x] **Commit 1.1.2:** Lambda CRUD de anuncios (crear, listar, editar, eliminar)
 - [ ] **Commit 1.1.3:** Integrar anuncios en portal Admin
 - [ ] **Commit 1.1.4:** Mostrar anuncios en portal Apoderado
 - [ ] **Commit 1.1.5:** Mostrar anuncios en landing page pública
