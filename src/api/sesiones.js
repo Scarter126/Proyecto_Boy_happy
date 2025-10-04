@@ -4,6 +4,7 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = re
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -29,12 +30,12 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // CU-42: POST /archivos-sesion - Subir archivo independiente
     // ========================================
-    if (httpMethod === 'POST' && (resource === '/archivos-sesion' || resource === '/archivos-sesion/')) {
+    if (httpMethod === 'POST' && (path === '/archivos-sesion' || path === '/archivos-sesion/')) {
       const data = JSON.parse(event.body);
 
       if (!data.rutAlumno || !data.archivoData || !data.nombreArchivo) {
@@ -95,7 +96,7 @@ exports.handler = async (event) => {
     // ========================================
     // CU-42: GET /archivos-sesion - Listar archivos con filtros
     // ========================================
-    if (httpMethod === 'GET' && (resource === '/archivos-sesion' || resource === '/archivos-sesion/')) {
+    if (httpMethod === 'GET' && (path === '/archivos-sesion' || path === '/archivos-sesion/')) {
       // Si hay ID específico, retornar ese archivo
       if (queryStringParameters?.id) {
         const scanResult = await docClient.send(new ScanCommand({
@@ -165,7 +166,7 @@ exports.handler = async (event) => {
     // ========================================
     // CU-43: PUT /archivos-sesion?id=xxx - Modificar archivo
     // ========================================
-    if (httpMethod === 'PUT' && (resource === '/archivos-sesion' || resource === '/archivos-sesion/')) {
+    if (httpMethod === 'PUT' && (path === '/archivos-sesion' || path === '/archivos-sesion/')) {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
@@ -234,7 +235,7 @@ exports.handler = async (event) => {
     // ========================================
     // CU-44: DELETE /archivos-sesion?id=xxx - Eliminar archivo
     // ========================================
-    if (httpMethod === 'DELETE' && (resource === '/archivos-sesion' || resource === '/archivos-sesion/')) {
+    if (httpMethod === 'DELETE' && (path === '/archivos-sesion' || path === '/archivos-sesion/')) {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
@@ -291,7 +292,7 @@ exports.handler = async (event) => {
     // ========================================
     // POST /sesiones - Registrar sesión completa
     // ========================================
-    if (httpMethod === 'POST' && resource === '/sesiones') {
+    if (httpMethod === 'POST' && path === '/sesiones') {
       const data = JSON.parse(event.body);
 
       if (!data.fechaHora || !data.rutAlumno || !data.fonoaudiologo) {
@@ -334,7 +335,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /sesiones - Listar sesiones
     // ========================================
-    if (httpMethod === 'GET' && resource === '/sesiones') {
+    if (httpMethod === 'GET' && path === '/sesiones') {
       const result = await docClient.send(new ScanCommand({ TableName: AGENDA_TABLE }));
 
       let items = result.Items;
@@ -385,7 +386,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /sesiones?id=xxx - Actualizar sesión
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/sesiones' && queryStringParameters?.id) {
+    if (httpMethod === 'PUT' && path === '/sesiones' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
       const data = JSON.parse(event.body);
 
@@ -453,7 +454,7 @@ exports.handler = async (event) => {
     // ========================================
     // DELETE /sesiones?id=xxx - Eliminar sesión
     // ========================================
-    if (httpMethod === 'DELETE' && resource === '/sesiones' && queryStringParameters?.id) {
+    if (httpMethod === 'DELETE' && path === '/sesiones' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
 
       const scanResult = await docClient.send(new ScanCommand({
@@ -501,7 +502,7 @@ exports.handler = async (event) => {
     // ========================================
     // POST /sesiones/archivos - Subir archivo
     // ========================================
-    if (httpMethod === 'POST' && resource === '/sesiones/archivos') {
+    if (httpMethod === 'POST' && path === '/sesiones/archivos') {
       const data = JSON.parse(event.body);
 
       if (!data.sesionId || !data.archivoBase64 || !data.nombre) {
@@ -563,7 +564,7 @@ exports.handler = async (event) => {
     // ========================================
     // DELETE /sesiones/archivos?id=xxx - Eliminar archivo
     // ========================================
-    if (httpMethod === 'DELETE' && resource === '/sesiones/archivos' && queryStringParameters?.id) {
+    if (httpMethod === 'DELETE' && path === '/sesiones/archivos' && queryStringParameters?.id) {
       const archivoId = queryStringParameters.id;
 
       // Buscar en todas las sesiones

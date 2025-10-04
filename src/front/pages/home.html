@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- STYLES -->
+    <link rel="stylesheet" href="../shared/boyhappy-styles.css">
 </head>
 <body>
     <!-- Navigation -->
@@ -179,47 +180,45 @@
         <div class="container">
             <h2 class="section-title">Solicitud de Matrícula</h2>
             <p class="section-subtitle">Completa el formulario y nos pondremos en contacto contigo</p>
-            <div class="booking-content">
-                <div class="booking-form enrollment-centered">
-                    <h3>Datos del Estudiante</h3>
-                    <form id="bookingForm">
-                        <div class="form-group">
-                            <label>Nombre Completo del Estudiante *</label>
-                            <input type="text" id="patientName" placeholder="Nombre y apellidos" required>
-                        </div>
-                        <div class="form-group">
-                            <label>RUT del Estudiante *</label>
-                            <input type="text" id="studentRut" placeholder="12345678-9" required
-                                   pattern="[0-9]{7,8}-[0-9kK]{1}"
-                                   title="Formato: 12345678-9">
-                        </div>
-                        <div class="form-group">
-                            <label>Fecha de Nacimiento *</label>
-                            <input type="date" id="birthDate" required
-                                   max="">
-                        </div>
-                        <div class="form-group">
-                            <label>Último Curso/Jardín</label>
-                            <input type="text" id="lastCourse" placeholder="Ej: Jardín Infantil Los Enanitos">
-                        </div>
-                        <h3 style="margin-top: 20px;">Datos del Apoderado</h3>
-                        <div class="form-group">
-                            <label>Correo Electrónico *</label>
-                            <input type="email" id="parentEmail" placeholder="correo@ejemplo.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Teléfono de Contacto *</label>
-                            <input type="tel" id="phone" placeholder="+56912345678" required
-                                   maxlength="12"
-                                   title="Formato: +56912345678 (máximo 12 dígitos)">
-                        </div>
-                        <div class="form-group">
-                            <label>Observaciones</label>
-                            <textarea id="observations" rows="3" placeholder="Información adicional (opcional)"></textarea>
-                        </div>
-                        <button type="submit" class="btn-primary">Enviar Solicitud de Matrícula</button>
-                    </form>
-                </div>
+            <div class="booking-form enrollment-centered">
+                <h3>Datos del Estudiante</h3>
+                <form id="bookingForm">
+                    <div class="form-group">
+                        <label>Nombre Completo del Estudiante *</label>
+                        <input type="text" id="patientName" placeholder="Nombre y apellidos" required>
+                    </div>
+                    <div class="form-group">
+                        <label>RUT del Estudiante *</label>
+                        <input type="text" id="studentRut" placeholder="12345678-9" required
+                                pattern="[0-9]{7,8}-[0-9kK]{1}"
+                                title="Formato: 12345678-9">
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha de Nacimiento *</label>
+                        <input type="date" id="birthDate" required
+                                max="">
+                    </div>
+                    <div class="form-group">
+                        <label>Último Curso/Jardín</label>
+                        <input type="text" id="lastCourse" placeholder="Ej: Jardín Infantil Los Enanitos">
+                    </div>
+                    <h3 style="margin-top: 20px;">Datos del Apoderado</h3>
+                    <div class="form-group">
+                        <label>Correo Electrónico *</label>
+                        <input type="email" id="parentEmail" placeholder="correo@ejemplo.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono de Contacto *</label>
+                        <input type="tel" id="phone" placeholder="+56912345678" required
+                                maxlength="12"
+                                title="Formato: +56912345678 (máximo 12 dígitos)">
+                    </div>
+                    <div class="form-group">
+                        <label>Observaciones</label>
+                        <textarea id="observations" rows="3" placeholder="Información adicional (opcional)"></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Enviar Solicitud de Matrícula</button>
+                </form>
             </div>
         </div>
     </section>

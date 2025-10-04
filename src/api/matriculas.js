@@ -1,13 +1,18 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { v4: uuidv4 } = require('uuid');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const sesClient = new SESClient({});
+const cognito = new CognitoIdentityProviderClient({});
 
 const COMUNICACIONES_TABLE = process.env.COMUNICACIONES_TABLE;
+const USUARIOS_TABLE = process.env.USUARIOS_TABLE || 'Usuarios';
+const USER_POOL_ID = process.env.USER_POOL_ID;
 const SOURCE_EMAIL = process.env.SOURCE_EMAIL || 'noreply@boyhappy.cl';
 
 /**
@@ -17,12 +22,12 @@ exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
   try {
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // POST /matriculas - Crear solicitud
     // ========================================
-    if (httpMethod === 'POST' && resource === '/matriculas') {
+    if (httpMethod === 'POST' && path === '/matriculas') {
       const data = JSON.parse(event.body);
 
       if (!data.nombre || !data.rut || !data.correo) {
@@ -63,7 +68,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /matriculas - Listar solicitudes
     // ========================================
-    if (httpMethod === 'GET' && resource === '/matriculas') {
+    if (httpMethod === 'GET' && path === '/matriculas') {
       const result = await docClient.send(new ScanCommand({
         TableName: COMUNICACIONES_TABLE,
         FilterExpression: '#tipo = :tipo',
@@ -93,7 +98,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /matriculas?id=xxx - Actualizar estado + Email
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/matriculas' && queryStringParameters?.id) {
+    if (httpMethod === 'PUT' && path === '/matriculas' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
       const data = JSON.parse(event.body);
 
@@ -164,9 +169,178 @@ exports.handler = async (event) => {
     }
 
     // ========================================
+    // POST /matriculas/convertir-usuario?id=xxx
+    // Convertir matrícula aprobada en usuario tipo alumno (RF-DIR-24 extendido)
+    // ========================================
+    if (httpMethod === 'POST' && path && path.includes('/convertir-usuario') && queryStringParameters?.id) {
+      const id = queryStringParameters.id;
+      const data = JSON.parse(event.body);
+
+      if (!data.curso) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Campo requerido: curso' })
+        };
+      }
+
+      // Obtener matrícula
+      const getResult = await docClient.send(new ScanCommand({
+        TableName: COMUNICACIONES_TABLE,
+        FilterExpression: 'id = :id',
+        ExpressionAttributeValues: { ':id': id }
+      }));
+
+      if (!getResult.Items || getResult.Items.length === 0) {
+        return {
+          statusCode: 404,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Matrícula no encontrada' })
+        };
+      }
+
+      const matricula = getResult.Items[0];
+
+      // Validar que esté aprobada
+      if (matricula.estado !== 'aprobada') {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Solo se pueden convertir matrículas aprobadas' })
+        };
+      }
+
+      // Verificar que no exista ya el usuario
+      const usuarioExistente = await docClient.send(new GetCommand({
+        TableName: USUARIOS_TABLE,
+        Key: { rut: matricula.rut }
+      }));
+
+      if (usuarioExistente.Item && usuarioExistente.Item.activo) {
+        return {
+          statusCode: 409,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Ya existe un usuario activo con este RUT' })
+        };
+      }
+
+      // Generar contraseña temporal
+      const passwordTemporal = `Boy${Math.floor(Math.random() * 10000)}!`;
+
+      try {
+        // 1. Crear usuario en Cognito
+        await cognito.send(new AdminCreateUserCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: matricula.correo,
+          TemporaryPassword: passwordTemporal,
+          UserAttributes: [
+            { Name: 'email', Value: matricula.correo },
+            { Name: 'email_verified', Value: 'true' }
+          ]
+        }));
+
+        // 2. Asignar al grupo 'alumno'
+        await cognito.send(new AdminAddUserToGroupCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: matricula.correo,
+          GroupName: 'alumno'
+        }));
+
+        // 3. Crear registro en DynamoDB
+        const nuevoUsuario = {
+          rut: matricula.rut,
+          nombre: matricula.nombre,
+          correo: matricula.correo,
+          rol: 'alumno',
+          telefono: matricula.telefono || '',
+          curso: data.curso,
+          fechaNacimiento: matricula.fechaNacimiento,
+          activo: true,
+          fechaCreacion: new Date().toISOString(),
+          creadoDesdeMatricula: id
+        };
+
+        await docClient.send(new PutCommand({
+          TableName: USUARIOS_TABLE,
+          Item: nuevoUsuario
+        }));
+
+        // 4. Actualizar matrícula para marcar que ya fue convertida
+        await docClient.send(new UpdateCommand({
+          TableName: COMUNICACIONES_TABLE,
+          Key: { id: matricula.id, timestamp: matricula.timestamp },
+          UpdateExpression: 'SET usuarioCreado = :t, fechaConversion = :f',
+          ExpressionAttributeValues: {
+            ':t': true,
+            ':f': new Date().toISOString()
+          }
+        }));
+
+        // 5. Enviar email con credenciales
+        try {
+          await sesClient.send(new SendEmailCommand({
+            Source: SOURCE_EMAIL,
+            Destination: { ToAddresses: [matricula.correo] },
+            Message: {
+              Subject: { Data: 'Bienvenido a Boy Happy - Credenciales de acceso', Charset: 'UTF-8' },
+              Body: {
+                Text: {
+                  Data: `Estimado/a ${matricula.nombre},
+
+¡Bienvenido/a a Boy Happy!
+
+Tu cuenta ha sido creada exitosamente. A continuación, tus credenciales de acceso:
+
+Usuario: ${matricula.correo}
+Contraseña temporal: ${passwordTemporal}
+Curso asignado: ${data.curso}
+
+Por favor, cambia tu contraseña en el primer inicio de sesión.
+
+Saludos,
+Equipo Boy Happy`,
+                  Charset: 'UTF-8'
+                }
+              }
+            }
+          }));
+        } catch (emailError) {
+          console.error('Error enviando email:', emailError);
+        }
+
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'Usuario creado exitosamente',
+            usuario: nuevoUsuario,
+            passwordTemporal // Solo para admin, no mostrar al usuario final
+          })
+        };
+
+      } catch (error) {
+        console.error('Error creando usuario:', error);
+
+        if (error.code === 'UsernameExistsException') {
+          return {
+            statusCode: 409,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'El correo ya está registrado en Cognito' })
+          };
+        }
+
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Error al crear usuario: ' + error.message })
+        };
+      }
+    }
+
+    // ========================================
     // DELETE /matriculas?id=xxx - Eliminar
     // ========================================
-    if (httpMethod === 'DELETE' && resource === '/matriculas' && queryStringParameters?.id) {
+    if (httpMethod === 'DELETE' && path === '/matriculas' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
 
       const getResult = await docClient.send(new ScanCommand({

@@ -2,6 +2,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -25,12 +26,12 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // POST /bitacora-fono - Registrar sesión terapéutica
     // ========================================
-    if (httpMethod === 'POST' && (resource === '/bitacora-fono' || resource === '/bitacora-fono/')) {
+    if (httpMethod === 'POST' && (path === '/bitacora-fono' || path === '/bitacora-fono/')) {
       const data = JSON.parse(event.body);
 
       // Validaciones
@@ -75,7 +76,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /bitacora-fono - Consultar bitácora con filtros
     // ========================================
-    if (httpMethod === 'GET' && (resource === '/bitacora-fono' || resource === '/bitacora-fono/')) {
+    if (httpMethod === 'GET' && (path === '/bitacora-fono' || path === '/bitacora-fono/')) {
       const result = await docClient.send(new ScanCommand({
         TableName: AGENDA_TABLE
       }));
@@ -114,7 +115,7 @@ exports.handler = async (event) => {
     // ========================================
     // DELETE /bitacora-fono?id=xxx - Eliminar registro
     // ========================================
-    if (httpMethod === 'DELETE' && (resource === '/bitacora-fono' || resource === '/bitacora-fono/')) {
+    if (httpMethod === 'DELETE' && (path === '/bitacora-fono' || path === '/bitacora-fono/')) {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,

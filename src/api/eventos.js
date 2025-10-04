@@ -1,7 +1,12 @@
-const AWS = require('aws-sdk');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, ScanCommand, GetCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const { v4: uuidv4 } = require('uuid');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
-const docClient = new AWS.DynamoDB.DocumentClient();
+const dynamoClient = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const sesClient = new SESClient({});
 
 // Variables de entorno - Soportar tanto nombres legacy como nuevos
 const EVENTOS_TABLE = process.env.EVENTOS_TABLE || process.env.COMUNICACIONES_TABLE || process.env.TABLE_NAME;
@@ -9,55 +14,66 @@ const MATRICULAS_TABLE = process.env.MATRICULAS_TABLE || process.env.COMUNICACIO
 
 exports.handler = async (event) => {
   try {
-    const { httpMethod, resource } = event;
+    const { httpMethod, path } = event;
+    const basePath = path.split('?')[0]; // Remover query string si existe
 
     // --- 📌 EVENTOS ---
-    if (resource === "/eventos") {
+    if (basePath === "/eventos" || path.startsWith("/eventos")) {
       if (httpMethod === "POST") {
-        const data = JSON.parse(event.body);
+        const data = parseBody(event);
+
+        if (!data.titulo || !data.fecha || !data.tipo) {
+          return badRequest('Campos requeridos: titulo, fecha, tipo');
+        }
+
         const item = {
           id: uuidv4(),
           titulo: data.titulo,
-          descripcion: data.descripcion,
+          descripcion: data.descripcion || '',
           fecha: data.fecha,
           hora: data.hora || "",
           tipo: data.tipo,
-          curso: data.curso
+          curso: data.curso || ''
         };
-        await docClient.put({ TableName: EVENTOS_TABLE, Item: item }).promise();
-        return { statusCode: 200, body: JSON.stringify(item) };
+        await docClient.send(new PutCommand({ TableName: EVENTOS_TABLE, Item: item }));
+        return success(item);
       }
 
       if (httpMethod === "GET") {
-        const result = await docClient.scan({ TableName: EVENTOS_TABLE }).promise();
-        return { statusCode: 200, body: JSON.stringify(result.Items) };
+        const result = await docClient.send(new ScanCommand({ TableName: EVENTOS_TABLE }));
+        return success(result.Items || []);
       }
 
       if (httpMethod === "DELETE") {
-        const { id } = event.queryStringParameters;
-        await docClient.delete({ TableName: EVENTOS_TABLE, Key: { id } }).promise();
-        return { statusCode: 200, body: JSON.stringify({ message: "Evento eliminado" }) };
+        const { id } = event.queryStringParameters || {};
+        if (!id) {
+          return badRequest('Se requiere el parámetro id');
+        }
+
+        await docClient.send(new DeleteCommand({ TableName: EVENTOS_TABLE, Key: { id } }));
+        return success({ message: "Evento eliminado" });
       }
 
       if (httpMethod === "PUT") {
-        const { id } = event.queryStringParameters;
-        const data = JSON.parse(event.body);
+        const { id } = event.queryStringParameters || {};
+        if (!id) {
+          return badRequest('Se requiere el parámetro id');
+        }
 
-        // Validar que el evento existe (Commit 1.3.2)
-        const existing = await docClient.get({
+        const data = parseBody(event);
+
+        // Validar que el evento existe
+        const existing = await docClient.send(new GetCommand({
           TableName: EVENTOS_TABLE,
           Key: { id }
-        }).promise();
+        }));
 
         if (!existing.Item) {
-          return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Evento no encontrado' })
-          };
+          return notFound('Evento no encontrado');
         }
 
         // Actualizar evento
-        await docClient.update({
+        await docClient.send(new UpdateCommand({
           TableName: EVENTOS_TABLE,
           Key: { id },
           UpdateExpression: "set titulo=:t, descripcion=:d, fecha=:f, hora=:h, tipo=:tp, curso=:c",
@@ -67,21 +83,18 @@ exports.handler = async (event) => {
             ":f": data.fecha,
             ":h": data.hora || "",
             ":tp": data.tipo,
-            ":c": data.curso
+            ":c": data.curso || existing.Item.curso
           }
-        }).promise();
+        }));
 
-        return {
-          statusCode: 200,
-          body: JSON.stringify({ message: "Evento actualizado correctamente" })
-        };
+        return success({ message: "Evento actualizado correctamente" });
       }
     }
 
     // --- 📌 MATRÍCULAS ---
-    if (resource === "/matriculas") {
+    if (basePath === "/matriculas" || path.startsWith("/matriculas")) {
       if (httpMethod === "POST") {
-        const data = JSON.parse(event.body);
+        const data = parseBody(event);
         const item = {
           id: uuidv4(),
           nombre: data.nombre,
@@ -93,12 +106,12 @@ exports.handler = async (event) => {
           estado: 'pendiente', // Commit 1.4.2: Estado inicial
           fechaRegistro: new Date().toISOString()
         };
-        await docClient.put({ TableName: MATRICULAS_TABLE, Item: item }).promise();
+        await docClient.send(new PutCommand({ TableName: MATRICULAS_TABLE, Item: item }));
         return { statusCode: 200, body: JSON.stringify(item) };
       }
 
       if (httpMethod === "GET") {
-        const result = await docClient.scan({ TableName: MATRICULAS_TABLE }).promise();
+        const result = await docClient.send(new ScanCommand({ TableName: MATRICULAS_TABLE }));
         return { statusCode: 200, body: JSON.stringify(result.Items) };
       }
 
@@ -108,7 +121,7 @@ exports.handler = async (event) => {
         const data = JSON.parse(event.body);
 
         // Actualizar estado
-        await docClient.update({
+        await docClient.send(new UpdateCommand({
           TableName: MATRICULAS_TABLE,
           Key: { id },
           UpdateExpression: 'SET estado = :e, motivo = :m',
@@ -116,18 +129,17 @@ exports.handler = async (event) => {
             ':e': data.estado,
             ':m': data.motivo || ''
           }
-        }).promise();
+        }));
 
         // Commit 1.4.5: Obtener datos de la matrícula para enviar email
-        const result = await docClient.get({
+        const result = await docClient.send(new GetCommand({
           TableName: MATRICULAS_TABLE,
           Key: { id }
-        }).promise();
+        }));
 
         const matricula = result.Item;
 
         // Enviar email automático
-        const ses = new AWS.SES();
         const SOURCE_EMAIL = process.env.SOURCE_EMAIL || 'noreply@boyhappy.cl';
 
         let mensaje;
@@ -166,7 +178,7 @@ Equipo Boy Happy`;
 
         if (mensaje) {
           try {
-            await ses.sendEmail({
+            await sesClient.send(new SendEmailCommand({
               Source: SOURCE_EMAIL,
               Destination: { ToAddresses: [matricula.correo] },
               Message: {
@@ -206,7 +218,7 @@ Equipo Boy Happy`;
                   }
                 }
               }
-            }).promise();
+            }));
           } catch (emailError) {
             console.error('Error enviando email de notificación:', emailError);
             // No fallar el request si falla el email

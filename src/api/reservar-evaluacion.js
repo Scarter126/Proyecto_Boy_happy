@@ -1,5 +1,8 @@
-const AWS = require('aws-sdk');
-const dynamo = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand, GetCommand, DeleteCommand, UpdateCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+
+const client = new DynamoDBClient({});
+const dynamo = DynamoDBDocumentClient.from(client);
 
 const TABLE_NAME = 'EvaluacionesFonoaudiologia';
 
@@ -8,7 +11,7 @@ exports.handler = async (event) => {
   // GET → Listar agendados y bloqueos
   // ------------------------
   if (event.httpMethod === 'GET') {
-    const result = await dynamo.scan({ TableName: TABLE_NAME }).promise();
+    const result = await dynamo.send(new ScanCommand({ TableName: TABLE_NAME }));
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -26,7 +29,7 @@ exports.handler = async (event) => {
 
     if (!data.fechaHora) return { statusCode: 400, body: 'Falta fechaHora' };
 
-    await dynamo.delete({ TableName: TABLE_NAME, Key: { fechaHora: data.fechaHora } }).promise();
+    await dynamo.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { fechaHora: data.fechaHora } }));
     return { statusCode: 200, body: 'Eliminado correctamente' };
   }
 
@@ -46,16 +49,16 @@ exports.handler = async (event) => {
     // ACEPTAR PACIENTE
     // ------------------------
     if (tipo === 'aceptar') {
-      const existing = await dynamo.get({ TableName: TABLE_NAME, Key: { fechaHora } }).promise();
+      const existing = await dynamo.send(new GetCommand({ TableName: TABLE_NAME, Key: { fechaHora } }));
       if (!existing.Item) return { statusCode: 404, body: 'Reserva no encontrada' };
       if (existing.Item.nombreAlumno === 'Ocupado') return { statusCode: 400, body: 'No se puede aceptar un bloqueo' };
 
-      await dynamo.update({
+      await dynamo.send(new UpdateCommand({
         TableName: TABLE_NAME,
         Key: { fechaHora },
         UpdateExpression: 'SET aceptado = :v',
         ExpressionAttributeValues: { ':v': true }
-      }).promise();
+      }));
 
       return { statusCode: 200, body: 'Paciente aceptado correctamente' };
     }
@@ -69,7 +72,7 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: 'Faltan datos obligatorios' };
     }
 
-    const existing = await dynamo.get({ TableName: TABLE_NAME, Key: { fechaHora } }).promise();
+    const existing = await dynamo.send(new GetCommand({ TableName: TABLE_NAME, Key: { fechaHora } }));
     if (existing.Item) return { statusCode: 409, body: 'Horario ya tomado' };
 
     const item = { fechaHora, timestamp: new Date().toISOString() };
@@ -82,7 +85,7 @@ exports.handler = async (event) => {
       Object.assign(item, { nombreAlumno, rutAlumno, fechaNacimiento, telefono, correo, nombreApoderado, rutApoderado });
     }
 
-    await dynamo.put({ TableName: TABLE_NAME, Item: item }).promise();
+    await dynamo.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
 
     return {
       statusCode: 200,

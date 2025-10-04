@@ -13,21 +13,40 @@
     "deploy": "cdk deploy --require-approval never",
     "destroy": "cdk destroy",
     "diff": "cdk diff",
-    "synth": "cdk synth"
+    "synth": "cdk synth",
+    "dev": "nodemon dev-server.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
     "@types/jest": "^29.5.13",
     "@types/node": "22.10.1",
     "aws-cdk": "2.173.2",
     "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "~5.7.2"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.901.0",
+    "@aws-sdk/client-dynamodb": "^3.902.0",
+    "@aws-sdk/client-s3": "^3.901.0",
+    "@aws-sdk/client-ses": "^3.901.0",
+    "@aws-sdk/lib-dynamodb": "^3.902.0",
+    "@faker-js/faker": "^8.3.1",
+    "adm-zip": "^0.5.16",
     "aws-cdk-lib": "2.173.2",
+    "connect-livereload": "^0.6.1",
     "constructs": "^10.0.0",
+    "cors": "^2.8.5",
+    "docx": "^9.5.1",
     "dotenv": "^16.4.7",
-    "source-map-support": "^0.5.21"
+    "express": "^4.18.2",
+    "image-size": "^2.0.2",
+    "livereload": "^0.9.3",
+    "mammoth": "^1.11.0",
+    "source-map-support": "^0.5.21",
+    "uuid": "^13.0.0",
+    "xml2js": "^0.6.2"
   }
 }

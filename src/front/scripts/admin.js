@@ -66,8 +66,8 @@ async function busquedaGlobal(query) {
     // ✅ CORREGIDO: Búsqueda implementada localmente (endpoint /busqueda no existe)
     try {
       // Buscar en usuarios
-      const resUsuarios = await fetch(usuariosUrl);
-      const usuarios = await resUsuarios.json();
+      console.log('📞 [BÚSQUEDA GLOBAL] Fetching usuarios...');
+      const usuarios = await window.apiClient.get(usuariosUrl);
       const usuariosFiltrados = usuarios.filter(u =>
         u.nombre?.toLowerCase().includes(query.toLowerCase()) ||
         u.rut?.includes(query) ||
@@ -82,8 +82,7 @@ async function busquedaGlobal(query) {
       }
 
       // Buscar en materiales
-      const resMateriales = await fetch(materialesUrl);
-      const dataMateriales = await resMateriales.json();
+      const dataMateriales = await window.apiClient.get(materialesUrl);
       const materiales = dataMateriales.materiales || dataMateriales; // ✅ CORREGIDO: Backend retorna wrapper
       const materialesFiltrados = materiales.filter(m =>
         m.titulo?.toLowerCase().includes(query.toLowerCase()) ||
@@ -232,11 +231,17 @@ function showSection(id) {
   }
 
   // Cargar datos específicos según la sección
+
+  // ✅ MIGRADO A ALPINE: No cargar nada, Alpine lo maneja automáticamente
+  // - dashboard → dashboardApp.init()
+  // - usuarios → usuariosApp.init()
+  // - asistencia → asistenciaApp.init()
+  // - materiales → materialesApp.init()
+  // - comparativo → comparativoApp.init()
+
+  // 🚧 PENDIENTE DE MIGRAR: Secciones que aún usan código legacy
   if (id === 'configuracion') {
     cargarConfiguracion();
-  }
-  if (id === 'materiales') {
-    cargarMateriales();
   }
   if (id === 'matriculas') {
     cargarMatriculas();
@@ -245,12 +250,31 @@ function showSection(id) {
     // Mostrar por defecto el tab de usuarios
     showEntityTab('usuarios-tab');
   }
+  if (id === 'categorias') {
+    cargarCategorias();
+  }
+  if (id === 'anuncios') {
+    cargarAnuncios();
+  }
+  if (id === 'retroalimentacion') {
+    cargarUsuariosParaRetro();
+    cargarHistorialRetro();
+  }
 }
 
 // Función para manejar tabs dentro de Gestión de Entidades
 function showEntityTab(tabId) {
-  // Ocultar todos los tabs
-  document.querySelectorAll('.entity-tab').forEach(tab => tab.classList.remove('active'));
+  // ✅ NO USAR ESTA FUNCIÓN PARA LA SECCIÓN DE USUARIOS
+  // Los tabs de usuarios ahora son manejados por Alpine.js en usuariosApp()
+  // Esta función solo se usa para las otras secciones legacy
+
+  // Ocultar todos los tabs (EXCEPTO los que están dentro de #usuarios)
+  document.querySelectorAll('.entity-tab').forEach(tab => {
+    // No tocar tabs dentro de la sección usuarios (Alpine los maneja)
+    if (!tab.closest('#usuarios')) {
+      tab.classList.remove('active');
+    }
+  });
 
   // Mostrar el tab seleccionado
   const tab = document.getElementById(tabId);
@@ -259,21 +283,27 @@ function showEntityTab(tabId) {
   }
 
   // Actualizar botones de tabs
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    // No tocar botones dentro de #usuarios
+    if (!btn.closest('#usuarios')) {
+      btn.classList.remove('active');
+    }
+  });
   const activeBtn = document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
-  if (activeBtn) {
+  if (activeBtn && !activeBtn.closest('#usuarios')) {
     activeBtn.classList.add('active');
   }
 
   // Cargar datos según el tab
   if (tabId === 'usuarios-tab') {
-    cargarUsuarios();
+    // Alpine maneja la carga automáticamente en init()
+    console.log('Tab usuarios - Alpine maneja la carga');
   } else if (tabId === 'cursos-tab') {
-    cargarCursos();
+    loadCursos();
   } else if (tabId === 'profesores-tab') {
-    cargarProfesores();
+    loadProfesores();
   } else if (tabId === 'aceptados-tab') {
-    cargarAceptados();
+    loadAceptados();
   }
 }
 
@@ -284,8 +314,7 @@ function showEntityTab(tabId) {
 // ----------------------
 async function loadAceptados() {
   // ✅ CORREGIDO: usar /matriculas con filtro de estado
-  const res = await fetch(`${matriculasUrl}?estado=aprobada`);
-  const data = await res.json();
+  const data = await window.apiClient.get(`${matriculasUrl}?estado=aprobada`);
   const tbody = document.querySelector("#aceptadosTable tbody");
   tbody.innerHTML = '';
   data.forEach(m => {
@@ -337,8 +366,7 @@ function nuevoCurso() {
 
 async function loadProfesores() {
   // ✅ CORREGIDO: usar /usuarios con filtro por rol
-  const res = await fetch(`${usuariosUrl}?rol=profesor`);
-  const allUsers = await res.json();
+  const allUsers = await window.apiClient.get(`${usuariosUrl}?rol=profesor`);
   const data = allUsers.filter(u => u.rol === 'profesor');
   const tbody = document.querySelector("#profesoresTable tbody");
   tbody.innerHTML = '';
@@ -395,18 +423,10 @@ document.getElementById('eventForm').addEventListener('submit', async function(e
     let res;
     if (eventId) {
       // ✅ CORREGIDO: usar /eventos en lugar de /comunicaciones (timestamp eliminado - no usado por backend)
-      res = await fetch(`${eventosUrl}?id=${eventId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(eventoData)
-      });
+      res = await window.apiClient.put(`${eventosUrl}?id=${eventId}`, eventoData);
     } else {
       // ✅ CORREGIDO: usar /eventos en lugar de /comunicaciones
-      res = await fetch(eventosUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(eventoData)
-      });
+      res = await window.apiClient.post(eventosUrl, eventoData);
     }
 
     if (res.ok) {
@@ -434,9 +454,7 @@ async function deleteEvent() {
 
   try {
     // ✅ CORREGIDO: usar /eventos en lugar de /comunicaciones (timestamp eliminado - no usado por backend)
-    const res = await fetch(`${eventosUrl}?id=${eventId}`, {
-      method: 'DELETE'
-    });
+    const res = await window.apiClient.delete(`${eventosUrl}?id=${eventId}`);
 
     if (res.ok) {
       alert('Evento eliminado correctamente');
@@ -453,6 +471,10 @@ async function deleteEvent() {
 
 document.addEventListener('DOMContentLoaded', async function() {
   const calendarEl = document.getElementById('calendar');
+  if (!calendarEl) {
+    console.warn('Elemento #calendar no encontrado, saltando inicialización de FullCalendar');
+    return;
+  }
   calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     locale: 'es',
@@ -467,8 +489,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     events: async function(fetchInfo, successCallback, failureCallback) {
       try {
         // ✅ CORREGIDO: usar /eventos en lugar de /comunicaciones
-        const res = await fetch(eventosUrl);
-        const eventos = await res.json();
+        const eventos = await window.apiClient.get(eventosUrl);
         successCallback(eventos.map(e => ({
           id: e.id || `${e.tipo}#${e.timestamp}`,
           title: e.titulo,
@@ -518,10 +539,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
       try {
         // ✅ CORREGIDO: usar /eventos en lugar de /comunicaciones (timestamp eliminado - no usado por backend)
-        const res = await fetch(`${eventosUrl}?id=${eventoId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const res = await window.apiClient.put(`${eventosUrl}?id=${eventoId}`, {
             tipo: 'evento',
             titulo: info.event.title,
             descripcion: info.event.extendedProps.description || '',
@@ -529,8 +547,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             hora: info.event.startStr.split('T')[1]?.substring(0, 5) || '',
             tipoEvento: info.event.extendedProps.tipo,
             curso: info.event.extendedProps.curso
-          })
-        });
+          });
 
         if (res.ok) {
           alert('Evento actualizado correctamente');
@@ -558,8 +575,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function cargarAnuncios() {
   try {
     // ✅ CORREGIDO: usar /anuncios en lugar de /comunicaciones
-    const res = await fetch(anunciosUrl);
-    const anuncios = await res.json();
+    const anuncios = await window.apiClient.get(anunciosUrl);
 
     document.getElementById('listaAnuncios').innerHTML = anuncios.map(a => `
       <div class="card">
@@ -587,17 +603,13 @@ document.getElementById('anuncioForm').addEventListener('submit', async (e) => {
 
   try {
     // ✅ CORREGIDO: usar /anuncios en lugar de /comunicaciones
-    await fetch(anunciosUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tipo: 'anuncio',
-        titulo: document.getElementById('titulo').value,
-        contenido: document.getElementById('contenido').value,
-        destinatarios: document.getElementById('destinatarios').value,
-        autor: 'Admin',
-        fecha: new Date().toISOString().split('T')[0]
-      })
+    await window.apiClient.post(anunciosUrl, {
+      tipo: 'anuncio',
+      titulo: document.getElementById('titulo').value,
+      contenido: document.getElementById('contenido').value,
+      destinatarios: document.getElementById('destinatarios').value,
+      autor: 'Admin',
+      fecha: new Date().toISOString().split('T')[0]
     });
 
     document.getElementById('anuncioForm').reset();
@@ -614,7 +626,7 @@ async function eliminarAnuncio(id) {
 
   try {
     // ✅ CORREGIDO: usar /anuncios en lugar de /comunicaciones (timestamp eliminado - no usado por backend)
-    await fetch(`${anunciosUrl}?id=${id}`, { method: 'DELETE' });
+    await window.apiClient.delete(`${anunciosUrl}?id=${id}`);
     cargarAnuncios();
     alert('Anuncio eliminado');
   } catch(err) {
@@ -624,194 +636,8 @@ async function eliminarAnuncio(id) {
 }
 
 // ----------------------
-// Gestión de Usuarios
+// Gestión de Usuarios - MIGRADO A ALPINE.JS (ver admin.html)
 // ----------------------
-function mostrarFormularioUsuario() {
-  document.getElementById('formUsuario').style.display = 'block';
-}
-
-function ocultarFormularioUsuario() {
-  document.getElementById('formUsuario').style.display = 'none';
-  document.getElementById('rutUsuario').value = '';
-  document.getElementById('nombreUsuario').value = '';
-  document.getElementById('correoUsuario').value = '';
-  document.getElementById('telefonoUsuario').value = '';
-  document.getElementById('rolUsuario').value = 'alumno';
-}
-
-async function cargarUsuarios() {
-  try {
-    const res = await fetch(usuariosUrl);
-    const usuarios = await res.json();
-
-    const tbody = document.querySelector('#tablaUsuarios tbody');
-    tbody.innerHTML = usuarios.map(u => `
-      <tr>
-        <td>${u.rut}</td>
-        <td>${u.nombre}</td>
-        <td>${u.correo}</td>
-        <td>${u.telefono || '-'}</td>
-        <td>
-          <span class="badge" style="background: var(--purple-main); color: white; padding: 4px 12px; border-radius: 12px;">
-            ${u.rol}
-          </span>
-        </td>
-        <td>
-          <button class="btn-sm btn-primary" onclick="cambiarRolUsuario('${u.rut}', '${u.nombre}', '${u.rol}')" title="Cambiar Rol">
-            <i class="fas fa-user-tag"></i>
-          </button>
-          <button class="btn-sm btn-secondary" onclick="editarUsuario('${u.rut}')" title="Editar">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn-sm btn-danger" onclick="eliminarUsuario('${u.rut}')" title="Eliminar">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  } catch(err) {
-    console.error('Error cargando usuarios:', err);
-  }
-}
-
-async function crearUsuario() {
-  const rut = document.getElementById('rutUsuario').value;
-  const nombre = document.getElementById('nombreUsuario').value;
-  const correo = document.getElementById('correoUsuario').value;
-  const telefono = document.getElementById('telefonoUsuario').value;
-  const rol = document.getElementById('rolUsuario').value;
-
-  if (!rut || !nombre || !correo) {
-    alert('Por favor completa todos los campos obligatorios');
-    return;
-  }
-
-  try {
-    const passwordTemporal = Math.random().toString(36).slice(-8).toUpperCase();
-
-    const res = await fetch(usuariosUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rut,
-        nombre,
-        correo,
-        telefono,
-        rol,
-        passwordTemporal
-      })
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert(`Usuario creado exitosamente.\n\nPassword temporal: ${passwordTemporal}\n\nNOTA: Guarda este password, el usuario debe cambiarlo en su primer inicio de sesión.`);
-      ocultarFormularioUsuario();
-      cargarUsuarios();
-    } else {
-      alert('Error al crear usuario: ' + (data.error || 'Error desconocido'));
-    }
-  } catch(err) {
-    console.error('Error creando usuario:', err);
-    alert('Error al crear usuario: ' + err.message);
-  }
-}
-
-async function editarUsuario(rut) {
-  const nuevoNombre = prompt('Nuevo nombre:');
-  const nuevoTelefono = prompt('Nuevo teléfono:');
-
-  if (!nuevoNombre) return;
-
-  try {
-    const res = await fetch(`${usuariosUrl}?rut=${encodeURIComponent(rut)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nombre: nuevoNombre,
-        telefono: nuevoTelefono || '',
-        rol: 'alumno'
-      })
-    });
-
-    if (res.ok) {
-      alert('Usuario actualizado correctamente');
-      cargarUsuarios();
-    } else {
-      alert('Error al actualizar usuario');
-    }
-  } catch(err) {
-    console.error('Error editando usuario:', err);
-    alert('Error al editar usuario: ' + err.message);
-  }
-}
-
-// CU-04: Cambiar rol de usuario
-async function cambiarRolUsuario(rut, nombre, rolActual) {
-  const roles = ['admin', 'profesor', 'fono', 'alumno'];
-  const rolesDisponibles = roles.filter(r => r !== rolActual);
-
-  const nuevoRol = prompt(
-    `Cambiar rol de ${nombre}\nRol actual: ${rolActual}\n\nSeleccione nuevo rol:\n` +
-    rolesDisponibles.map((r, i) => `${i + 1}. ${r}`).join('\n') +
-    '\n\nIngrese el número del rol:'
-  );
-
-  if (!nuevoRol) return;
-
-  const index = parseInt(nuevoRol) - 1;
-  if (isNaN(index) || index < 0 || index >= rolesDisponibles.length) {
-    alert('Selección inválida');
-    return;
-  }
-
-  const rolSeleccionado = rolesDisponibles[index];
-
-  if (!confirm(`¿Confirmar cambio de rol de ${nombre}?\n${rolActual} → ${rolSeleccionado}`)) return;
-
-  try {
-    const res = await fetch(`${usuariosUrl}?rut=${encodeURIComponent(rut)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rol: rolSeleccionado })
-    });
-
-    if (res.ok) {
-      alert(`✅ Rol actualizado: ${rolActual} → ${rolSeleccionado}\n\nEl usuario ahora tiene permisos de: ${rolSeleccionado}`);
-      cargarUsuarios();
-    } else {
-      const error = await res.json();
-      alert('Error al cambiar rol: ' + (error.error || error.message));
-    }
-  } catch(err) {
-    console.error('Error cambiando rol:', err);
-    alert('Error al cambiar rol: ' + err.message);
-  }
-}
-
-async function eliminarUsuario(rut) {
-  if (!confirm(`¿Estás seguro de eliminar el usuario con RUT ${rut}?\n\nEsto desactivará el usuario.`)) return;
-
-  try {
-    const res = await fetch(`${usuariosUrl}?rut=${encodeURIComponent(rut)}`, {
-      method: 'DELETE'
-    });
-
-    if (res.ok) {
-      alert('Usuario desactivado correctamente');
-      cargarUsuarios();
-    } else {
-      alert('Error al eliminar usuario');
-    }
-  } catch(err) {
-    console.error('Error eliminando usuario:', err);
-    alert('Error al eliminar usuario: ' + err.message);
-  }
-}
-
-if (document.getElementById('usuarios')) {
-  cargarUsuarios();
-}
 
 // ----------------------
 // Notificaciones
@@ -835,15 +661,11 @@ document.getElementById('notifForm').addEventListener('submit', async (e) => {
   statusDiv.innerHTML = '📤 Enviando emails, por favor espera...';
 
   try {
-    const res = await fetch(notificacionesUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await window.apiClient.post(notificacionesUrl, {
         destinatarios,
         asunto,
         mensaje
-      })
-    });
+      });
 
     const data = await res.json();
 
@@ -883,8 +705,7 @@ document.getElementById('notifForm').addEventListener('submit', async (e) => {
 async function cargarMatriculas() {
   try {
     // Nuevo endpoint unificado: GET /matriculas
-    const res = await fetch(matriculasUrl);
-    const matriculas = await res.json();
+    const matriculas = await window.apiClient.get(matriculasUrl);
 
     const container = document.getElementById('listaMatriculas');
     container.innerHTML = matriculas.map(m => `
@@ -918,11 +739,7 @@ async function aprobarMatricula(id) {
   if (!confirm('¿Aprobar esta matrícula?')) return;
 
   try {
-    const res = await fetch(`${matriculasUrl}?id=${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado: 'aprobada', motivo: 'Aprobada por administración' })
-    });
+    const res = await window.apiClient.put(`${matriculasUrl}?id=${encodeURIComponent(id)}`, { estado: 'aprobada', motivo: 'Aprobada por administración' });
 
     if (res.ok) {
       alert('Matrícula aprobada correctamente. Se enviará email automático.');
@@ -941,14 +758,10 @@ async function rechazarMatricula(id) {
   if (!motivo) return;
 
   try {
-    const res = await fetch(`${matriculasUrl}?id=${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await window.apiClient.put(`${matriculasUrl}?id=${encodeURIComponent(id)}`, {
         estado: 'rechazada',
         motivo
-      })
-    });
+      });
 
     if (res.ok) {
       alert('Matrícula rechazada. Se enviará email automático.');
@@ -1013,11 +826,7 @@ imageUploadForm.addEventListener('submit', async function (e) {
             grupo: grupo,
             album: album || null
           };
-          const res = await fetch(galeriaUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-          });
+          const res = await window.apiClient.post(galeriaUrl, body);
           const data = await res.json();
           resolve(file.name + ' → ' + data.message);
         } catch (err) {
@@ -1057,8 +866,7 @@ async function cargarAsistenciaAdmin() {
       url += `curso=${encodeURIComponent(curso)}&`;
     }
 
-    const res = await fetch(url.slice(0, -1)); // Quitar último &
-    let registros = await res.json();
+    let registros = await window.apiClient.get(url.slice(0, -1)); // Quitar último &
 
     // Filtrar por rango de fechas en front
     if (fechaInicio || fechaFin) {
@@ -1326,8 +1134,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const mesAtras = new Date();
   mesAtras.setMonth(mesAtras.getMonth() - 1);
 
-  document.getElementById('adminAsistenciaFechaInicio').value = mesAtras.toISOString().split('T')[0];
-  document.getElementById('adminAsistenciaFechaFin').value = hoy.toISOString().split('T')[0];
+  const fechaInicio = document.getElementById('adminAsistenciaFechaInicio');
+  const fechaFin = document.getElementById('adminAsistenciaFechaFin');
+
+  if (fechaInicio) fechaInicio.value = mesAtras.toISOString().split('T')[0];
+  if (fechaFin) fechaFin.value = hoy.toISOString().split('T')[0];
 
   // Cargar asistencia al abrir la sección
   if (window.location.hash === '#asistencia') {
@@ -1347,8 +1158,7 @@ document.addEventListener('DOMContentLoaded', function() {
 async function cargarCategorias() {
   try {
     // ✅ CORREGIDO: usar /categorias en lugar de /recursos-academicos/categorias
-    const res = await fetch(categoriasUrl);
-    const categorias = await res.json();
+    const categorias = await window.apiClient.get(categoriasUrl);
 
     if (!categorias || categorias.length === 0) {
       document.getElementById('listaCategorias').innerHTML =
@@ -1428,19 +1238,11 @@ async function guardarCategoria() {
     if (id) {
       // Actualizar - Migrado: PUT /recursos-academicos/categorias
       // ✅ CORREGIDO: usar /categorias en lugar de /recursos-academicos/categorias
-      res = await fetch(`${categoriasUrl}?id=${encodeURIComponent(id)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoria)
-      });
+      res = await window.apiClient.put(`${categoriasUrl}?id=${encodeURIComponent(id)}`, categoria);
     } else {
       // Crear - Migrado: POST /recursos-academicos/categorias
       // ✅ CORREGIDO: usar /categorias en lugar de /recursos-academicos/categorias
-      res = await fetch(categoriasUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(categoria)
-      });
+      res = await window.apiClient.post(categoriasUrl, categoria);
     }
 
     if (!res.ok) {
@@ -1461,8 +1263,7 @@ async function guardarCategoria() {
 async function editarCategoria(id) {
   try {
     // ✅ CORREGIDO: usar /categorias en lugar de /recursos-academicos/categorias
-    const res = await fetch(`${categoriasUrl}?id=${encodeURIComponent(id)}`);
-    const categoria = await res.json();
+    const categoria = await window.apiClient.get(`${categoriasUrl}?id=${encodeURIComponent(id)}`);
 
     if (!categoria) {
       alert('❌ Categoría no encontrada');
@@ -1490,8 +1291,7 @@ async function eliminarCategoriaConConfirmacion(id, nombre, cantidadMateriales) 
   if (cantidadMateriales > 0) {
     // Cargar otras categorías para reasignar
     // ✅ CORREGIDO: usar /categorias en lugar de /recursos-academicos/categorias
-    const res = await fetch(categoriasUrl);
-    const categorias = await res.json();
+    const categorias = await window.apiClient.get(categoriasUrl);
     const otras = categorias.filter(c => c.id !== id);
 
     if (otras.length === 0) {
@@ -1529,7 +1329,7 @@ async function eliminarCategoria(id, categoriaDestinoId) {
       url += `&categoriaDestinoId=${encodeURIComponent(categoriaDestinoId)}`;
     }
 
-    const res = await fetch(url, { method: 'DELETE' });
+    const res = await window.apiClient.delete(url);
 
     if (!res.ok) {
       const error = await res.json();
@@ -1554,13 +1354,27 @@ let configuracionActual = null;
 
 async function cargarConfiguracion() {
   try {
-    const res = await fetch(configuracionUrl);
-    if (!res.ok) throw new Error('Error al cargar configuración');
+    const data = await window.apiClient.get(configuracionUrl);
 
-    configuracionActual = await res.json();
+    // El backend retorna { parametros: [...] }
+    // Necesitamos consolidar los parámetros en un objeto único
+    configuracionActual = {};
 
-    // Cargar datos básicos
-    document.getElementById('nombreJardin').value = configuracionActual.nombreJardin || '';
+    if (data.parametros && Array.isArray(data.parametros)) {
+      data.parametros.forEach(param => {
+        if (param.id === 'cursos') {
+          configuracionActual.cursos = param.cursos || [];
+        } else if (param.id === 'asignaturas') {
+          configuracionActual.asignaturas = param.asignaturas || [];
+        } else if (param.id === 'periodo-academico') {
+          configuracionActual.anoEscolar = param.anio || new Date().getFullYear();
+        }
+        // Agregar otros parámetros según sea necesario
+      });
+    }
+
+    // Cargar datos básicos (por ahora con valores por defecto)
+    document.getElementById('nombreJardin').value = configuracionActual.nombreJardin || 'Boy Happy';
     document.getElementById('direccionJardin').value = configuracionActual.direccion || '';
     document.getElementById('telefonoJardin').value = configuracionActual.telefono || '';
     document.getElementById('emailJardin').value = configuracionActual.email || '';
@@ -1569,26 +1383,34 @@ async function cargarConfiguracion() {
     // Cargar cursos
     const cursos = configuracionActual.cursos || [];
     const listaCursos = document.getElementById('listaCursos');
-    listaCursos.innerHTML = cursos.map((curso, i) => `
-      <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
-        <input type="text" value="${curso}" onchange="actualizarCurso(${i}, this.value)" style="flex: 1;">
-        <button class="btn btn-sm btn-danger" onclick="eliminarCurso(${i})">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    `).join('');
+    if (cursos.length === 0) {
+      listaCursos.innerHTML = '<p style="color: #666; text-align: center;">No hay cursos configurados</p>';
+    } else {
+      listaCursos.innerHTML = cursos.map((curso, i) => `
+        <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
+          <input type="text" value="${curso}" onchange="actualizarCurso(${i}, this.value)" style="flex: 1;">
+          <button class="btn btn-sm btn-danger" onclick="eliminarCurso(${i})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `).join('');
+    }
 
     // Cargar asignaturas
     const asignaturas = configuracionActual.asignaturas || [];
     const listaAsignaturas = document.getElementById('listaAsignaturas');
-    listaAsignaturas.innerHTML = asignaturas.map((asig, i) => `
-      <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
-        <input type="text" value="${asig}" onchange="actualizarAsignatura(${i}, this.value)" style="flex: 1;">
-        <button class="btn btn-sm btn-danger" onclick="eliminarAsignatura(${i})">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    `).join('');
+    if (asignaturas.length === 0) {
+      listaAsignaturas.innerHTML = '<p style="color: #666; text-align: center;">No hay asignaturas configuradas</p>';
+    } else {
+      listaAsignaturas.innerHTML = asignaturas.map((asig, i) => `
+        <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
+          <input type="text" value="${asig}" onchange="actualizarAsignatura(${i}, this.value)" style="flex: 1;">
+          <button class="btn btn-sm btn-danger" onclick="eliminarAsignatura(${i})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `).join('');
+    }
 
   } catch (err) {
     console.error('Error cargando configuración:', err);
@@ -1646,11 +1468,7 @@ async function guardarConfiguracion() {
       asignaturas: configuracionActual.asignaturas || []
     };
 
-    const res = await fetch(configuracionUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config)
-    });
+    const res = await window.apiClient.put(configuracionUrl, config);
 
     if (!res.ok) throw new Error('Error al guardar configuración');
 
@@ -1678,10 +1496,7 @@ async function cargarMateriales() {
       url += `?curso=${encodeURIComponent(curso)}`;
     }
 
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Error al cargar materiales');
-
-    const data = await res.json();
+    const data = await window.apiClient.get(url);
     let materiales = data.materiales || data; // ✅ CORREGIDO: Backend retorna wrapper
 
     // Filtrar por estado si se seleccionó
@@ -1777,10 +1592,7 @@ function getEstadoBadge(estado) {
 async function verDetalleMaterial(id) {
   try {
     // ✅ CORREGIDO: usar /materiales en lugar de /recursos-academicos/materiales
-    const res = await fetch(`${materialesUrl}?id=${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Error al obtener material');
-
-    const material = await res.json();
+    const material = await window.apiClient.get(`${materialesUrl}?id=${encodeURIComponent(id)}`);
 
     const detalles = `
 📄 Título: ${material.titulo}
@@ -1808,15 +1620,11 @@ async function aprobarMaterial(id) {
 
   try {
     // ✅ CORREGIDO: usar /materiales en lugar de /recursos-academicos/materiales
-    const res = await fetch(`${materialesUrl}?id=${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await window.apiClient.put(`${materialesUrl}?id=${encodeURIComponent(id)}`, {
         estado: 'aprobado',
         fechaRevision: new Date().toISOString(),
         revisadoPor: 'Admin' // TODO: Obtener del usuario actual
-      })
-    });
+      });
 
     if (!res.ok) throw new Error('Error al aprobar');
 
@@ -1836,16 +1644,12 @@ async function rechazarMaterial(id) {
 
   try {
     // ✅ CORREGIDO: usar /materiales en lugar de /recursos-academicos/materiales
-    const res = await fetch(`${materialesUrl}?id=${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await window.apiClient.put(`${materialesUrl}?id=${encodeURIComponent(id)}`, {
         estado: 'rechazado',
         observaciones: motivo,
         fechaRevision: new Date().toISOString(),
         revisadoPor: 'Admin'
-      })
-    });
+      });
 
     if (!res.ok) throw new Error('Error al rechazar');
 
@@ -1865,16 +1669,12 @@ async function solicitarCorreccion(id) {
 
   try {
     // ✅ CORREGIDO: usar /materiales en lugar de /recursos-academicos/materiales
-    const res = await fetch(`${materialesUrl}?id=${encodeURIComponent(id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await window.apiClient.put(`${materialesUrl}?id=${encodeURIComponent(id)}`, {
         estado: 'requiere_correccion',
         observaciones: correcciones,
         fechaRevision: new Date().toISOString(),
         revisadoPor: 'Admin'
-      })
-    });
+      });
 
     if (!res.ok) throw new Error('Error al solicitar corrección');
 
@@ -1894,8 +1694,8 @@ async function solicitarCorreccion(id) {
 // Cargar usuarios en los selectores de retroalimentación
 async function cargarUsuariosParaRetro() {
   try {
-    const res = await fetch(usuariosUrl);
-    const usuarios = await res.json();
+    console.log('📞 [RETROALIMENTACIÓN] Fetching usuarios para select...');
+    const usuarios = await window.apiClient.get(usuariosUrl);
 
     const selectRetro = document.getElementById('retroUsuario');
     const selectHistorial = document.getElementById('historialUsuario');
@@ -1947,11 +1747,7 @@ async function enviarRetroalimentacion(event) {
   };
 
   try {
-    const res = await fetch(retroalimentacionUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    const res = await window.apiClient.post(retroalimentacionUrl, data);
 
     if (!res.ok) {
       const error = await res.json();
@@ -1988,8 +1784,7 @@ async function cargarHistorialRetro() {
       url += `tipo=${tipo}&`;
     }
 
-    const res = await fetch(url);
-    const items = await res.json();
+    const items = await window.apiClient.get(url);
 
     if (!items || items.length === 0) {
       document.getElementById('historialRetroalimentacion').innerHTML = `
@@ -2194,10 +1989,10 @@ function getAmbitoLabel(ambito) {
 // Inicializar retroalimentación al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
   cargarUsuariosParaRetro();
-  // Cargar dashboard al iniciar si es la sección activa
-  if (window.location.hash === '#dashboard' || !window.location.hash) {
-    cargarDashboard();
-  }
+  // ⚠️ DESHABILITADO: Dashboard ahora usa Alpine.js (dashboardApp component)
+  // if (window.location.hash === '#dashboard' || !window.location.hash) {
+  //   cargarDashboard();
+  // }
 });
 
 // ==============================================
@@ -2208,10 +2003,10 @@ async function cargarDashboard() {
   try {
     // Cargar datos de múltiples fuentes en paralelo
     const [usuarios, asistencia, dataMateriales] = await Promise.all([
-      fetch(usuariosUrl).then(r => r.json()),
-      fetch(`${PREFIX}/asistencia`).then(r => r.json()).catch(() => []),
+      window.apiClient.get(usuariosUrl),
+      window.apiClient.get(`${PREFIX}/asistencia`).catch(() => []),
       // ✅ CORREGIDO: usar /materiales en lugar de /recursos-academicos/materiales
-      fetch(materialesUrl).then(r => r.json()).catch(() => ({ materiales: [] }))
+      window.apiClient.get(materialesUrl).catch(() => ({ materiales: [] }))
       // NOTA: Removido fetch de matrículas (no hay RF)
     ]);
 
@@ -2232,7 +2027,6 @@ async function cargarDashboard() {
 
   } catch (err) {
     console.error('Error cargando dashboard:', err);
-    alert('Error al cargar el dashboard');
   }
 }
 
@@ -2247,7 +2041,8 @@ function calcularIndicadorUsuarios(usuarios) {
 }
 
 function calcularIndicadorAsistencia(registros) {
-  if (!registros || registros.length === 0) {
+  // Asegurarse de que registros sea un array
+  if (!Array.isArray(registros) || registros.length === 0) {
     document.getElementById('promedioAsistencia').textContent = 'N/A';
     actualizarSemaforo('semaforoAsistencia', 'gray');
     return;
@@ -2473,14 +2268,19 @@ let chartInstances = {
   niveles: null
 };
 
-// Inicializar fechas por defecto
+// Inicializar fechas por defecto (LEGACY - ahora manejado por Alpine.js)
 document.addEventListener('DOMContentLoaded', function() {
-  const hoy = new Date();
-  const hace30Dias = new Date();
-  hace30Dias.setDate(hoy.getDate() - 30);
+  const fechaInicio = document.getElementById('comparativoFechaInicio');
+  const fechaFin = document.getElementById('comparativoFechaFin');
 
-  document.getElementById('comparativoFechaInicio').value = hace30Dias.toISOString().split('T')[0];
-  document.getElementById('comparativoFechaFin').value = hoy.toISOString().split('T')[0];
+  if (fechaInicio && fechaFin) {
+    const hoy = new Date();
+    const hace30Dias = new Date();
+    hace30Dias.setDate(hoy.getDate() - 30);
+
+    fechaInicio.value = hace30Dias.toISOString().split('T')[0];
+    fechaFin.value = hoy.toISOString().split('T')[0];
+  }
 });
 
 async function generarComparativo() {
@@ -2544,7 +2344,14 @@ function filtrarPorFechas(datos, fechaInicio, fechaFin) {
 }
 
 // Gráfico 1: Asistencia Promedio por Curso (Barras)
+// LEGACY - Ahora manejado por Alpine.js en admin.html
 function generarGraficoAsistencia(cursos, asistencia) {
+  const canvas = document.getElementById('chartAsistencia');
+  if (!canvas) {
+    console.warn('Canvas chartAsistencia no encontrado - probablemente usando Alpine.js');
+    return;
+  }
+
   const datos = cursos.map(curso => {
     const registrosCurso = asistencia.filter(r => r.curso === curso);
     if (registrosCurso.length === 0) return 0;
@@ -2553,7 +2360,7 @@ function generarGraficoAsistencia(cursos, asistencia) {
     return ((presentes / registrosCurso.length) * 100).toFixed(1);
   });
 
-  const ctx = document.getElementById('chartAsistencia').getContext('2d');
+  const ctx = canvas.getContext('2d');
 
   // Destruir gráfico anterior si existe
   if (chartInstances.asistencia) {
@@ -2625,7 +2432,14 @@ function generarGraficoAsistencia(cursos, asistencia) {
 }
 
 // Gráfico 2: Evolución Temporal de Asistencia (Líneas)
+// LEGACY - Ahora manejado por Alpine.js en admin.html
 function generarGraficoEvolucion(cursos, asistencia, fechaInicio, fechaFin) {
+  const canvas = document.getElementById('chartEvolucion');
+  if (!canvas) {
+    console.warn('Canvas chartEvolucion no encontrado - probablemente usando Alpine.js');
+    return;
+  }
+
   // Generar array de fechas
   const fechas = [];
   let fecha = new Date(fechaInicio);
@@ -2665,7 +2479,7 @@ function generarGraficoEvolucion(cursos, asistencia, fechaInicio, fechaFin) {
     };
   });
 
-  const ctx = document.getElementById('chartEvolucion').getContext('2d');
+  const ctx = canvas.getContext('2d');
 
   if (chartInstances.evolucion) {
     chartInstances.evolucion.destroy();
@@ -2719,7 +2533,14 @@ function generarGraficoEvolucion(cursos, asistencia, fechaInicio, fechaFin) {
 }
 
 // Gráfico 3: Distribución de Niveles de Logro (Pastel/Dona)
+// LEGACY - Ahora manejado por Alpine.js en admin.html
 function generarGraficoNiveles(cursos, evaluaciones) {
+  const canvas = document.getElementById('chartNiveles');
+  if (!canvas) {
+    console.warn('Canvas chartNiveles no encontrado - probablemente usando Alpine.js');
+    return;
+  }
+
   const niveles = { L: 0, OD: 0, NL: 0, NT: 0 };
 
   // Filtrar evaluaciones de cursos seleccionados
@@ -2731,7 +2552,7 @@ function generarGraficoNiveles(cursos, evaluaciones) {
     }
   });
 
-  const ctx = document.getElementById('chartNiveles').getContext('2d');
+  const ctx = canvas.getContext('2d');
 
   if (chartInstances.niveles) {
     chartInstances.niveles.destroy();
@@ -2958,3 +2779,145 @@ function exportarTablaComparativa() {
   const filename = `comparativo_cursos_${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(wb, filename);
 }
+
+// ==============================================
+// GESTIÓN DE CURSOS DINÁMICOS
+// ==============================================
+
+// Variable global para cachear cursos
+let cursosDisponibles = [];
+
+/**
+ * Obtener cursos desde la configuración en DynamoDB
+ */
+async function obtenerCursosDesdeConfiguracion() {
+  try {
+    const apiUrl = window.APP_CONFIG?.API_URL || PREFIX || '';
+    const data = await window.apiClient.get(`${apiUrl}/configuracion?key=cursos`);
+    return data.cursos || [];
+  } catch (error) {
+    console.error('Error al cargar cursos:', error);
+    return [];
+  }
+}
+
+/**
+ * Cargar cursos dinámicamente y almacenarlos en variable global
+ */
+async function cargarCursosGlobal() {
+  cursosDisponibles = await obtenerCursosDesdeConfiguracion();
+  return cursosDisponibles;
+}
+
+/**
+ * Poblar un select con los cursos disponibles
+ * @param {string} selectId - ID del elemento select
+ * @param {Object} options - Opciones de configuración
+ */
+async function cargarCursosEnSelect(selectId, options = {}) {
+  const select = document.getElementById(selectId);
+  if (!select) {
+    console.error(`Select con id "${selectId}" no encontrado`);
+    return;
+  }
+
+  // Cargar cursos si no están cargados
+  if (cursosDisponibles.length === 0) {
+    await cargarCursosGlobal();
+  }
+
+  // Limpiar select
+  select.innerHTML = '';
+
+  // Agregar placeholder si existe
+  if (options.placeholder) {
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = options.placeholder;
+    select.appendChild(placeholderOption);
+  }
+
+  // Agregar opción "Todos" si se requiere
+  if (options.incluirTodos) {
+    const todosOption = document.createElement('option');
+    todosOption.value = 'todos';
+    todosOption.textContent = 'Todos los cursos';
+    select.appendChild(todosOption);
+  }
+
+  // Agregar cursos
+  cursosDisponibles.forEach(curso => {
+    const option = document.createElement('option');
+    option.value = curso;
+    option.textContent = curso;
+    if (options.valorSeleccionado === curso) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+}
+
+/**
+ * Generar checkboxes de cursos dinámicamente
+ * @param {string} containerId - ID del contenedor
+ * @param {string} checkboxClass - Clase CSS para los checkboxes
+ * @param {boolean} todosChecked - Marcar todos por defecto
+ */
+async function cargarCursosEnCheckboxes(containerId, checkboxClass = 'curso-checkbox', todosChecked = true) {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.error(`Contenedor con id "${containerId}" no encontrado`);
+    return;
+  }
+
+  // Cargar cursos si no están cargados
+  if (cursosDisponibles.length === 0) {
+    await cargarCursosGlobal();
+  }
+
+  // Limpiar contenido existente
+  container.innerHTML = '';
+
+  // Generar checkboxes
+  cursosDisponibles.forEach(curso => {
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '8px';
+    label.style.cursor = 'pointer';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = checkboxClass;
+    checkbox.value = curso;
+    checkbox.checked = todosChecked;
+
+    const span = document.createElement('span');
+    span.textContent = curso;
+
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    container.appendChild(label);
+  });
+}
+
+// ==============================================
+// INICIALIZACIÓN DE CURSOS DINÁMICOS
+// ==============================================
+
+// Cargar cursos dinámicamente al iniciar la página
+document.addEventListener('DOMContentLoaded', async function() {
+  // Cargar checkboxes de comparativo de cursos (LEGACY - ahora manejado por Alpine.js)
+  const comparativoContainer = document.getElementById('comparativoCursosCheckboxes');
+  if (comparativoContainer) {
+    await cargarCursosEnCheckboxes('comparativoCursosCheckboxes', 'curso-checkbox', true);
+  }
+
+  // Cargar select de retroalimentación
+  const retroCursoSelect = document.getElementById('retroCurso');
+  if (retroCursoSelect) {
+    await cargarCursosEnSelect('retroCurso', {
+      placeholder: '-- Sin especificar --'
+    });
+  }
+});

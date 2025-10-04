@@ -9,6 +9,7 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <!-- STYLES -->
+<link rel="stylesheet" href="../shared/boyhappy-styles.css">
 </head>
 <body>
 <aside class="sidebar">
@@ -51,12 +52,7 @@
       <div class="form-group">
         <label for="asistenciaCurso">Curso</label>
         <select id="asistenciaCurso">
-          <option value="">Seleccionar curso</option>
-          <option value="medio-mayor">Medio Mayor</option>
-          <option value="prekinder-a">Prekínder A</option>
-          <option value="prekinder-b">Prekínder B</option>
-          <option value="kinder">Kínder</option>
-          <option value="extension">Extensión Horaria</option>
+          <!-- Los cursos se cargarán dinámicamente -->
         </select>
       </div>
 
@@ -86,12 +82,7 @@
         <div class="form-group">
           <label for="consultaCurso">Curso</label>
           <select id="consultaCurso">
-            <option value="">Seleccionar curso</option>
-            <option value="medio-mayor">Medio Mayor</option>
-            <option value="prekinder-a">Prekínder A</option>
-            <option value="prekinder-b">Prekínder B</option>
-            <option value="kinder">Kínder</option>
-            <option value="extension">Extensión Horaria</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
         <div class="form-group">
@@ -115,12 +106,7 @@
         <div class="form-group">
           <label for="reporteCurso">Curso</label>
           <select id="reporteCurso">
-            <option value="">Seleccionar curso</option>
-            <option value="medio-mayor">Medio Mayor</option>
-            <option value="prekinder-a">Prekínder A</option>
-            <option value="prekinder-b">Prekínder B</option>
-            <option value="kinder">Kínder</option>
-            <option value="extension">Extensión Horaria</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
         <div class="form-group">
@@ -154,12 +140,7 @@
           <div class="form-group">
             <label for="notaCurso">Curso *</label>
             <select id="notaCurso" required onchange="cargarAlumnosPorCurso()">
-              <option value="">Seleccionar curso</option>
-              <option value="medio-mayor">Medio Mayor</option>
-              <option value="prekinder-a">Prekínder A</option>
-              <option value="prekinder-b">Prekínder B</option>
-              <option value="kinder">Kínder</option>
-              <option value="extension">Extensión Horaria</option>
+              <!-- Los cursos se cargarán dinámicamente -->
             </select>
           </div>
 
@@ -236,12 +217,7 @@
         <div class="form-group">
           <label for="consultaCurso">Curso</label>
           <select id="consultaCurso" onchange="consultarNotas()">
-            <option value="">Todos los cursos</option>
-            <option value="medio-mayor">Medio Mayor</option>
-            <option value="prekinder-a">Prekínder A</option>
-            <option value="prekinder-b">Prekínder B</option>
-            <option value="kinder">Kínder</option>
-            <option value="extension">Extensión Horaria</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
 
@@ -276,12 +252,7 @@
           <div class="form-group">
             <label for="materialCurso">Curso *</label>
             <select id="materialCurso" required>
-              <option value="">Seleccionar curso</option>
-              <option value="medio-mayor">Medio Mayor</option>
-              <option value="prekinder-a">Prekínder A</option>
-              <option value="prekinder-b">Prekínder B</option>
-              <option value="kinder">Kínder</option>
-              <option value="extension">Extensión Horaria</option>
+              <!-- Los cursos se cargarán dinámicamente -->
             </select>
           </div>
 
@@ -327,12 +298,7 @@
         <div class="form-group">
           <label for="consultaMaterialCurso">Curso</label>
           <select id="consultaMaterialCurso" onchange="consultarMateriales()">
-            <option value="">Todos los cursos</option>
-            <option value="medio-mayor">Medio Mayor</option>
-            <option value="prekinder-a">Prekínder A</option>
-            <option value="prekinder-b">Prekínder B</option>
-            <option value="kinder">Kínder</option>
-            <option value="extension">Extensión Horaria</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
 
@@ -377,11 +343,7 @@
         <div class="form-group">
           <label for="promedioCurso">Curso:</label>
           <select id="promedioCurso" onchange="cargarAlumnosPorCurso()">
-            <option value="">-- Seleccionar curso --</option>
-            <option value="medio-mayor">Medio Mayor</option>
-            <option value="prekinder-a">Prekínder A</option>
-            <option value="prekinder-b">Prekínder B</option>
-            <option value="kinder">Kínder</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
 
@@ -412,11 +374,7 @@
           <div class="form-group">
             <label for="bitacoraCurso">Curso *</label>
             <select id="bitacoraCurso" required>
-              <option value="">Seleccionar curso</option>
-              <option value="Pre-Kinder">Pre-Kinder</option>
-              <option value="Kinder">Kinder</option>
-              <option value="1° Básico">1° Básico</option>
-              <option value="2° Básico">2° Básico</option>
+              <!-- Los cursos se cargarán dinámicamente -->
             </select>
           </div>
 
@@ -483,11 +441,7 @@
         <div class="form-group">
           <label for="consultaBitacoraCurso">Curso</label>
           <select id="consultaBitacoraCurso" onchange="consultarBitacora()">
-            <option value="">Seleccionar curso</option>
-            <option value="Pre-Kinder">Pre-Kinder</option>
-            <option value="Kinder">Kinder</option>
-            <option value="1° Básico">1° Básico</option>
-            <option value="2° Básico">2° Básico</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
 
@@ -552,12 +506,7 @@
       <div class="form-group">
         <label for="curso">Curso</label>
         <select id="curso" name="curso">
-          <option value="todos">Todos</option>
-          <option value="medio-mayor">Medio Mayor</option>
-          <option value="prekinder-a">Prekínder A</option>
-          <option value="prekinder-b">Prekínder B</option>
-          <option value="kinder">Kínder</option>
-          <option value="extension">Extensión Horaria</option>
+          <!-- Los cursos se cargarán dinámicamente -->
         </select>
       </div>
       <div style="text-align:center; margin-top:20px;">
@@ -569,5 +518,6 @@
 </div>
 
 <!-- SCRIPT -->
+<script src="../scripts/common.js"></script>
 </body>
 </html>

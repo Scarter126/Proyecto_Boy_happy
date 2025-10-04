@@ -1,6 +1,7 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -23,12 +24,12 @@ exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
   try {
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // GET /reportes/asistencia - Reporte de asistencia
     // ========================================
-    if (httpMethod === 'GET' && resource === '/reportes/asistencia') {
+    if (httpMethod === 'GET' && path === '/reportes/asistencia') {
       if (!queryStringParameters?.curso) {
         return {
           statusCode: 400,
@@ -89,7 +90,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /reportes/cumplimiento - Cumplimiento docente
     // ========================================
-    if (httpMethod === 'GET' && resource === '/reportes/cumplimiento') {
+    if (httpMethod === 'GET' && path === '/reportes/cumplimiento') {
       const usuariosResult = await docClient.send(new ScanCommand({ TableName: USUARIOS_TABLE }));
       const profesores = usuariosResult.Items.filter(u => u.rol === 'profesor');
 
@@ -139,7 +140,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /reportes/actividades - Actividades por usuario
     // ========================================
-    if (httpMethod === 'GET' && resource === '/reportes/actividades') {
+    if (httpMethod === 'GET' && path === '/reportes/actividades') {
       if (!queryStringParameters?.usuario) {
         return {
           statusCode: 400,
@@ -181,7 +182,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /reportes/notas - Rendimiento académico
     // ========================================
-    if (httpMethod === 'GET' && resource === '/reportes/notas') {
+    if (httpMethod === 'GET' && path === '/reportes/notas') {
       const { curso, asignatura } = queryStringParameters || {};
 
       const recursosResult = await docClient.send(new ScanCommand({ TableName: RECURSOS_TABLE }));
@@ -214,7 +215,7 @@ exports.handler = async (event) => {
     // ========================================
     // POST /reportes/consolidado - Generar reporte consolidado
     // ========================================
-    if (httpMethod === 'POST' && resource === '/reportes/consolidado') {
+    if (httpMethod === 'POST' && path === '/reportes/consolidado') {
       const data = JSON.parse(event.body);
 
       const reporteId = `reporte-${uuidv4()}`;
@@ -244,7 +245,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /reportes/indicadores - Indicadores de desempeño
     // ========================================
-    if (httpMethod === 'GET' && resource === '/reportes/indicadores') {
+    if (httpMethod === 'GET' && path === '/reportes/indicadores') {
       const recursosResult = await docClient.send(new ScanCommand({ TableName: RECURSOS_TABLE }));
       const usuariosResult = await docClient.send(new ScanCommand({ TableName: USUARIOS_TABLE }));
 

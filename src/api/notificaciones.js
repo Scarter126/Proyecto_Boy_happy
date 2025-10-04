@@ -1,22 +1,23 @@
-const AWS = require('aws-sdk');
-const ses = new AWS.SES();
-const docClient = new AWS.DynamoDB.DocumentClient();
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
+
+const dynamoClient = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
+const sesClient = new SESClient({});
 
 const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
 const SOURCE_EMAIL = process.env.SOURCE_EMAIL;
 
 exports.handler = async (event) => {
   try {
-    const data = JSON.parse(event.body);
+    const data = parseBody(event);
     const { destinatarios, asunto, mensaje } = data;
 
     // Validar campos requeridos
     if (!destinatarios || !asunto || !mensaje) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Faltan campos requeridos: destinatarios, asunto, mensaje' })
-      };
+      return badRequest('Campos requeridos: destinatarios, asunto, mensaje');
     }
 
     // Obtener emails según destinatarios
@@ -24,22 +25,22 @@ exports.handler = async (event) => {
 
     if (destinatarios === 'todos') {
       // Obtener todos los usuarios activos
-      const usuarios = await docClient.scan({
+      const usuarios = await docClient.send(new ScanCommand({
         TableName: USUARIOS_TABLE,
         FilterExpression: 'activo = :activo',
         ExpressionAttributeValues: { ':activo': true }
-      }).promise();
+      }));
       emailsDestino = usuarios.Items.map(u => u.correo);
     } else {
       // Filtrar por rol específico
-      const usuarios = await docClient.scan({
+      const usuarios = await docClient.send(new ScanCommand({
         TableName: USUARIOS_TABLE,
         FilterExpression: 'rol = :rol AND activo = :activo',
         ExpressionAttributeValues: {
           ':rol': destinatarios,
           ':activo': true
         }
-      }).promise();
+      }));
       emailsDestino = usuarios.Items.map(u => u.correo);
     }
 
@@ -57,7 +58,7 @@ exports.handler = async (event) => {
 
     for (const email of emailsDestino) {
       try {
-        await ses.sendEmail({
+        await sesClient.send(new SendEmailCommand({
           Source: SOURCE_EMAIL,
           Destination: { ToAddresses: [email] },
           Message: {
@@ -97,7 +98,7 @@ exports.handler = async (event) => {
               }
             }
           }
-        }).promise();
+        }));
         resultados.push(email);
       } catch (error) {
         console.error(`Error enviando email a ${email}:`, error);

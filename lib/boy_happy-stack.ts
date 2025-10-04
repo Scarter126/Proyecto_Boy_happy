@@ -244,9 +244,9 @@ export class BoyHappyStack extends cdk.Stack {
     }
 
     const LAMBDA_PROFILES = {
-      light: { memory: 256, timeout: 5 },    // Auth, callbacks
-      medium: { memory: 384, timeout: 10 }, // CRUD operations
-      heavy: { memory: 768, timeout: 15 },  // Reportes, S3
+      light: { memory: 256, timeout: 10 },    // Auth, callbacks
+      medium: { memory: 512, timeout: 15 },   // CRUD operations
+      heavy: { memory: 1024, timeout: 30 },   // Reportes, S3, backups
     };
 
     const createLambda = (
@@ -288,8 +288,18 @@ export class BoyHappyStack extends cdk.Stack {
       },
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
-        allowMethods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
-        allowHeaders: ['Content-Type', 'Authorization'],
+        allowMethods: apigateway.Cors.ALL_METHODS,
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'Cookie',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+          'X-Requested-With'
+        ],
+        allowCredentials: true,
+        maxAge: cdk.Duration.minutes(10)
       },
     });
 
@@ -459,12 +469,24 @@ export class BoyHappyStack extends cdk.Stack {
     // Lambda de Matrículas (FASE 10 - separado de eventos)
     const matriculasLambda = createLambda('MatriculasLambda', 'api/matriculas', 'handler', {
       COMUNICACIONES_TABLE: comunicacionesTable.tableName,
+      USUARIOS_TABLE: usuariosTable.tableName,
+      USER_POOL_ID: process.env.USER_POOL_ID ?? '',
       SOURCE_EMAIL: 'noreply@boyhappy.cl',
     });
     comunicacionesTable.grantReadWriteData(matriculasLambda);
+    usuariosTable.grantReadWriteData(matriculasLambda);
     matriculasLambda.addToRolePolicy(new iam.PolicyStatement({
       actions: ['ses:SendEmail', 'ses:SendRawEmail'],
       resources: ['*'],
+    }));
+    matriculasLambda.addToRolePolicy(new iam.PolicyStatement({
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminAddUserToGroup'
+      ],
+      resources: [
+        `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${process.env.USER_POOL_ID}`,
+      ],
     }));
 
     // Lambda de Backups (CU-12)
@@ -600,7 +622,8 @@ exports.handler = async (event) => {
       statusCode: 404,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
       },
       body: JSON.stringify({ error: 'Route not found', path })
     };
@@ -623,7 +646,8 @@ exports.handler = async (event) => {
         statusCode: 502,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': 'true'
         },
         body: JSON.stringify({
           error: 'Lambda execution error',
@@ -645,7 +669,8 @@ exports.handler = async (event) => {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
       },
       body: JSON.stringify({
         error: 'Internal routing error',

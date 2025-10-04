@@ -2,6 +2,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -20,9 +21,9 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
-    if (httpMethod === 'POST' && resource === '/categorias') {
+    if (httpMethod === 'POST' && path === '/categorias') {
       const data = JSON.parse(event.body);
       const item = {
         id: `categoria-${uuidv4()}`,
@@ -39,7 +40,7 @@ exports.handler = async (event) => {
       return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item) };
     }
 
-    if (httpMethod === 'GET' && resource === '/categorias') {
+    if (httpMethod === 'GET' && path === '/categorias') {
       const result = await docClient.send(new ScanCommand({
         TableName: RECURSOS_TABLE,
         FilterExpression: '#tipo = :tipo',

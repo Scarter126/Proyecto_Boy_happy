@@ -5,12 +5,13 @@
  */
 
 require('dotenv').config({ path: './.env' });
-const AWS = require('aws-sdk');
+const { CognitoIdentityProviderClient, AdminSetUserPasswordCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const crypto = require('crypto');
 
-// Configurar AWS SDK
-AWS.config.update({ region: process.env.AWS_REGION || 'us-east-1' });
-const cognito = new AWS.CognitoIdentityServiceProvider();
+// Configurar AWS SDK v3
+const cognito = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION || 'us-east-1'
+});
 
 const ADMIN_EMAIL = 'admin@boyhappy.cl';
 
@@ -54,12 +55,12 @@ async function main() {
     const newPassword = generatePassword();
 
     // Resetear contraseña en Cognito
-    await cognito.adminSetUserPassword({
+    await cognito.send(new AdminSetUserPasswordCommand({
       UserPoolId: process.env.USER_POOL_ID,
       Username: ADMIN_EMAIL,
       Password: newPassword,
       Permanent: false // Será temporal, usuario debe cambiarla
-    }).promise();
+    }));
 
     console.log('✅ Contraseña reseteada exitosamente\n');
     console.log('='.repeat(60));

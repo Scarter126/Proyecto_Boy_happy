@@ -247,15 +247,27 @@ function extractUserFromToken(event) {
  * @returns {Object} { authorized: boolean, user: Object, response: Object }
  */
 function authorize(event, allowedRoles = null) {
-  const { httpMethod, resource } = event;
+  const { httpMethod, resource, path } = event;
+
+  // Usar path como resource si resource es /{proxy+}
+  const effectiveResource = (resource === '/{proxy+}' || !resource) ? path : resource;
 
   // Extraer información del usuario
   const user = extractUserFromToken(event);
 
+  // Debug logging
+  console.log('Auth Debug:', {
+    httpMethod,
+    resource,
+    path,
+    effectiveResource,
+    user: user ? { rol: user.rol, roles: user.roles, email: user.email } : null
+  });
+
   // Si no se puede extraer el usuario, denegar acceso (excepto rutas públicas)
   if (!user || !user.rol) {
     // Verificar si es una ruta pública
-    const permissions = PERMISSIONS_MATRIX[resource];
+    const permissions = PERMISSIONS_MATRIX[effectiveResource];
     if (permissions && permissions[httpMethod] && permissions[httpMethod].length === 0) {
       // Ruta pública, permitir acceso
       return {
@@ -265,12 +277,29 @@ function authorize(event, allowedRoles = null) {
       };
     }
 
+    // Logging detallado para debugging (sin exponer datos sensibles)
+    console.error('Auth failed - No user or role:', {
+      hasUser: !!user,
+      hasRol: user?.rol,
+      hasCookieHeader: !!event.headers?.cookie || !!event.headers?.Cookie,
+      hasAuthHeader: !!event.headers?.Authorization || !!event.headers?.authorization,
+      hasAuthorizerClaims: !!event.requestContext?.authorizer?.claims,
+      resource,
+      effectiveResource,
+      httpMethod,
+      path
+    });
+
     return {
       authorized: false,
       user: null,
       response: {
         statusCode: 401,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': 'true'
+        },
         body: JSON.stringify({
           error: 'No autenticado',
           message: 'Debe iniciar sesión para acceder a este recurso'
@@ -284,18 +313,22 @@ function authorize(event, allowedRoles = null) {
 
   // Si no se especificaron roles, usar la matriz de permisos
   if (!rolesPermitidos) {
-    const permissions = PERMISSIONS_MATRIX[resource];
+    const permissions = PERMISSIONS_MATRIX[effectiveResource];
     if (permissions && permissions[httpMethod]) {
       rolesPermitidos = permissions[httpMethod];
     } else {
       // Si no hay configuración específica, denegar por defecto
-      console.warn(`No hay configuración de permisos para ${httpMethod} ${resource}`);
+      console.warn(`No hay configuración de permisos para ${httpMethod} ${effectiveResource}`);
       return {
         authorized: false,
         user,
         response: {
           statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': 'true'
+          },
           body: JSON.stringify({
             error: 'Acceso denegado',
             message: 'No tiene permisos para acceder a este recurso'
@@ -318,13 +351,17 @@ function authorize(event, allowedRoles = null) {
   const tienePermiso = user.roles.some(rol => rolesPermitidos.includes(rol));
 
   if (!tienePermiso) {
-    console.warn(`Usuario ${user.email} con rol ${user.rol} intentó acceder a ${httpMethod} ${resource}`);
+    console.warn(`Usuario ${user.email} con rol ${user.rol} intentó acceder a ${httpMethod} ${effectiveResource}`);
     return {
       authorized: false,
       user,
       response: {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': 'true'
+        },
         body: JSON.stringify({
           error: 'Acceso denegado',
           message: `No tiene permisos para ejecutar esta operación. Roles requeridos: ${rolesPermitidos.join(', ')}`,
@@ -378,7 +415,11 @@ function authorizeResourceAccess(event, resourceOwnerRut) {
       user,
       response: {
         statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': 'true'
+        },
         body: JSON.stringify({
           error: 'Acceso denegado',
           message: 'No puede acceder a recursos de otros usuarios'

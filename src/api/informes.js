@@ -4,6 +4,7 @@ const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = re
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -27,12 +28,12 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // POST /informes o /informes-fono - Crear informe
     // ========================================
-    if (httpMethod === 'POST' && (resource === '/informes' || resource === '/informes-fono' || resource === '/informes/' || resource === '/informes-fono/')) {
+    if (httpMethod === 'POST' && (path === '/informes' || path === '/informes-fono' || path === '/informes/' || path === '/informes-fono/')) {
       const data = JSON.parse(event.body);
 
       if (!data.rutAlumno || !data.tipoEvaluacion) {
@@ -76,7 +77,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /informes o /informes-fono - Listar informes
     // ========================================
-    if (httpMethod === 'GET' && (resource === '/informes' || resource === '/informes-fono' || resource === '/informes/' || resource === '/informes-fono/')) {
+    if (httpMethod === 'GET' && (path === '/informes' || path === '/informes-fono' || path === '/informes/' || path === '/informes-fono/')) {
       // Si solicita un ID específico
       if (queryStringParameters?.id) {
         const result = await docClient.send(new ScanCommand({
@@ -131,7 +132,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /informes o /informes-fono?id=xxx - Modificar informe
     // ========================================
-    if (httpMethod === 'PUT' && (resource === '/informes' || resource === '/informes-fono' || resource === '/informes/' || resource === '/informes-fono/') && queryStringParameters?.id) {
+    if (httpMethod === 'PUT' && (path === '/informes' || path === '/informes-fono' || path === '/informes/' || path === '/informes-fono/') && queryStringParameters?.id) {
       const id = queryStringParameters.id;
       const data = JSON.parse(event.body);
 
@@ -213,7 +214,7 @@ exports.handler = async (event) => {
     // ========================================
     // DELETE /informes o /informes-fono?id=xxx - Eliminar informe
     // ========================================
-    if (httpMethod === 'DELETE' && (resource === '/informes' || resource === '/informes-fono' || resource === '/informes/' || resource === '/informes-fono/') && queryStringParameters?.id) {
+    if (httpMethod === 'DELETE' && (path === '/informes' || path === '/informes-fono' || path === '/informes/' || path === '/informes-fono/') && queryStringParameters?.id) {
       const id = queryStringParameters.id;
 
       // Buscar el informe

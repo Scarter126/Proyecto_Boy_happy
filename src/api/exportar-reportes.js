@@ -1,6 +1,7 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -24,12 +25,12 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // GET /exportar/asistencia?formato=csv|xlsx|pdf
     // ========================================
-    if (httpMethod === 'GET' && resource === '/exportar/asistencia') {
+    if (httpMethod === 'GET' && path === '/exportar/asistencia') {
       const { curso, fechaInicio, fechaFin, formato = 'csv' } = queryStringParameters || {};
 
       if (!curso) {
@@ -137,7 +138,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /exportar/notas?formato=csv|xlsx|pdf
     // ========================================
-    if (httpMethod === 'GET' && resource === '/exportar/notas') {
+    if (httpMethod === 'GET' && path === '/exportar/notas') {
       const { curso, asignatura, formato = 'csv' } = queryStringParameters || {};
 
       const recursosResult = await docClient.send(new ScanCommand({ TableName: RECURSOS_TABLE }));
@@ -198,7 +199,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /exportar/cumplimiento?formato=csv|xlsx|pdf
     // ========================================
-    if (httpMethod === 'GET' && resource === '/exportar/cumplimiento') {
+    if (httpMethod === 'GET' && path === '/exportar/cumplimiento') {
       const { formato = 'csv' } = queryStringParameters || {};
 
       const usuariosResult = await docClient.send(new ScanCommand({ TableName: USUARIOS_TABLE }));

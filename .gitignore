@@ -1,7 +1,6 @@
 # Ignorar todos los .js compilados
 *.js
-!jest.config.js
-!full-dev-server.js
+!jest.config.jest
 
 # Pero SI incluir los .js de las lambdas en src/
 !src/api/**/*.js
@@ -43,3 +42,8 @@ Thumbs.db
 # Test
 coverage/
 .nyc_output/
+
+# Documentation
+doc/
+
+.env

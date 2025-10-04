@@ -1362,3 +1362,23 @@ document.addEventListener('DOMContentLoaded', function() {
     bitacoraFecha.value = new Date().toISOString().split('T')[0];
   }
 });
+
+// ==============================================
+// INICIALIZACIÓN DE CURSOS DINÁMICOS
+// ==============================================
+
+// Cargar cursos dinámicamente al iniciar la página
+document.addEventListener('DOMContentLoaded', async function() {
+  // Cargar todos los selects de cursos
+  await cargarCursosEnSelect('asistenciaCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('consultaCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('reporteCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('notaCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('consultaCurso', { placeholder: '', incluirTodos: true });
+  await cargarCursosEnSelect('promedioCurso', { placeholder: '-- Seleccionar curso --' });
+  await cargarCursosEnSelect('materialCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('consultaMaterialCurso', { placeholder: '', incluirTodos: true });
+  await cargarCursosEnSelect('bitacoraCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('consultaBitacoraCurso', { placeholder: 'Seleccionar curso' });
+  await cargarCursosEnSelect('curso', { incluirTodos: true });
+});

@@ -1,55 +1,118 @@
 {
-  "generado": "2025-10-04T02:17:21.745Z",
+  "generado": "2025-10-04T09:25:25.224Z",
   "nota": "IMPORTANTE: Estas contraseñas son permanentes. Guárdalas en un lugar seguro.",
   "usuarios": [
     {
       "rol": "admin",
-      "nombre": "María González",
+      "nombre": "Virginia Kshlerin",
       "correo": "admin@boyhappy.cl",
       "password": "Admin123!",
-      "rut": "12345678-9"
+      "rut": "12812328-8"
     },
     {
       "rol": "profesor",
-      "nombre": "Carlos Ramírez",
-      "correo": "carlos.ramirez@boyhappy.cl",
+      "nombre": "Sonya Tremblay",
+      "correo": "sonya.tremblay@boyhappy.cl",
       "password": "Profesor123!",
-      "rut": "23456789-0"
+      "rut": "14716399-1"
     },
     {
       "rol": "profesor",
-      "nombre": "Ana Torres",
-      "correo": "ana.torres@boyhappy.cl",
+      "nombre": "Marge Wunsch",
+      "correo": "marge.wunsch@boyhappy.cl",
       "password": "Profesor123!",
-      "rut": "34567890-1"
+      "rut": "16321441-5"
+    },
+    {
+      "rol": "profesor",
+      "nombre": "Madeline Veum",
+      "correo": "madeline.veum@boyhappy.cl",
+      "password": "Profesor123!",
+      "rut": "14624543-9"
     },
     {
       "rol": "fono",
-      "nombre": "Patricia Muñoz",
-      "correo": "patricia.munoz@boyhappy.cl",
+      "nombre": "Carleton Lockman",
+      "correo": "carleton.lockman@boyhappy.cl",
       "password": "Fono123!",
-      "rut": "45678901-2"
+      "rut": "18180542-0"
     },
     {
       "rol": "fono",
-      "nombre": "Roberto Silva",
-      "correo": "roberto.silva@boyhappy.cl",
+      "nombre": "Elmer Kovacek",
+      "correo": "elmer.kovacek@boyhappy.cl",
       "password": "Fono123!",
-      "rut": "56789012-3"
+      "rut": "11760148-K"
     },
     {
       "rol": "alumno",
-      "nombre": "Sofía Pérez",
-      "correo": "apoderado.sofia@gmail.com",
+      "nombre": "Lorine Mann",
+      "correo": "apoderado.lorine@gmail.com",
       "password": "Alumno123!",
-      "rut": "67890123-4"
+      "rut": "10039345-K"
     },
     {
       "rol": "alumno",
-      "nombre": "Diego Morales",
-      "correo": "apoderado.diego@gmail.com",
+      "nombre": "Willa Cruickshank",
+      "correo": "apoderado.willa@gmail.com",
       "password": "Alumno123!",
-      "rut": "78901234-5"
+      "rut": "17276249-2"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Roberta Koch",
+      "correo": "apoderado.roberta@gmail.com",
+      "password": "Alumno123!",
+      "rut": "22006853-6"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Marcelle Howe",
+      "correo": "apoderado.marcelle@gmail.com",
+      "password": "Alumno123!",
+      "rut": "18499565-4"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Gertrude Mohr",
+      "correo": "apoderado.gertrude@gmail.com",
+      "password": "Alumno123!",
+      "rut": "20302633-1"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Rose Moore",
+      "correo": "apoderado.rose@gmail.com",
+      "password": "Alumno123!",
+      "rut": "23586498-3"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Lawson Wolf",
+      "correo": "apoderado.lawson@gmail.com",
+      "password": "Alumno123!",
+      "rut": "17990040-8"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Ford Hintz-Yundt",
+      "correo": "apoderado.ford@gmail.com",
+      "password": "Alumno123!",
+      "rut": "16816302-9"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Macie Weissnat-Jacobi",
+      "correo": "apoderado.macie@gmail.com",
+      "password": "Alumno123!",
+      "rut": "18199922-5"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Charley Botsford",
+      "correo": "apoderado.charley@gmail.com",
+      "password": "Alumno123!",
+      "rut": "14980773-K"
     }
   ]
 }

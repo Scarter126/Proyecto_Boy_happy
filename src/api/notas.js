@@ -2,6 +2,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -43,12 +44,12 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // POST /notas - Crear nota
     // ========================================
-    if (httpMethod === 'POST' && resource === '/notas') {
+    if (httpMethod === 'POST' && path === '/notas') {
       const data = JSON.parse(event.body);
 
       // Validaciones
@@ -127,7 +128,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /notas - Listar notas (con filtros)
     // ========================================
-    if (httpMethod === 'GET' && resource === '/notas') {
+    if (httpMethod === 'GET' && path === '/notas') {
       const params = {
         TableName: RECURSOS_TABLE,
         FilterExpression: '#tipo = :tipo',
@@ -204,7 +205,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /notas/agrupadas - Notas agrupadas por asignatura (para vista de alumnos)
     // ========================================
-    if (httpMethod === 'GET' && resource === '/notas/agrupadas') {
+    if (httpMethod === 'GET' && path === '/notas/agrupadas') {
       if (!queryStringParameters || !queryStringParameters.rutAlumno) {
         return {
           statusCode: 400,
@@ -278,7 +279,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /notas/promedios - Calcular promedios por alumno
     // ========================================
-    if (httpMethod === 'GET' && resource === '/notas/promedios') {
+    if (httpMethod === 'GET' && path === '/notas/promedios') {
       if (!queryStringParameters || !queryStringParameters.rutAlumno) {
         return {
           statusCode: 400,
@@ -369,7 +370,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /notas?id=xxx - Modificar nota
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/notas') {
+    if (httpMethod === 'PUT' && path === '/notas') {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,
@@ -472,7 +473,7 @@ exports.handler = async (event) => {
     // ========================================
     // DELETE /notas?id=xxx - Eliminar nota
     // ========================================
-    if (httpMethod === 'DELETE' && resource === '/notas') {
+    if (httpMethod === 'DELETE' && path === '/notas') {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,

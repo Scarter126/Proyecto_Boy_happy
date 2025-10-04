@@ -4,6 +4,7 @@ const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = re
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const { authorize } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -47,12 +48,12 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, resource, queryStringParameters } = event;
+    const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
     // POST /materiales - Subir material
     // ========================================
-    if (httpMethod === 'POST' && resource === '/materiales') {
+    if (httpMethod === 'POST' && path === '/materiales') {
       const data = JSON.parse(event.body);
 
       // Validaciones
@@ -128,7 +129,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /materiales - Listar materiales
     // ========================================
-    if (httpMethod === 'GET' && resource === '/materiales') {
+    if (httpMethod === 'GET' && path === '/materiales') {
       const params = {
         TableName: RECURSOS_TABLE,
         FilterExpression: '#tipo = :tipo',
@@ -209,7 +210,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /materiales?id=xxx - Modificar material
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/materiales' && queryStringParameters?.id) {
+    if (httpMethod === 'PUT' && path === '/materiales' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
       const data = JSON.parse(event.body);
 
@@ -310,7 +311,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /materiales/aprobar?id=xxx - Aprobar (Dirección)
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/materiales/aprobar') {
+    if (httpMethod === 'PUT' && path === '/materiales/aprobar') {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
@@ -366,7 +367,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /materiales/rechazar?id=xxx - Rechazar
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/materiales/rechazar') {
+    if (httpMethod === 'PUT' && path === '/materiales/rechazar') {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
@@ -422,7 +423,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /materiales/corregir?id=xxx - Solicitar corrección
     // ========================================
-    if (httpMethod === 'PUT' && resource === '/materiales/corregir') {
+    if (httpMethod === 'PUT' && path === '/materiales/corregir') {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
@@ -478,7 +479,7 @@ exports.handler = async (event) => {
     // ========================================
     // DELETE /materiales?id=xxx - Eliminar
     // ========================================
-    if (httpMethod === 'DELETE' && resource === '/materiales') {
+    if (httpMethod === 'DELETE' && path === '/materiales') {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,

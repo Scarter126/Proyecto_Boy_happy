@@ -1,7 +1,8 @@
-const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand, AdminRemoveUserFromGroupCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, ScanCommand, PutCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const { authorize, ROLES } = require('/opt/nodejs/authMiddleware');
+const { success, badRequest, notFound, serverError, parseBody } = require('/opt/nodejs/responseHelper');
 
 const cognito = new CognitoIdentityProviderClient({});
 const ddbClient = new DynamoDBClient({});
@@ -18,7 +19,7 @@ exports.handler = async (event) => {
       return authResult.response;
     }
 
-    const { httpMethod, body, queryStringParameters } = event;
+    const { httpMethod, body, queryStringParameters, path } = event;
 
     // POST - Crear usuario
     if (httpMethod === 'POST') {
@@ -53,13 +54,13 @@ exports.handler = async (event) => {
         };
       }
 
-      // Validar rol permitido
-      const rolesPermitidos = ['admin', 'profesor', 'fono', 'alumno'];
+      // Validar rol permitido (admin no se puede asignar desde esta API)
+      const rolesPermitidos = ['profesor', 'fono', 'alumno'];
       if (!rolesPermitidos.includes(data.rol)) {
         return {
           statusCode: 400,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Rol inválido. Debe ser: admin, profesor, fono o alumno' })
+          body: JSON.stringify({ error: 'Rol inválido. Debe ser: profesor, fono o alumno' })
         };
       }
 
@@ -151,6 +152,27 @@ exports.handler = async (event) => {
       const data = JSON.parse(body);
       const { rut } = queryStringParameters;
 
+      // Validar que no se intente asignar rol admin
+      if (data.rol && data.rol === 'admin') {
+        return {
+          statusCode: 403,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'No se puede asignar el rol admin desde esta API' })
+        };
+      }
+
+      // Validar rol si se proporciona
+      if (data.rol) {
+        const rolesPermitidos = ['profesor', 'fono', 'alumno'];
+        if (!rolesPermitidos.includes(data.rol)) {
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Rol inválido. Debe ser: profesor, fono o alumno' })
+          };
+        }
+      }
+
       await docClient.send(new UpdateCommand({
         TableName: TABLE_NAME,
         Key: { rut },
@@ -167,6 +189,105 @@ exports.handler = async (event) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Usuario actualizado correctamente' })
       };
+    }
+
+    // PUT /usuarios/cambiar-rol - Cambiar rol de usuario (RF-SES-03)
+    if (httpMethod === 'PUT' && path && path.includes('/cambiar-rol')) {
+      const { rut } = queryStringParameters;
+      const data = JSON.parse(body);
+
+      console.log('🔍 DEBUG cambiar-rol:', { rut, body, data });
+
+      if (!data.nuevoRol) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Campo requerido: nuevoRol' })
+        };
+      }
+
+      // Validar rol permitido
+      const rolesPermitidos = ['profesor', 'fono', 'alumno'];
+      if (!rolesPermitidos.includes(data.nuevoRol)) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Rol inválido. Debe ser: profesor, fono o alumno' })
+        };
+      }
+
+      // Obtener usuario actual de DynamoDB
+      const usuario = await docClient.send(new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { rut }
+      }));
+
+      if (!usuario.Item) {
+        return {
+          statusCode: 404,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Usuario no encontrado' })
+        };
+      }
+
+      const rolActual = usuario.Item.rol;
+      const correo = usuario.Item.correo;
+
+      // Si el rol es el mismo, no hacer nada
+      if (rolActual === data.nuevoRol) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'El usuario ya tiene ese rol' })
+        };
+      }
+
+      try {
+        // 1. Remover del grupo anterior en Cognito
+        await cognito.send(new AdminRemoveUserFromGroupCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: correo,
+          GroupName: rolActual
+        }));
+
+        // 2. Agregar al nuevo grupo en Cognito
+        await cognito.send(new AdminAddUserToGroupCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: correo,
+          GroupName: data.nuevoRol
+        }));
+
+        // 3. Actualizar DynamoDB
+        await docClient.send(new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { rut },
+          UpdateExpression: 'SET rol = :r, fechaActualizacion = :f',
+          ExpressionAttributeValues: {
+            ':r': data.nuevoRol,
+            ':f': new Date().toISOString()
+          }
+        }));
+
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'Rol actualizado correctamente',
+            rolAnterior: rolActual,
+            rolNuevo: data.nuevoRol
+          })
+        };
+
+      } catch (error) {
+        console.error('Error cambiando rol en Cognito:', error);
+
+        // Rollback en DynamoDB si falla Cognito
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Error al cambiar rol en Cognito: ' + error.message })
+        };
+      }
     }
 
     // DELETE - Soft delete (marcar como inactivo)

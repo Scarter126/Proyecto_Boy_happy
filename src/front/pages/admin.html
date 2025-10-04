@@ -14,19 +14,47 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <!-- Chart.js (CU-23) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- ⭐ SHAREDIFICACIÓN: Orden correcto de carga -->
+<!-- 1. HTTP Client (primero, otros dependen de él) -->
+<script src="../shared/http-client.js"></script>
+
+<!-- 2. SweetAlert2 (antes de components.js que lo usa) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- 3. SweetAlert2 Config (modular) -->
+<link rel="stylesheet" href="../scripts/admin/swal-styles.css">
+<script src="../scripts/admin/swal-config.js"></script>
+
+<!-- 4. Components y Stores (después de Swal y http-client) -->
+<script src="../shared/components.js"></script>
+<script src="../shared/hooks.js"></script>
+<script src="../shared/api-hooks.js"></script>
+<script src="../shared/alpine-components.js"></script>
+<script src="../shared/alpine-stores.js"></script>
+
+<!-- 5. Admin Alpine.js Apps (modulares) -->
+<script src="../scripts/admin/dashboard-app.js"></script>
+<script src="../scripts/admin/usuarios-app.js"></script>
+<script src="../scripts/admin/asistencia-app.js"></script>
+<script src="../scripts/admin/materiales-app.js"></script>
+<script src="../scripts/admin/comparativo-app.js"></script>
+<script src="../scripts/admin/matriculas-app.js"></script>
+
+<!-- 6. Alpine.js (AL FINAL, defer) -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<!-- 7. Validación de módulos -->
+<script src="../scripts/admin/index.js"></script>
+
 <!-- STYLES -->
+<link rel="stylesheet" href="../shared/boyhappy-styles.css">
 </head>
 <body>
 <aside class="sidebar">
   <div class="sidebar-logo">
     <i class="fas fa-graduation-cap"></i>
     <span>Boy Happy</span>
-  </div>
-
-  <!-- Búsqueda Global -->
-  <div class="global-search">
-    <input type="text" id="globalSearchInput" placeholder="🔍 Buscar...">
-    <div id="searchResults" class="search-dropdown"></div>
   </div>
 
   <ul class="sidebar-menu">
@@ -49,102 +77,217 @@
 </aside>
 
 <main class="main-content">
-  <!-- Dashboard Section (CU-24) -->
-  <div id="dashboard" class="section active">
+  <!-- ⭐ Dashboard Section - SHAREDIFICADO con Alpine.js + Hooks -->
+  <div id="dashboard" class="section active" x-data="dashboardApp()">
     <div class="content-header">
       <h1><i class="fas fa-tachometer-alt"></i> Dashboard de Indicadores</h1>
-      <button class="btn btn-primary" onclick="cargarDashboard()"><i class="fas fa-sync"></i> Actualizar</button>
     </div>
 
-    <!-- Indicadores Principales -->
-    <div id="indicadoresPrincipales" class="dashboard-grid">
-      <div class="indicator-card">
-        <div class="indicator-header">
-          <i class="fas fa-users fa-2x"></i>
-          <h3>Usuarios Activos</h3>
-        </div>
-        <div class="indicator-value" id="totalUsuarios">0</div>
-        <div class="indicator-trend" id="trendUsuarios"></div>
+    <!-- Loading State -->
+    <template x-if="loading && !data">
+      <div style="text-align: center; padding: 60px 20px; color: #667eea;">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p style="margin-top: 15px; font-size: 1.1em;">Cargando dashboard...</p>
       </div>
+    </template>
 
-      <div class="indicator-card">
-        <div class="indicator-header">
-          <i class="fas fa-calendar-check fa-2x"></i>
-          <h3>Asistencia Promedio</h3>
+    <!-- Dashboard Content (solo visible cuando hay datos) -->
+    <template x-if="data">
+      <div>
+        <!-- Indicadores Principales -->
+        <div class="dashboard-grid">
+          <!-- Usuarios Activos -->
+          <div class="indicator-card">
+            <div class="indicator-header">
+              <i class="fas fa-users fa-2x"></i>
+              <h3>Usuarios Activos</h3>
+            </div>
+            <div class="indicator-value" x-text="indicadores.totalUsuarios"></div>
+            <div class="indicator-trend">
+              <small style="color: #4caf50;">
+                <i class="fas fa-arrow-up"></i>
+                <span x-text="indicadores.trendUsuarios"></span>
+              </small>
+            </div>
+          </div>
+
+          <!-- Asistencia Promedio -->
+          <div class="indicator-card">
+            <div class="indicator-header">
+              <i class="fas fa-calendar-check fa-2x"></i>
+              <h3>Asistencia Promedio</h3>
+            </div>
+            <div class="indicator-value" x-text="indicadores.promedioAsistencia"></div>
+            <div class="indicator-semaphore" style="display: flex; flex-direction: row; gap: 8px; align-items: center; justify-content: center;">
+              <div class="semaphore-light"
+                   :class="{ active: indicadores.semaforoAsistencia === 'red' }"
+                   :style="indicadores.semaforoAsistencia === 'red' ? 'background: #f44336' : 'background: #ddd'"></div>
+              <div class="semaphore-light"
+                   :class="{ active: indicadores.semaforoAsistencia === 'yellow' }"
+                   :style="indicadores.semaforoAsistencia === 'yellow' ? 'background: #ff9800' : 'background: #ddd'"></div>
+              <div class="semaphore-light"
+                   :class="{ active: indicadores.semaforoAsistencia === 'green' }"
+                   :style="indicadores.semaforoAsistencia === 'green' ? 'background: #4caf50' : 'background: #ddd'"></div>
+            </div>
+          </div>
+
+          <!-- Materiales Activos -->
+          <div class="indicator-card">
+            <div class="indicator-header">
+              <i class="fas fa-folder fa-2x"></i>
+              <h3>Materiales Activos</h3>
+            </div>
+            <div class="indicator-value" x-text="indicadores.materialesActivos"></div>
+            <div class="indicator-semaphore" style="display: flex; flex-direction: row; gap: 8px; align-items: center; justify-content: center;">
+              <div class="semaphore-light"
+                   :class="{ active: indicadores.semaforoMateriales === 'red' }"
+                   :style="indicadores.semaforoMateriales === 'red' ? 'background: #f44336' : 'background: #ddd'"></div>
+              <div class="semaphore-light"
+                   :class="{ active: indicadores.semaforoMateriales === 'yellow' }"
+                   :style="indicadores.semaforoMateriales === 'yellow' ? 'background: #ff9800' : 'background: #ddd'"></div>
+              <div class="semaphore-light"
+                   :class="{ active: indicadores.semaforoMateriales === 'green' }"
+                   :style="indicadores.semaforoMateriales === 'green' ? 'background: #4caf50' : 'background: #ddd'"></div>
+            </div>
+          </div>
         </div>
-        <div class="indicator-value" id="promedioAsistencia">0%</div>
-        <div class="indicator-semaphore" id="semaforoAsistencia">
-          <div class="semaphore-light green"></div>
+
+        <!-- Alertas Críticas -->
+        <div class="card" style="margin-top: 25px;">
+          <h3><i class="fas fa-exclamation-triangle"></i> Alertas y Acciones Requeridas</h3>
+          <div style="margin-top: 15px;">
+            <template x-if="alertas.length === 0">
+              <p style="color: #4caf50; text-align: center;">
+                <i class="fas fa-check-circle"></i> No hay alertas críticas
+              </p>
+            </template>
+
+            <template x-for="alerta in alertas" :key="alerta.mensaje">
+              <div :style="`padding: 15px; margin-bottom: 10px; border-radius: 8px; background: ${alerta.color}15; border-left: 4px solid ${alerta.color}; display: flex; justify-content: space-between; align-items: center;`">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <i :class="'fas ' + alerta.icono" :style="`color: ${alerta.color}; font-size: 1.5em;`"></i>
+                  <div>
+                    <strong x-text="alerta.mensaje" :style="`color: ${alerta.color};`"></strong>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                      Prioridad: <span x-text="alerta.prioridad.toUpperCase()"></span>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn btn-sm" :style="`background: ${alerta.color}; color: white;`"
+                        @click="showSection(alerta.seccion)">
+                  <i class="fas fa-arrow-right"></i>
+                  <span x-text="alerta.accion"></span>
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Resumen por Curso -->
+        <div class="card" style="margin-top: 25px;">
+          <h3><i class="fas fa-chart-bar"></i> Resumen por Curso</h3>
+
+          <!-- Mensaje si no hay datos -->
+          <template x-if="resumenCursos.length === 0">
+            <p style="text-align: center; color: #999; padding: 40px;">
+              <i class="fas fa-info-circle"></i> No hay datos de cursos disponibles
+            </p>
+          </template>
+
+          <!-- Grid de cursos -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-top: 20px;">
+            <template x-for="(curso, index) in resumenCursos" :key="curso.codigo">
+              <div class="card"
+                   :style="`background: white; border: 3px solid ${$store.utils.getCursoColor(index)}; color: #333; padding: 20px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1);`"
+                   @click="console.log('Click en curso:', curso.codigo)"
+                   @mouseenter="$el.style.transform = 'translateY(-4px)'; $el.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)'"
+                   @mouseleave="$el.style.transform = 'translateY(0)'; $el.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)'">
+
+                <!-- Nombre del curso con semáforo -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                  <h4 :style="`margin: 0; color: ${$store.utils.getCursoColor(index)}; font-weight: 600;`" x-text="curso.nombre"></h4>
+                  <div class="semaphore-light active"
+                       :style="`width: 16px; height: 16px; background: ${curso.semaforoColor}; box-shadow: 0 0 8px ${curso.semaforoColor};`">
+                  </div>
+                </div>
+
+                <!-- Métricas -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div>
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">
+                      <i class="fas fa-users" :style="`color: ${$store.utils.getCursoColor(index)}`"></i> Alumnos
+                    </div>
+                    <div :style="`font-size: 1.6em; font-weight: bold; color: ${$store.utils.getCursoColor(index)};`" x-text="curso.alumnos"></div>
+                  </div>
+
+                  <div>
+                    <div style="font-size: 0.85em; color: #666; margin-bottom: 4px;">
+                      <i class="fas fa-calendar-check" :style="`color: ${$store.utils.getCursoColor(index)}`"></i> Asistencia
+                    </div>
+                    <div :style="`font-size: 1.6em; font-weight: bold; color: ${$store.utils.getCursoColor(index)};`" x-text="curso.asistencia"></div>
+                  </div>
+                </div>
+
+                <!-- Materiales -->
+                <div :style="`margin-top: 15px; padding-top: 15px; border-top: 2px solid ${$store.utils.getCursoColor(index)}33;`">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.85em; color: #666;">
+                      <i class="fas fa-book" :style="`color: ${$store.utils.getCursoColor(index)}`"></i> Materiales publicados
+                    </span>
+                    <span :style="`font-size: 1.1em; font-weight: bold; color: ${$store.utils.getCursoColor(index)};`" x-text="`${curso.materialesPublicados}/${curso.materialesTotal}`"></span>
+                  </div>
+                </div>
+
+                <!-- Detalle de registros -->
+                <div style="margin-top: 10px; font-size: 0.75em; color: #999; text-align: right;">
+                  <span x-text="`${curso.registrosAsistencia} registros`"></span>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
       </div>
-
-      <div class="indicator-card">
-        <div class="indicator-header">
-          <i class="fas fa-folder fa-2x"></i>
-          <h3>Materiales Pendientes</h3>
-        </div>
-        <div class="indicator-value" id="materialesPendientes">0</div>
-        <div class="indicator-semaphore" id="semaforoMateriales">
-          <div class="semaphore-light green"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Alertas Críticas -->
-    <div class="card" style="margin-top: 25px;">
-      <h3><i class="fas fa-exclamation-triangle"></i> Alertas y Acciones Requeridas</h3>
-      <div id="alertasCriticas"></div>
-    </div>
-
-    <!-- Resumen por Curso -->
-    <div class="card" style="margin-top: 25px;">
-      <h3><i class="fas fa-chart-bar"></i> Resumen por Curso</h3>
-      <div id="resumenCursos"></div>
-    </div>
+    </template>
   </div>
 
-  <!-- Comparativo Multi-Curso Section (CU-23) -->
-  <div id="comparativo" class="section">
+  <!-- Comparativo Multi-Curso Section (CU-23) - MIGRADO A ALPINE -->
+  <div id="comparativo" class="section" x-data="comparativoApp()">
     <div class="content-header">
       <h1><i class="fas fa-chart-line"></i> Comparativo Multi-Curso</h1>
-      <button class="btn btn-primary" onclick="generarComparativo()"><i class="fas fa-sync"></i> Actualizar</button>
     </div>
+
+    <!-- Loading State -->
+    <template x-if="loading">
+      <div style="text-align: center; padding: 60px 20px; color: #667eea;">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p style="margin-top: 15px; font-size: 1.1em;">Cargando datos comparativos...</p>
+      </div>
+    </template>
 
     <!-- Selector de Cursos -->
     <div class="card">
       <h3><i class="fas fa-filter"></i> Seleccionar Cursos para Comparar</h3>
       <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" class="curso-checkbox" value="medio-mayor" checked>
-          <span>Medio Mayor</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" class="curso-checkbox" value="prekinder-a" checked>
-          <span>Prekínder A</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" class="curso-checkbox" value="prekinder-b" checked>
-          <span>Prekínder B</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" class="curso-checkbox" value="kinder" checked>
-          <span>Kínder</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" class="curso-checkbox" value="extension" checked>
-          <span>Extensión Horaria</span>
-        </label>
+        <template x-for="curso in cursos" :key="curso.codigo">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox"
+                   :value="curso.codigo"
+                   x-model="cursosSeleccionados"
+                   class="curso-checkbox">
+            <span x-text="curso.nombre"></span>
+          </label>
+        </template>
       </div>
 
       <!-- Filtro de Período -->
       <div class="form-row" style="margin-top: 20px;">
         <div class="form-group">
-          <label for="comparativoFechaInicio">Período Desde</label>
-          <input type="date" id="comparativoFechaInicio">
+          <label>Período Desde</label>
+          <input type="date" x-model="fechaInicio">
         </div>
         <div class="form-group">
-          <label for="comparativoFechaFin">Período Hasta</label>
-          <input type="date" id="comparativoFechaFin">
+          <label>Período Hasta</label>
+          <input type="date" x-model="fechaFin">
         </div>
       </div>
     </div>
@@ -153,8 +296,8 @@
     <div class="card" style="margin-top: 25px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3><i class="fas fa-chart-bar"></i> Asistencia Promedio por Curso</h3>
-        <button class="btn btn-sm btn-success" onclick="exportarGrafico('chartAsistencia', 'asistencia_comparativo')">
-          <i class="fas fa-download"></i> Exportar Gráfico
+        <button class="btn btn-sm btn-success" @click="exportarGrafico('chartAsistencia', 'asistencia_comparativo')">
+          <i class="fas fa-download"></i> Exportar PNG
         </button>
       </div>
       <canvas id="chartAsistencia" style="max-height: 400px;"></canvas>
@@ -164,8 +307,8 @@
     <div class="card" style="margin-top: 25px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3><i class="fas fa-chart-line"></i> Evolución de Asistencia en el Tiempo</h3>
-        <button class="btn btn-sm btn-success" onclick="exportarGrafico('chartEvolucion', 'evolucion_asistencia')">
-          <i class="fas fa-download"></i> Exportar Gráfico
+        <button class="btn btn-sm btn-success" @click="exportarGrafico('chartEvolucion', 'evolucion_asistencia')">
+          <i class="fas fa-download"></i> Exportar PNG
         </button>
       </div>
       <canvas id="chartEvolucion" style="max-height: 400px;"></canvas>
@@ -175,8 +318,8 @@
     <div class="card" style="margin-top: 25px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3><i class="fas fa-chart-pie"></i> Distribución de Niveles de Logro</h3>
-        <button class="btn btn-sm btn-success" onclick="exportarGrafico('chartNiveles', 'niveles_logro')">
-          <i class="fas fa-download"></i> Exportar Gráfico
+        <button class="btn btn-sm btn-success" @click="exportarGrafico('chartNiveles', 'niveles_logro')">
+          <i class="fas fa-download"></i> Exportar PNG
         </button>
       </div>
       <canvas id="chartNiveles" style="max-height: 400px;"></canvas>
@@ -186,11 +329,50 @@
     <div class="card" style="margin-top: 25px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3><i class="fas fa-table"></i> Resumen Numérico Comparativo</h3>
-        <button class="btn btn-sm btn-success" onclick="exportarTablaComparativa()">
+        <button class="btn btn-sm btn-success" @click="exportarTablaExcel()">
           <i class="fas fa-file-excel"></i> Exportar a Excel
         </button>
       </div>
-      <div id="tablaComparativa"></div>
+
+      <!-- Tabla renderizada con Alpine -->
+      <template x-if="datosComparativos.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Curso</th>
+              <th>Asistencia (%)</th>
+              <th>Total Evaluaciones</th>
+              <th>Logrado (L)</th>
+              <th>En Desarrollo (OD)</th>
+              <th>No Logrado (NL)</th>
+              <th>No Trabajado (NT)</th>
+              <th>Promedio</th>
+              <th>Materiales</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="d in datosComparativos" :key="d.codigo">
+              <tr>
+                <td><strong x-text="d.curso"></strong></td>
+                <td :style="`background: ${getColorFondo(d.asistencia)};`" x-text="d.asistencia + '%'"></td>
+                <td x-text="d.totalEvaluaciones"></td>
+                <td x-text="d.logrado"></td>
+                <td x-text="d.enDesarrollo"></td>
+                <td x-text="d.noLogrado"></td>
+                <td x-text="d.noTrabajado"></td>
+                <td><strong x-text="d.promedioNumerico"></strong></td>
+                <td x-text="d.materiales"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </template>
+
+      <template x-if="datosComparativos.length === 0">
+        <p style="text-align: center; color: #999; padding: 40px;">
+          <i class="fas fa-info-circle"></i> Selecciona cursos y período para ver el comparativo
+        </p>
+      </template>
     </div>
   </div>
 
@@ -262,16 +444,145 @@
     </div>
   </div>
 
-  <!-- Matrículas Section -->
-  <div id="matriculas" class="section">
+  <!-- Matrículas Section - MIGRADO A ALPINE.JS -->
+  <div id="matriculas" class="section" x-data="matriculasApp()">
     <div class="content-header">
       <h1><i class="fas fa-file-alt"></i> Solicitudes de Matrícula</h1>
     </div>
-    <div id="listaMatriculas"></div>
+
+    <!-- Estadísticas -->
+    <div class="dashboard-grid" style="margin-bottom: 25px;">
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <i class="fas fa-clock fa-2x" style="color: #ff9800;"></i>
+          <h3>Pendientes</h3>
+        </div>
+        <div class="indicator-value" x-text="estadisticas.pendientes"></div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <i class="fas fa-check-circle fa-2x" style="color: #4caf50;"></i>
+          <h3>Aprobadas</h3>
+        </div>
+        <div class="indicator-value" x-text="estadisticas.aprobadas"></div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <i class="fas fa-times-circle fa-2x" style="color: #f44336;"></i>
+          <h3>Rechazadas</h3>
+        </div>
+        <div class="indicator-value" x-text="estadisticas.rechazadas"></div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <i class="fas fa-file-alt fa-2x" style="color: #667eea;"></i>
+          <h3>Total</h3>
+        </div>
+        <div class="indicator-value" x-text="estadisticas.total"></div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card" style="margin-bottom: 20px;">
+      <h3>Filtros</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Estado</label>
+          <select x-model="filtroEstado">
+            <option value="">Todas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="aprobada">Aprobadas</option>
+            <option value="rechazada">Rechazadas</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <template x-if="matriculas.loading && !matriculas.data">
+      <div class="card" style="text-align: center; padding: 40px;">
+        <i class="fas fa-spinner fa-spin fa-2x" style="color: #667eea;"></i>
+        <p style="margin-top: 15px;">Cargando solicitudes...</p>
+      </div>
+    </template>
+
+    <!-- Lista de Matrículas -->
+    <template x-if="matriculas.data">
+      <div class="card">
+        <h3 x-text="`Solicitudes (${matriculasFiltradas.length})`"></h3>
+
+        <template x-if="matriculasFiltradas.length === 0">
+          <p style="text-align: center; color: #666; padding: 30px;">
+            No hay solicitudes de matrícula
+          </p>
+        </template>
+
+        <template x-if="matriculasFiltradas.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>RUT</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="mat in matriculasFiltradas" :key="mat.id">
+                <tr>
+                  <td><strong x-text="mat.nombre"></strong></td>
+                  <td x-text="mat.rut"></td>
+                  <td x-text="mat.correo"></td>
+                  <td x-text="mat.telefono || '-'"></td>
+                  <td x-text="formatDate(mat.fechaRegistro)"></td>
+                  <td>
+                    <span :style="`background: ${getEstadoColor(mat.estado)}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;`"
+                          x-text="getEstadoTexto(mat.estado)"></span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-primary" @click="verDetalle(mat)" title="Ver Detalle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+
+                    <template x-if="mat.estado === 'pendiente'">
+                      <button class="btn btn-sm btn-success" @click="aprobarMatricula(mat)" title="Aprobar">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger" @click="rechazarMatricula(mat)" title="Rechazar">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </template>
+
+                    <template x-if="mat.estado === 'aprobada' && !mat.usuarioCreado">
+                      <button class="btn btn-sm btn-success" @click="crearUsuarioDesdeMatricula(mat)" title="Crear Usuario">
+                        <i class="fas fa-user-plus"></i> Crear Usuario
+                      </button>
+                    </template>
+
+                    <template x-if="mat.usuarioCreado">
+                      <span style="color: #4caf50; font-size: 0.85em;">
+                        <i class="fas fa-check-circle"></i> Usuario creado
+                      </span>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+      </div>
+    </template>
   </div>
 
   <!-- Asistencia Section -->
-  <div id="asistencia" class="section">
+  <!-- ✅ Asistencia Section - MIGRADO A ALPINE.JS -->
+  <div id="asistencia" class="section" x-data="asistenciaApp()">
     <div class="content-header">
       <h1><i class="fas fa-calendar-check"></i> Supervisión de Asistencia</h1>
     </div>
@@ -280,8 +591,8 @@
       <h3>Filtros</h3>
       <div class="form-row">
         <div class="form-group">
-          <label for="adminAsistenciaCurso">Curso</label>
-          <select id="adminAsistenciaCurso" onchange="cargarAsistenciaAdmin()">
+          <label>Curso</label>
+          <select x-model="filtros.curso" @change="aplicarFiltros()">
             <option value="">Todos los cursos</option>
             <option value="medio-mayor">Medio Mayor</option>
             <option value="prekinder-a">Prekínder A</option>
@@ -292,52 +603,102 @@
         </div>
 
         <div class="form-group">
-          <label for="adminAsistenciaFechaInicio">Desde</label>
-          <input type="date" id="adminAsistenciaFechaInicio" onchange="cargarAsistenciaAdmin()">
+          <label>Desde</label>
+          <input type="date" x-model="filtros.fechaInicio" @change="aplicarFiltros()">
         </div>
 
         <div class="form-group">
-          <label for="adminAsistenciaFechaFin">Hasta</label>
-          <input type="date" id="adminAsistenciaFechaFin" onchange="cargarAsistenciaAdmin()">
+          <label>Hasta</label>
+          <input type="date" x-model="filtros.fechaFin" @change="aplicarFiltros()">
         </div>
       </div>
     </div>
 
-    <div id="resumenAsistenciaAdmin" class="card" style="margin-top: 20px;">
-      <h3>Resumen General</h3>
-      <div style="display: flex; gap: 20px; margin-top: 15px; flex-wrap: wrap;">
-        <div class="stat-card presente">
-          <i class="fas fa-check"></i>
-          <div>
-            <h4 id="adminTotalPresente">0</h4>
-            <p>Presentes</p>
+    <!-- Loading State -->
+    <div :style="(asistencia.loading && !asistencia.data) ? '' : 'display: none'" class="card" style="margin-top: 20px; text-align: center; padding: 40px;">
+      <i class="fas fa-spinner fa-spin fa-2x" style="color: #667eea;"></i>
+      <p style="margin-top: 15px;">Cargando asistencia...</p>
+    </div>
+
+    <!-- Resumen General -->
+    <div :style="asistencia.data ? '' : 'display: none'">
+      <div>
+        <div class="card" style="margin-top: 20px;">
+          <h3>Resumen General</h3>
+          <div style="display: flex; gap: 20px; margin-top: 15px; flex-wrap: wrap;">
+            <div class="stat-card presente">
+              <i class="fas fa-check"></i>
+              <div>
+                <h4 x-text="resumen.presente"></h4>
+                <p>Presentes</p>
+              </div>
+            </div>
+            <div class="stat-card ausente">
+              <i class="fas fa-times"></i>
+              <div>
+                <h4 x-text="resumen.ausente"></h4>
+                <p>Ausentes</p>
+              </div>
+            </div>
+            <div class="stat-card atrasado">
+              <i class="fas fa-clock"></i>
+              <div>
+                <h4 x-text="resumen.atrasado"></h4>
+                <p>Atrasados</p>
+              </div>
+            </div>
+            <div class="stat-card porcentaje">
+              <i class="fas fa-percentage"></i>
+              <div>
+                <h4 x-text="resumen.porcentaje + '%'"></h4>
+                <p>Asistencia</p>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="stat-card ausente">
-          <i class="fas fa-times"></i>
-          <div>
-            <h4 id="adminTotalAusente">0</h4>
-            <p>Ausentes</p>
-          </div>
-        </div>
-        <div class="stat-card atrasado">
-          <i class="fas fa-clock"></i>
-          <div>
-            <h4 id="adminTotalAtrasado">0</h4>
-            <p>Atrasados</p>
-          </div>
-        </div>
-        <div class="stat-card porcentaje">
-          <i class="fas fa-percentage"></i>
-          <div>
-            <h4 id="adminPorcentajeAsistencia">0%</h4>
-            <p>Asistencia</p>
-          </div>
+
+        <!-- Detalle por Alumno -->
+        <div class="card" style="margin-top: 20px;">
+          <h3>Detalle por Alumno</h3>
+
+          <p :style="(detalleAlumnos && detalleAlumnos.length === 0) ? '' : 'display: none'" style="text-align: center; padding: 30px; color: #999;">
+            No hay registros de asistencia para los filtros seleccionados.
+          </p>
+
+          <table :style="(detalleAlumnos && detalleAlumnos.length > 0) ? '' : 'display: none'" style="width: 100%; margin-top: 15px;">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>RUT</th>
+                  <th>Curso</th>
+                  <th>Presente</th>
+                  <th>Ausente</th>
+                  <th>Atrasado</th>
+                  <th>% Asistencia</th>
+                  <th>Alerta</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="a in (detalleAlumnos || [])" :key="a.rut">
+                  <tr :style="a.tieneAlerta ? 'background-color: #ffe6e6;' : ''">
+                    <td x-text="a.nombre"></td>
+                    <td x-text="a.rut"></td>
+                    <td x-text="a.curso"></td>
+                    <td><span class="badge-presente" x-text="a.presente"></span></td>
+                    <td><span class="badge-ausente" x-text="a.ausente"></span></td>
+                    <td><span class="badge-atrasado" x-text="a.atrasado"></span></td>
+                    <td><strong x-text="a.porcentaje + '%'"></strong></td>
+                    <td>
+                      <span :style="a.tieneAlerta ? '' : 'display: none'" style="color: red;">⚠️ Bajo</span>
+                      <span :style="!a.tieneAlerta ? '' : 'display: none'">✅</span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+          </table>
         </div>
       </div>
     </div>
-
-    <div id="listaAsistenciaAdmin"></div>
   </div>
 
   <!-- Categorías Section -->
@@ -378,8 +739,8 @@
     </div>
   </div>
 
-  <!-- Materiales Section (CU-13, 14, 15, 16) -->
-  <div id="materiales" class="section">
+  <!-- ✅ Materiales Section - MIGRADO A ALPINE.JS -->
+  <div id="materiales" class="section" x-data="materialesApp()">
     <div class="content-header">
       <h1><i class="fas fa-folder-open"></i> Supervisión de Materiales Pedagógicos</h1>
     </div>
@@ -388,8 +749,8 @@
       <h3>Filtros</h3>
       <div class="form-row">
         <div class="form-group">
-          <label for="filtroEstadoMaterial">Estado</label>
-          <select id="filtroEstadoMaterial">
+          <label>Estado</label>
+          <select x-model="filtros.estado" @change="aplicarFiltros()">
             <option value="">Todos</option>
             <option value="pendiente">Pendiente Revisión</option>
             <option value="aprobado">Aprobado</option>
@@ -398,8 +759,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="filtroCursoMaterial">Curso</label>
-          <select id="filtroCursoMaterial">
+          <label>Curso</label>
+          <select x-model="filtros.curso" @change="aplicarFiltros()">
             <option value="">Todos</option>
             <option value="medio-mayor">Medio Mayor</option>
             <option value="prekinder-a">Prekínder A</option>
@@ -408,12 +769,68 @@
           </select>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="cargarMateriales()">
-        <i class="fas fa-search"></i> Buscar Materiales
-      </button>
     </div>
 
-    <div id="listaMateriales" style="margin-top: 20px;"></div>
+    <!-- Loading State -->
+    <div :style="(materiales.loading && !materiales.data) ? '' : 'display: none'" class="card" style="margin-top: 20px; text-align: center; padding: 40px;">
+      <i class="fas fa-spinner fa-spin fa-2x" style="color: #667eea;"></i>
+      <p style="margin-top: 15px;">Cargando materiales...</p>
+    </div>
+
+    <!-- Materiales Table -->
+    <div :style="materiales.data ? '' : 'display: none'" class="card" style="margin-top: 20px;">
+      <h3 x-text="`Materiales Encontrados (${(materialesFiltrados || []).length})`"></h3>
+
+      <p :style="(materialesFiltrados && materialesFiltrados.length === 0) ? '' : 'display: none'" style="text-align: center; color: #666; padding: 30px;">
+        No se encontraron materiales
+      </p>
+
+      <table :style="(materialesFiltrados && materialesFiltrados.length > 0) ? '' : 'display: none'" class="data-table">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Curso</th>
+                <th>Asignatura</th>
+                <th>Profesor</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="mat in (materialesFiltrados || [])" :key="mat.id">
+                <tr>
+                  <td><strong x-text="mat.titulo"></strong></td>
+                  <td x-text="mat.curso"></td>
+                  <td x-text="mat.asignatura"></td>
+                  <td x-text="mat.profesor"></td>
+                  <td x-text="$store.utils.formatDate(mat.fechaSubida)"></td>
+                  <td>
+                    <span :style="`background: ${$store.utils.getEstadoColor(mat.estado)}; color: white; padding: 4px 12px; border-radius: 12px;`"
+                          x-text="$store.utils.getEstadoTexto(mat.estado)"></span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-primary" @click="verDetalle(mat)" title="Ver Detalle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <template x-if="mat.estado === 'pendiente' || mat.estado === 'requiere_correccion'">
+                      <button class="btn btn-sm btn-success" @click="aprobar(mat)" title="Aprobar">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button class="btn btn-sm btn-danger" @click="rechazar(mat)" title="Rechazar">
+                        <i class="fas fa-times"></i>
+                      </button>
+                      <button class="btn btn-sm btn-warning" @click="solicitarCorreccion(mat)" title="Solicitar Corrección">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+      </div>
+    </div>
   </div>
 
   <!-- Configuración Section (CU-11, 12) -->
@@ -534,11 +951,7 @@
         <div class="form-group">
           <label for="retroCurso">Curso (Opcional)</label>
           <select id="retroCurso">
-            <option value="">-- Sin especificar --</option>
-            <option value="medio-mayor">Medio Mayor</option>
-            <option value="prekinder-a">Prekínder A</option>
-            <option value="prekinder-b">Prekínder B</option>
-            <option value="kinder">Kínder</option>
+            <!-- Los cursos se cargarán dinámicamente -->
           </select>
         </div>
 
@@ -592,146 +1005,185 @@
   </div>
 
   <!-- Gestión de Usuarios Section (Consolidado: Usuarios, Cursos, Profesores, Aceptados) -->
-  <div id="usuarios" class="section">
+  <!-- Usuarios Section -->
+  <div id="usuarios" class="section" x-data="usuariosApp()">
     <div class="content-header">
       <h1><i class="fas fa-users"></i> Gestión de Usuarios</h1>
+      <button class="btn btn-primary" @click="mostrarFormulario = !mostrarFormulario">
+        <i class="fas fa-plus"></i> Nuevo Usuario
+      </button>
     </div>
 
-    <!-- Tabs para sub-secciones -->
-    <div class="tabs-container">
-      <div class="tabs">
-        <button class="tab-btn active" onclick="showEntityTab('usuarios-tab')">
-          <i class="fas fa-users"></i> Usuarios
-        </button>
-        <button class="tab-btn" onclick="showEntityTab('cursos-tab')">
-          <i class="fas fa-book"></i> Cursos
-        </button>
-        <button class="tab-btn" onclick="showEntityTab('profesores-tab')">
-          <i class="fas fa-chalkboard-teacher"></i> Profesores
-        </button>
-        <button class="tab-btn" onclick="showEntityTab('aceptados-tab')">
-          <i class="fas fa-check-circle"></i> Alumnos Aceptados
-        </button>
-      </div>
-    </div>
-
-    <!-- Tab: Usuarios -->
-    <div id="usuarios-tab" class="entity-tab active">
-      <div class="content-header" style="margin-top: 20px;">
-        <h2><i class="fas fa-users"></i> Gestión de Usuarios</h2>
-        <button class="btn btn-primary" onclick="mostrarFormularioUsuario()"><i class="fas fa-plus"></i> Nuevo Usuario</button>
-      </div>
-
-      <div id="formUsuario" class="form-container" style="display:none;">
-        <h3>Crear Nuevo Usuario</h3>
+    <!-- Filtros -->
+    <div class="card" style="margin-bottom: 20px;">
+      <h3>Filtros</h3>
+      <div class="form-row">
         <div class="form-group">
-          <label for="rutUsuario">RUT</label>
-          <input type="text" id="rutUsuario" placeholder="12345678-9" required>
+          <label>Buscar</label>
+          <input type="text" x-model="filtros.busqueda" placeholder="Buscar por nombre, RUT o correo...">
         </div>
         <div class="form-group">
-          <label for="nombreUsuario">Nombre completo</label>
-          <input type="text" id="nombreUsuario" placeholder="Nombre completo" required>
-        </div>
-        <div class="form-group">
-          <label for="correoUsuario">Email</label>
-          <input type="email" id="correoUsuario" placeholder="correo@ejemplo.com" required>
-        </div>
-        <div class="form-group">
-          <label for="telefonoUsuario">Teléfono</label>
-          <input type="tel" id="telefonoUsuario" placeholder="+56 9 1234 5678">
-        </div>
-        <div class="form-group">
-          <label for="rolUsuario">Rol</label>
-          <select id="rolUsuario">
-            <option value="admin">Administrador</option>
-            <option value="profesor">Profesor</option>
-            <option value="fono">Fonoaudiólogo</option>
-            <option value="alumno">Alumno/Apoderado</option>
+          <label>Rol</label>
+          <select x-model="filtros.rol">
+            <option value="">Todos los roles</option>
+            <option value="profesor">Profesores</option>
+            <option value="fono">Fonoaudiólogos</option>
+            <option value="alumno">Alumnos/Apoderados</option>
           </select>
         </div>
-        <button class="btn btn-success" onclick="crearUsuario()">Guardar Usuario</button>
-        <button class="btn btn-secondary" onclick="ocultarFormularioUsuario()">Cancelar</button>
+        <div class="form-group">
+          <label>Estado</label>
+          <select x-model="filtros.estado">
+            <option value="">Todos los estados</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+      <!-- Formulario de Nuevo Usuario -->
+      <div :style="mostrarFormulario ? '' : 'display: none'" class="form-container" style="margin-bottom: 20px;">
+        <h3 x-text="usuarioEditando ? 'Editar Usuario' : 'Crear Nuevo Usuario'"></h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <!-- Columna 1 -->
+          <div>
+            <div class="form-group">
+              <label>RUT <span style="color: red;">*</span></label>
+              <input type="text" x-model="nuevoUsuario.rut" placeholder="12345678-9" required :disabled="!!usuarioEditando">
+            </div>
+
+            <div class="form-group">
+              <label>Nombre <span style="color: red;">*</span></label>
+              <input type="text" x-model="nuevoUsuario.nombre" placeholder="Nombre" required>
+            </div>
+
+            <div class="form-group">
+              <label>Apellido <span style="color: red;">*</span></label>
+              <input type="text" x-model="nuevoUsuario.apellido" placeholder="Apellido" required>
+            </div>
+
+            <div class="form-group">
+              <label>Correo Electrónico <span style="color: red;">*</span></label>
+              <input type="email" x-model="nuevoUsuario.correo" placeholder="correo@ejemplo.com" required>
+            </div>
+          </div>
+
+          <!-- Columna 2 -->
+          <div>
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="tel" x-model="nuevoUsuario.telefono" placeholder="+56 9 1234 5678">
+            </div>
+
+            <div class="form-group">
+              <label>Rol <span style="color: red;">*</span></label>
+              <select x-model="nuevoUsuario.rol" required>
+                <option value="">Seleccione un rol</option>
+                <option value="profesor">Profesor/Docente</option>
+                <option value="fono">Fonoaudiólogo/a</option>
+                <option value="alumno">Alumno/Apoderado</option>
+              </select>
+            </div>
+
+            <div class="form-group" x-show="usuarioEditando">
+              <label>Estado</label>
+              <select x-model="nuevoUsuario.activo">
+                <option :value="true">Activo</option>
+                <option :value="false">Inactivo</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px;">
+          <button class="btn btn-success" @click="guardarUsuario()" :disabled="crearMutation.loading || updateMutation.loading">
+            <i class="fas fa-save"></i>
+            <span x-text="(crearMutation.loading || updateMutation.loading) ? 'Guardando...' : (usuarioEditando ? 'Actualizar Usuario' : 'Guardar Usuario')"></span>
+          </button>
+          <button class="btn btn-secondary" @click="cancelarFormulario()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
       </div>
 
+      <!-- Tabla de Usuarios -->
       <div class="card">
         <h3>Lista de Usuarios</h3>
-        <table id="tablaUsuarios">
+
+        <!-- Loading state -->
+        <div :style="(usuarios.loading && !usuarios.data) ? '' : 'display: none'" style="text-align: center; padding: 30px;">
+          <i class="fas fa-spinner fa-spin fa-2x" style="color: #667eea;"></i>
+          <p>Cargando usuarios...</p>
+        </div>
+
+        <!-- Tabla con datos -->
+        <table :style="(usuarios.data && usuarios.data.length > 0) ? '' : 'display: none'">
           <thead>
             <tr>
               <th>RUT</th>
               <th>Nombre</th>
+              <th>Apellido</th>
               <th>Email</th>
               <th>Teléfono</th>
               <th>Rol</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+            <template x-for="u in usuariosFiltrados" :key="u.rut">
+              <tr :style="u.activo === false ? 'opacity: 0.6; background: #f5f5f5;' : ''">
+                <td x-text="u.rut"></td>
+                <td x-text="u.nombre"></td>
+                <td x-text="u.apellido || '-'"></td>
+                <td x-text="u.correo"></td>
+                <td x-text="u.telefono || '-'"></td>
+                <td>
+                  <span
+                    class="badge"
+                    :style="`background: ${getRolColor(u.rol)}; color: white; padding: 4px 12px; border-radius: 12px;`"
+                    x-text="getRolLabel(u.rol)">
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    :style="`background: ${u.activo !== false ? '#4caf50' : '#f44336'}; color: white; padding: 4px 12px; border-radius: 12px;`"
+                    x-text="u.activo !== false ? 'Activo' : 'Inactivo'">
+                  </span>
+                </td>
+                <td>
+                  <button class="btn-sm btn-primary" @click="cambiarRol(u)" title="Cambiar Rol" :disabled="u.activo === false">
+                    <i class="fas fa-user-tag"></i>
+                  </button>
+                  <button class="btn-sm btn-secondary" @click="editarUsuario(u)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button
+                    class="btn-sm"
+                    :class="u.activo !== false ? 'btn-danger' : 'btn-success'"
+                    @click="toggleEstadoUsuario(u)"
+                    :title="u.activo !== false ? 'Desactivar' : 'Activar'">
+                    <i :class="u.activo !== false ? 'fas fa-ban' : 'fas fa-check'"></i>
+                  </button>
+                  <button
+                    :style="tieneMatriculaPendiente(u) ? '' : 'display: none'"
+                    class="btn-sm btn-success"
+                    @click="aprobarMatricula(u)"
+                    title="Aprobar Matrícula">
+                    <i class="fas fa-check-circle"></i>
+                  </button>
+                </td>
+              </tr>
+            </template>
+          </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Tab: Cursos -->
-    <div id="cursos-tab" class="entity-tab">
-      <div class="content-header" style="margin-top: 20px;">
-        <h2><i class="fas fa-book"></i> Cursos</h2>
-        <button class="btn btn-primary" onclick="nuevoCurso()"><i class="fas fa-plus"></i> Añadir Curso</button>
-      </div>
-      <div class="card">
-        <table id="cursosTable">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Profesor a cargo</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
 
-    <!-- Tab: Profesores -->
-    <div id="profesores-tab" class="entity-tab">
-      <div class="content-header" style="margin-top: 20px;">
-        <h2><i class="fas fa-chalkboard-teacher"></i> Profesores</h2>
-        <button class="btn btn-primary" onclick="nuevoProfesor()"><i class="fas fa-plus"></i> Añadir Profesor</button>
-      </div>
-      <div class="card">
-        <table id="profesoresTable">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Teléfono</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Tab: Alumnos Aceptados -->
-    <div id="aceptados-tab" class="entity-tab">
-      <div class="content-header" style="margin-top: 20px;">
-        <h2><i class="fas fa-check-circle"></i> Alumnos Aceptados</h2>
-      </div>
-      <div class="card">
-        <table id="aceptadosTable">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>RUT</th>
-              <th>Fecha Nacimiento</th>
-              <th>Correo</th>
-              <th>Teléfono</th>
-              <th>Curso</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </main>
 
@@ -786,5 +1238,10 @@
 </div>
 
 <!-- SCRIPT -->
+<script src="../scripts/admin.js"></script>
+
+<!-- ✅ Alpine.js Apps ahora están en módulos separados (scripts/admin/*.js) -->
+
+
 </body>
 </html>

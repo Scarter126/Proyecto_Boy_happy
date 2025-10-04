@@ -27,6 +27,7 @@ exports.handler = async (event) => {
     const scriptPath = path.join(__dirname, 'scripts', route.script);
     const cssPath = path.join(__dirname, 'shared', 'boyhappy-styles.css');
     const authJsPath = path.join(__dirname, 'shared', 'auth.js');
+    const commonJsPath = path.join(__dirname, 'scripts', 'common.js');
 
     // Leer el archivo HTML
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
@@ -35,6 +36,7 @@ exports.handler = async (event) => {
     const cssContent = fs.readFileSync(cssPath, 'utf8');
     let scriptContent = fs.readFileSync(scriptPath, 'utf8');
     const authJs = fs.readFileSync(authJsPath, 'utf8');
+    const commonJs = fs.readFileSync(commonJsPath, 'utf8');
 
     // Reemplazar variables de entorno en el HTML
     htmlContent = htmlContent
@@ -62,8 +64,8 @@ exports.handler = async (event) => {
       const REDIRECT_URI = API_URL + '/callback';
     </script>`;
 
-    // Inyectar JavaScript en el HTML (incluir config + auth.js + script específico de la página)
-    const scriptTag = `${configScript}\n    <script>${authJs}</script>\n    <script>${scriptContent}</script>`;
+    // Inyectar JavaScript en el HTML (incluir config + common.js + auth.js + script específico de la página)
+    const scriptTag = `${configScript}\n    <script>${commonJs}</script>\n    <script>${authJs}</script>\n    <script>${scriptContent}</script>`;
     htmlContent = htmlContent.replace('<!-- SCRIPT -->', scriptTag);
 
     return {
