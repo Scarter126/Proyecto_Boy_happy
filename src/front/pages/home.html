@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boy Happy - Escuela de Lenguaje</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- STYLES -->
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Boy Happy</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#inicio">Inicio</a></li>
+                <li><a href="#noticias">Noticias</a></li>
+                <li><a href="#profesionales">Nuestro Equipo</a></li>
+                <li><a href="#ubicacion">Ubicación</a></li>
+                <li><a href="#reservas">Matrícula</a></li>
+                <li><a href="#" onclick="irACognito()" class="btn-login">Ingresar</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">¡Bienvenidos a Boy Happy!</h1>
+            <p class="hero-subtitle">Donde aprender a comunicarse es una aventura divertida</p>
+            <div class="hero-buttons">
+                <button class="btn-primary" onclick="openContactModal()">Contáctanos</button>
+                <button class="btn-secondary" onclick="document.getElementById('reservas').scrollIntoView()">Solicitar Matrícula</button>
+            </div>
+        </div>
+        <div class="hero-illustration">
+            <div class="floating-bubble bubble-1">🎈</div>
+            <div class="floating-bubble bubble-2">📚</div>
+            <div class="floating-bubble bubble-3">🌟</div>
+            <div class="floating-bubble bubble-4">🎨</div>
+        </div>
+    </section>
+
+    <!-- News Carousel Section -->
+    <section id="noticias" class="news-section">
+        <div class="container">
+            <h2 class="section-title">Noticias Importantes</h2>
+            <div class="carousel-container">
+                <button class="carousel-btn prev" onclick="changeSlide(-1)">❮</button>
+                <div class="carousel-wrapper">
+                    <div class="carousel-track">
+                        <div class="carousel-slide active">
+                            <div class="news-card">
+                                <div class="news-icon">🎉</div>
+                                <h3>¡Nuevos Talleres de Verano!</h3>
+                                <p>Este verano tendremos talleres especiales de comunicación y juegos para niños de 3 a 8 años.</p>
+                                <span class="news-date">15 de Enero, 2025</span>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <div class="news-card">
+                                <div class="news-icon">🏆</div>
+                                <h3>Premio a la Excelencia Educativa</h3>
+                                <p>Nuestra escuela fue reconocida por su innovador método de enseñanza en terapia del lenguaje.</p>
+                                <span class="news-date">10 de Enero, 2025</span>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <div class="news-card">
+                                <div class="news-icon">👨‍⚕️</div>
+                                <h3>Nueva Fonoaudióloga en el Equipo</h3>
+                                <p>Damos la bienvenida a la Dra. María González, especialista en trastornos del habla infantil.</p>
+                                <span class="news-date">5 de Enero, 2025</span>
+                            </div>
+                        </div>
+                        <div class="carousel-slide">
+                            <div class="news-card">
+                                <div class="news-icon">📅</div>
+                                <h3>Horario Extendido</h3>
+                                <p>A partir de febrero, atenderemos también los sábados por la mañana para mayor comodidad.</p>
+                                <span class="news-date">1 de Enero, 2025</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-btn next" onclick="changeSlide(1)">❯</button>
+                <div class="carousel-indicators">
+                    <span class="indicator active" onclick="goToSlide(0)"></span>
+                    <span class="indicator" onclick="goToSlide(1)"></span>
+                    <span class="indicator" onclick="goToSlide(2)"></span>
+                    <span class="indicator" onclick="goToSlide(3)"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Professionals Section -->
+    <section id="profesionales" class="professionals-section">
+        <div class="container">
+            <h2 class="section-title">Nuestro Equipo de Profesionales</h2>
+            <div id="professionalsGrid" class="professionals-grid">
+                <!-- Cargado dinámicamente desde API -->
+                <div class="professional-card">
+                    <div class="professional-avatar">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Cargando equipo profesional...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section - CU-17, 18, 19 -->
+    <section id="galeria" class="gallery-section">
+        <div class="container">
+            <h2 class="section-title">Galería de Momentos</h2>
+            <p class="section-subtitle">Descubre los mejores momentos de nuestra comunidad educativa</p>
+
+            <!-- Filtros de álbum -->
+            <div class="gallery-filter">
+                <button class="filter-btn active" data-album="todos" onclick="filtrarGaleria('todos')">
+                    <i class="fas fa-images"></i> Todos
+                </button>
+                <!-- Los álbumes se cargan dinámicamente -->
+            </div>
+
+            <!-- Grid de imágenes -->
+            <div id="galleryGrid" class="gallery-grid">
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 3em; color: var(--purple-main);"></i>
+                    <p style="margin-top: 15px; color: #666;">Cargando galería...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal para ver imagen en grande -->
+    <div id="imageModal" class="modal"></div>
+
+    <!-- Location Section -->
+    <section id="ubicacion" class="location-section">
+        <div class="container">
+            <h2 class="section-title">Encuéntranos</h2>
+            <div class="location-content">
+                <div class="location-info">
+                    <div class="info-card">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Dirección</h3>
+                        <p>Los Jardines 727<br>Ñuñoa, Santiago<br>Región Metropolitana</p>
+                    </div>
+                    <div class="info-card">
+                        <i class="fas fa-clock"></i>
+                        <h3>Horario</h3>
+                        <p>Lunes a Viernes<br>Cierra a las 7:00 PM</p>
+                    </div>
+                    <div class="info-card">
+                        <i class="fas fa-phone"></i>
+                        <h3>Contacto</h3>
+                        <p>+56 9 8668 1455<br><a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank" style="color: var(--burgundy-main); text-decoration: none;">@escuelaboyhappy</a></p>
+                    </div>
+                </div>
+                <div id="map" class="map-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Booking Calendar Section -->
+    <section id="reservas" class="booking-section">
+        <div class="container">
+            <h2 class="section-title">Solicitud de Matrícula</h2>
+            <p class="section-subtitle">Completa el formulario y nos pondremos en contacto contigo</p>
+            <div class="booking-content">
+                <div class="booking-form enrollment-centered">
+                    <h3>Datos del Estudiante</h3>
+                    <form id="bookingForm">
+                        <div class="form-group">
+                            <label>Nombre Completo del Estudiante *</label>
+                            <input type="text" id="patientName" placeholder="Nombre y apellidos" required>
+                        </div>
+                        <div class="form-group">
+                            <label>RUT del Estudiante *</label>
+                            <input type="text" id="studentRut" placeholder="12345678-9" required
+                                   pattern="[0-9]{7,8}-[0-9kK]{1}"
+                                   title="Formato: 12345678-9">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Nacimiento *</label>
+                            <input type="date" id="birthDate" required
+                                   max="">
+                        </div>
+                        <div class="form-group">
+                            <label>Último Curso/Jardín</label>
+                            <input type="text" id="lastCourse" placeholder="Ej: Jardín Infantil Los Enanitos">
+                        </div>
+                        <h3 style="margin-top: 20px;">Datos del Apoderado</h3>
+                        <div class="form-group">
+                            <label>Correo Electrónico *</label>
+                            <input type="email" id="parentEmail" placeholder="correo@ejemplo.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono de Contacto *</label>
+                            <input type="tel" id="phone" placeholder="+56912345678" required
+                                   maxlength="12"
+                                   title="Formato: +56912345678 (máximo 12 dígitos)">
+                        </div>
+                        <div class="form-group">
+                            <label>Observaciones</label>
+                            <textarea id="observations" rows="3" placeholder="Información adicional (opcional)"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Enviar Solicitud de Matrícula</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Boy Happy</h3>
+                    <p>Ayudando a los niños a comunicarse mejor desde 2010</p>
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces Rápidos</h4>
+                    <ul>
+                        <li><a href="#inicio">Inicio</a></li>
+                        <li><a href="#profesionales">Equipo</a></li>
+                        <li><a href="#reservas">Matrícula</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Servicios</h4>
+                    <ul>
+                        <li>Evaluación del Lenguaje</li>
+                        <li>Terapia del Habla</li>
+                        <li>Estimulación Temprana</li>
+                        <li>Talleres Grupales</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Boy Happy. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoginModal()">&times;</span>
+            <div class="modal-header">
+                <h2>Iniciar Sesión</h2>
+                <p>Accede a tu cuenta</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="correo@ejemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-primary">Ingresar</button>
+                <p class="modal-footer-text">
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeContactModal()">&times;</span>
+            <div class="modal-header">
+                <h2>Contáctanos</h2>
+                <p>Estamos aquí para ayudarte</p>
+            </div>
+            <form id="contactForm">
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" name="nombre" placeholder="Tu nombre" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="tu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mensaje</label>
+                    <textarea name="mensaje" rows="4" placeholder="¿En qué podemos ayudarte?" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Enviar Mensaje</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content success-modal">
+            <div class="success-icon">✓</div>
+            <h2>¡Éxito!</h2>
+            <p id="successMessage">Operación completada exitosamente</p>
+            <button class="btn-primary" onclick="closeSuccessModal()">Aceptar</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Enrollment Modal -->
+    <div id="confirmBookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeConfirmModal()">&times;</span>
+            <div class="modal-header">
+                <h2>Confirmar Solicitud de Matrícula</h2>
+                <p>Por favor verifica los datos antes de enviar</p>
+            </div>
+            <div class="booking-summary">
+                <div class="summary-item">
+                    <i class="fas fa-user"></i>
+                    <div>
+                        <strong>Estudiante:</strong>
+                        <span id="confirmPatient"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-id-card"></i>
+                    <div>
+                        <strong>RUT:</strong>
+                        <span id="confirmRut"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-birthday-cake"></i>
+                    <div>
+                        <strong>Fecha de Nacimiento:</strong>
+                        <span id="confirmBirthDate"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <strong>Email:</strong>
+                        <span id="confirmEmail"></span>
+                    </div>
+                </div>
+                <div class="summary-item">
+                    <i class="fas fa-phone"></i>
+                    <div>
+                        <strong>Teléfono:</strong>
+                        <span id="confirmPhone"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" onclick="submitEnrollment()">
+                    <i class="fas fa-check"></i> Confirmar Solicitud
+                </button>
+                <button class="btn-secondary" onclick="closeConfirmModal()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- SCRIPT -->
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "boyhappy-scripts",
+  "version": "1.0.0",
+  "description": "Scripts de utilidad para BoyHappy - Seeding y mantenimiento",
+  "scripts": {
+    "seed": "node seed-database.js",
+    "seed:dry-run": "node seed-database.js --dry-run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.901.0",
+    "@aws-sdk/client-dynamodb": "^3.712.0",
+    "@aws-sdk/lib-dynamodb": "^3.712.0",
+    "@faker-js/faker": "^9.3.0",
+    "aws-sdk": "^2.1691.0",
+    "dotenv": "^16.6.1"
+  },
+  "main": "crear-usuarios-cognito.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

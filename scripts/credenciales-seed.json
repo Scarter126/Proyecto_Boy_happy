@@ -1,0 +1,55 @@
+{
+  "generado": "2025-10-04T02:17:21.745Z",
+  "nota": "IMPORTANTE: Estas contraseñas son permanentes. Guárdalas en un lugar seguro.",
+  "usuarios": [
+    {
+      "rol": "admin",
+      "nombre": "María González",
+      "correo": "admin@boyhappy.cl",
+      "password": "Admin123!",
+      "rut": "12345678-9"
+    },
+    {
+      "rol": "profesor",
+      "nombre": "Carlos Ramírez",
+      "correo": "carlos.ramirez@boyhappy.cl",
+      "password": "Profesor123!",
+      "rut": "23456789-0"
+    },
+    {
+      "rol": "profesor",
+      "nombre": "Ana Torres",
+      "correo": "ana.torres@boyhappy.cl",
+      "password": "Profesor123!",
+      "rut": "34567890-1"
+    },
+    {
+      "rol": "fono",
+      "nombre": "Patricia Muñoz",
+      "correo": "patricia.munoz@boyhappy.cl",
+      "password": "Fono123!",
+      "rut": "45678901-2"
+    },
+    {
+      "rol": "fono",
+      "nombre": "Roberto Silva",
+      "correo": "roberto.silva@boyhappy.cl",
+      "password": "Fono123!",
+      "rut": "56789012-3"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Sofía Pérez",
+      "correo": "apoderado.sofia@gmail.com",
+      "password": "Alumno123!",
+      "rut": "67890123-4"
+    },
+    {
+      "rol": "alumno",
+      "nombre": "Diego Morales",
+      "correo": "apoderado.diego@gmail.com",
+      "password": "Alumno123!",
+      "rut": "78901234-5"
+    }
+  ]
+}

@@ -1,25 +1,45 @@
-# Ignorar todos los .js
+# Ignorar todos los .js compilados
 *.js
+!jest.config.js
+!full-dev-server.js
 
-# Pero no ignorar los .js dentro de la carpeta lambdas
-!lambdas/**/*.js
-!templates/**/*.js
-# Ignorar archivos de configuración o compilación
-jest.config.js
+# Pero SI incluir los .js de las lambdas en src/
+!src/api/**/*.js
+!src/front/**/*.js
+!src/layers/**/*.js
+!scripts/**/*.js
+
+# TypeScript
 *.d.ts
 
-# Ignorar directorios comunes de Node.js
+# Dependencies
 node_modules
 
-# CDK asset staging directory
+# CDK
 .cdk.staging
 cdk.out
 
-# Ignorar el archivo de configuración de variables de entorno (config.env)
+# Environment
+.env
+.env.local
 config.env
 
-# Ignorar archivos de log
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
 
-# Otros archivos comunes que no deberían subirse
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.nyc_output/
