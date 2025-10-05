@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Fonoaudióloga - Boy Happy</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- STYLES -->
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <i class="fas fa-graduation-cap"></i>
+    <span>Boy Happy</span>
+  </div>
+  <ul class="sidebar-menu">
+    <li><a href="#" onclick="showSection('agendados'); return false;" class="active"><i class="fas fa-clipboard-list"></i> Agendados</a></li>
+    <li><a href="#" onclick="showSection('disponibilidad'); return false;"><i class="fas fa-calendar-alt"></i> Disponibilidad</a></li>
+    <li><a href="#" onclick="showSection('sesiones'); return false;"><i class="fas fa-file-medical"></i> Archivos de Sesiones</a></li>
+    <li><a href="#" onclick="showSection('bitacora'); return false;"><i class="fas fa-book-medical"></i> Bitácora</a></li>
+    <li><a href="#" onclick="showSection('informes'); return false;"><i class="fas fa-file-contract"></i> Informes</a></li>
+  </ul>
+  <button class="logout-btn" onclick="cerrarSesion()">
+    <i class="fas fa-sign-out-alt"></i>
+    <span>Cerrar Sesión</span>
+  </button>
+</aside>
+
+<main class="main-content">
+  <!-- Pacientes agendados -->
+  <div id="agendados" class="section active">
+    <div class="content-header">
+      <h1><i class="fas fa-clipboard-list"></i> Pacientes Agendados</h1>
+    </div>
+    <div class="card">
+      <table id="agendadosTable">
+        <thead>
+          <tr>
+            <th>Alumno</th>
+            <th>RUT</th>
+            <th>Fecha Nac.</th>
+            <th>Apoderado</th>
+            <th>Contacto</th>
+            <th>Fecha Hora</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Disponibilidad -->
+  <div id="disponibilidad" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-calendar-alt"></i> Gestión de Disponibilidad</h1>
+    </div>
+    <div class="form-container">
+      <h3>Bloquear Horarios</h3>
+      <p>Marca los horarios en los que no podrás trabajar:</p>
+      <form id="dispForm">
+        <div class="form-group">
+          <label for="dispFecha">Fecha</label>
+          <input type="date" id="dispFecha" required>
+        </div>
+        <div class="form-group">
+          <label for="dispHora">Hora</label>
+          <input type="time" id="dispHora" required>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Bloquear Horario
+        </button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Horarios Bloqueados</h3>
+      <ul id="dispLista" style="list-style: none; padding: 0;"></ul>
+    </div>
+  </div>
+
+  <!-- CU-42, 43, 44: Archivos de Sesiones -->
+  <div id="sesiones" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-file-medical"></i> Archivos de Sesiones Terapéuticas</h1>
+      <button class="btn btn-primary" onclick="mostrarFormularioArchivo()">
+        <i class="fas fa-plus"></i> Subir Archivo
+      </button>
+    </div>
+
+    <!-- Formulario de subida -->
+    <div id="formArchivo" class="card" style="display: none;">
+      <h3 id="tituloFormArchivo">Subir Archivo de Sesión</h3>
+      <form id="archivoSesionForm" onsubmit="guardarArchivoSesion(event)">
+        <input type="hidden" id="archivoIdEditar">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="archivoAlumno">Alumno *</label>
+            <select id="archivoAlumno" required>
+              <option value="">Seleccionar alumno</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="archivoFecha">Fecha de Sesión *</label>
+            <input type="date" id="archivoFecha" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="archivoTipo">Tipo de Archivo *</label>
+            <select id="archivoTipo" required>
+              <option value="">Seleccionar tipo</option>
+              <option value="evaluacion">Evaluación Inicial</option>
+              <option value="actividad">Actividad de Sesión</option>
+              <option value="informe">Informe de Progreso</option>
+              <option value="derivacion">Derivación</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="archivoArchivo">Archivo *</label>
+            <input type="file" id="archivoArchivo" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="archivoDescripcion">Descripción/Observaciones</label>
+          <textarea id="archivoDescripcion" rows="3" placeholder="Detalles del archivo..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="ocultarFormularioArchivo()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="filtroAlumnoArchivo">Filtrar por Alumno</label>
+          <select id="filtroAlumnoArchivo" onchange="cargarArchivosSesion()">
+            <option value="">Todos los alumnos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filtroTipoArchivo">Filtrar por Tipo</label>
+          <select id="filtroTipoArchivo" onchange="cargarArchivosSesion()">
+            <option value="">Todos los tipos</option>
+            <option value="evaluacion">Evaluación</option>
+            <option value="actividad">Actividad</option>
+            <option value="informe">Informe</option>
+            <option value="derivacion">Derivación</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de archivos -->
+    <div id="listaArchivos"></div>
+  </div>
+
+  <!-- CU-45: Bitácora de Sesiones -->
+  <div id="bitacora" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-book-medical"></i> Bitácora de Sesiones Terapéuticas</h1>
+    </div>
+
+    <!-- Formulario de registro -->
+    <div class="card">
+      <h3>Registrar Sesión Terapéutica</h3>
+      <form id="bitacoraForm" onsubmit="guardarBitacoraSesion(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="bitacoraAlumno">Alumno *</label>
+            <select id="bitacoraAlumno" required>
+              <option value="">Seleccionar alumno</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bitacoraFecha">Fecha de Sesión *</label>
+            <input type="date" id="bitacoraFecha" required>
+          </div>
+          <div class="form-group">
+            <label for="bitacoraDuracion">Duración (minutos) *</label>
+            <input type="number" id="bitacoraDuracion" min="15" max="120" value="45" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="bitacoraObjetivos">Objetivos Trabajados *</label>
+          <textarea id="bitacoraObjetivos" rows="3" placeholder="Objetivos terapéuticos de la sesión..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="bitacoraActividades">Actividades Realizadas *</label>
+          <textarea id="bitacoraActividades" rows="4" placeholder="Descripción detallada de las actividades..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="bitacoraResultados">Resultados/Observaciones *</label>
+          <textarea id="bitacoraResultados" rows="3" placeholder="Logros, dificultades, observaciones..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="bitacoraSiguientePaso">Próximos Pasos</label>
+          <textarea id="bitacoraSiguientePaso" rows="2" placeholder="Planificación para próxima sesión..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Guardar Sesión
+        </button>
+      </form>
+    </div>
+
+    <!-- Consulta de bitácora -->
+    <div class="card">
+      <h3>Consultar Bitácora</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="consultaBitacoraAlumno">Alumno</label>
+          <select id="consultaBitacoraAlumno" onchange="consultarBitacoraSesion()">
+            <option value="">Seleccionar alumno</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="consultaBitacoraFechaInicio">Desde</label>
+          <input type="date" id="consultaBitacoraFechaInicio">
+        </div>
+        <div class="form-group">
+          <label for="consultaBitacoraFechaFin">Hasta</label>
+          <input type="date" id="consultaBitacoraFechaFin">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="consultarBitacoraSesion()">
+        <i class="fas fa-search"></i> Buscar
+      </button>
+    </div>
+
+    <div id="listaBitacora"></div>
+  </div>
+
+  <!-- CU-46, 47, 48: Informes de Evaluación -->
+  <div id="informes" class="section">
+    <div class="content-header">
+      <h1><i class="fas fa-file-contract"></i> Informes de Evaluación Fonoaudiológica</h1>
+      <button class="btn btn-primary" onclick="mostrarFormularioInforme()">
+        <i class="fas fa-plus"></i> Crear Informe
+      </button>
+    </div>
+
+    <!-- Formulario de informe -->
+    <div id="formInforme" class="card" style="display: none;">
+      <h3 id="tituloFormInforme">Crear Informe de Evaluación</h3>
+      <form id="informeForm" onsubmit="guardarInforme(event)">
+        <input type="hidden" id="informeIdEditar">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="informeAlumno">Alumno *</label>
+            <select id="informeAlumno" required>
+              <option value="">Seleccionar alumno</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="informeFecha">Fecha de Evaluación *</label>
+            <input type="date" id="informeFecha" required>
+          </div>
+          <div class="form-group">
+            <label for="informeTipo">Tipo de Evaluación *</label>
+            <select id="informeTipo" required>
+              <option value="">Seleccionar tipo</option>
+              <option value="inicial">Evaluación Inicial</option>
+              <option value="seguimiento">Seguimiento</option>
+              <option value="alta">Alta Terapéutica</option>
+              <option value="derivacion">Derivación</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="informeMotivo">Motivo de Consulta *</label>
+          <textarea id="informeMotivo" rows="2" placeholder="Motivo de la evaluación..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="informeAntecedentes">Antecedentes Relevantes</label>
+          <textarea id="informeAntecedentes" rows="3" placeholder="Antecedentes médicos, escolares, familiares..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="informeEvaluacion">Resultados de Evaluación *</label>
+          <textarea id="informeEvaluacion" rows="4" placeholder="Resultados obtenidos en las pruebas aplicadas..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="informeDiagnostico">Diagnóstico Fonoaudiológico *</label>
+          <textarea id="informeDiagnostico" rows="3" placeholder="Diagnóstico según resultados..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="informeRecomendaciones">Recomendaciones *</label>
+          <textarea id="informeRecomendaciones" rows="4" placeholder="Indicaciones terapéuticas, derivaciones, sugerencias..." required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="ocultarFormularioInforme()">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Guardar Informe
+          </button>
+          <button type="button" class="btn btn-success" onclick="generarPDFInforme()">
+            <i class="fas fa-file-pdf"></i> Generar PDF
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="filtroAlumnoInforme">Filtrar por Alumno</label>
+          <select id="filtroAlumnoInforme" onchange="cargarInformes()">
+            <option value="">Todos los alumnos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filtroTipoInforme">Filtrar por Tipo</label>
+          <select id="filtroTipoInforme" onchange="cargarInformes()">
+            <option value="">Todos los tipos</option>
+            <option value="inicial">Evaluación Inicial</option>
+            <option value="seguimiento">Seguimiento</option>
+            <option value="alta">Alta</option>
+            <option value="derivacion">Derivación</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de informes -->
+    <div id="listaInformes"></div>
+  </div>
+</main>
+
+<!-- SCRIPT -->
+</body>
+</html>

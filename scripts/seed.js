@@ -1,5 +1,5 @@
 /**
- * Script Completo de Seeding para BoyHappy - VERSIÓN MEJORADA
+ * Script Completo de Seeding para BoyHappy - VERSIÓN MEJORADA v3
  *
  * Este script realiza:
  * 1. Crea usuarios en AWS Cognito con contraseñas permanentes
@@ -9,13 +9,20 @@
  *
  * Datos generados:
  * - 15 usuarios (1 admin, 3 profesores, 2 fonos, 10 alumnos)
- * - Configuración del sistema
- * - Categorías de materiales
- * - ~15 comunicaciones
- * - ~200 asistencias (último mes)
- * - ~80 recursos académicos
- * - ~30 retroalimentaciones
- * - ~15 citas fonoaudiológicas
+ * - 5 configuraciones del sistema
+ * - 6 categorías de materiales
+ * - ~23 comunicaciones (5 anuncios + 8 eventos [incluye tipo 'evaluacion'] + 10 matrículas con estados variados)
+ * - ~800 asistencias (último año)
+ * - ~850 recursos académicos (500 notas + 150 materiales con estados variados + 100 bitácoras + 100 sesiones)
+ * - ~80 retroalimentaciones
+ * - ~70 citas fonoaudiológicas (50 pasadas + 20 futuras)
+ *
+ * Mejoras v3:
+ * - ✅ Eventos tipo 'evaluacion' además de 'evento'
+ * - ✅ Matrículas con estados: aprobada (60%), pendiente (20%), en_revision (10%), rechazada (10%)
+ * - ✅ Apoderados compartidos: 3 padres con 2 hijos cada uno, 4 padres con 1 hijo
+ * - ✅ Citas fonoaudiológicas futuras (próximos 90 días)
+ * - ✅ Materiales con estado 'rechazado'
  *
  * Uso: node scripts/seed.js
  */
@@ -226,11 +233,68 @@ fonosCredenciales.forEach((fono, i) => {
 const alumnosCredenciales = usuariosCredenciales.filter(u => u.rol === 'alumno');
 const alumnos = [];
 
-// Distribuir alumnos entre los cursos
+// Crear apoderados compartidos (algunos padres tendrán múltiples hijos)
+const apoderados = [
+  {
+    nombre: 'Carlos González Pérez',
+    telefono: generarTelefonoChileno(),
+    correo: 'carlos.gonzalez@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  },
+  {
+    nombre: 'María Silva Contreras',
+    telefono: generarTelefonoChileno(),
+    correo: 'maria.silva@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  },
+  {
+    nombre: 'Roberto Muñoz Ortiz',
+    telefono: generarTelefonoChileno(),
+    correo: 'roberto.munoz@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  },
+  {
+    nombre: 'Ana Torres Rojas',
+    telefono: generarTelefonoChileno(),
+    correo: 'ana.torres@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  },
+  {
+    nombre: 'Jorge Soto Vega',
+    telefono: generarTelefonoChileno(),
+    correo: 'jorge.soto@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  },
+  {
+    nombre: 'Patricia Núñez Lagos',
+    telefono: generarTelefonoChileno(),
+    correo: 'patricia.nunez@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  },
+  {
+    nombre: 'Luis Herrera Campos',
+    telefono: generarTelefonoChileno(),
+    correo: 'luis.herrera@gmail.com',
+    direccion: `${faker.location.streetAddress()}, Santiago`,
+  }
+];
+
+// Distribuir alumnos entre los cursos (algunos compartirán apoderados)
+// Los primeros 3 apoderados tendrán 2 hijos cada uno, el resto tendrá 1 hijo
 alumnosCredenciales.forEach((alumno, i) => {
   const curso = CURSOS_CONFIG[i % CURSOS_CONFIG.length];
   const nombreCompleto = alumno.nombre.split(' ');
-  const nombreApoderado = faker.person.fullName();
+
+  // Asignar apoderado: los primeros 6 alumnos se distribuyen en 3 apoderados (2 hijos cada uno)
+  // Los últimos 4 alumnos tienen apoderados individuales
+  let apoderado;
+  if (i < 6) {
+    // Primeros 6 alumnos: 2 hijos por apoderado
+    apoderado = apoderados[Math.floor(i / 2)];
+  } else {
+    // Últimos 4 alumnos: 1 hijo por apoderado
+    apoderado = apoderados[3 + (i - 6)];
+  }
 
   alumnos.push({
     rut: alumno.rut,
@@ -243,10 +307,10 @@ alumnosCredenciales.forEach((alumno, i) => {
     curso: curso.codigo,
     cursoNombre: curso.nombre,
     fechaNacimiento: generarFechaNacimiento(curso),
-    direccion: `${faker.location.streetAddress()}, Santiago`,
-    nombreApoderado: nombreApoderado,
-    telefonoApoderado: generarTelefonoChileno(),
-    correoApoderado: generarCorreo(nombreApoderado.split(' ')[0], nombreApoderado.split(' ')[1] || 'Familia'),
+    direccion: apoderado.direccion,
+    nombreApoderado: apoderado.nombre,
+    telefonoApoderado: apoderado.telefono,
+    correoApoderado: apoderado.correo,
     estadoMatricula: 'activo',
     fechaIngreso: faker.date.recent({ days: 365 }).toISOString().split('T')[0],
     activo: true,
@@ -415,40 +479,73 @@ for (let i = 0; i < 5; i++) {
   });
 }
 
-// ===== EVENTOS (5 con Faker) =====
-const titulosEventos = ['Día de la familia', 'Semana del libro', 'Feria de ciencias', 'Día del deporte', 'Festival de música'];
-const lugaresEventos = ['Patio principal', 'Biblioteca', 'Gimnasio', 'Cancha deportiva', 'Auditorio'];
+// ===== EVENTOS (8 con Faker - incluye tipo 'evento' y 'evaluacion') =====
+const eventosData = [
+  { titulo: 'Día de la familia', lugar: 'Patio principal', tipoEvento: 'evento' },
+  { titulo: 'Semana del libro', lugar: 'Biblioteca', tipoEvento: 'evento' },
+  { titulo: 'Feria de ciencias', lugar: 'Gimnasio', tipoEvento: 'evento' },
+  { titulo: 'Día del deporte', lugar: 'Cancha deportiva', tipoEvento: 'evento' },
+  { titulo: 'Festival de música', lugar: 'Auditorio', tipoEvento: 'evento' },
+  { titulo: 'Evaluación de Matemáticas', lugar: 'Sala de clases', tipoEvento: 'evaluacion' },
+  { titulo: 'Evaluación de Lenguaje', lugar: 'Sala de clases', tipoEvento: 'evaluacion' },
+  { titulo: 'Evaluación de Ciencias', lugar: 'Laboratorio', tipoEvento: 'evaluacion' }
+];
 
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < eventosData.length; i++) {
+  const evento = eventosData[i];
   comunicaciones.push({
     id: `evento-${String(i + 1).padStart(3, '0')}`,
     timestamp: faker.date.recent({ days: 365 }).toISOString(),
     tipo: 'evento',
     fecha: faker.date.soon({ days: 90 }).toISOString().split('T')[0],
-    titulo: titulosEventos[i],
-    contenido: `${titulosEventos[i]} - ${faker.lorem.sentence()}`,
-    lugar: lugaresEventos[i],
-    horaInicio: '10:00',
-    horaFin: '13:00',
+    titulo: evento.titulo,
+    contenido: `${evento.titulo} - ${faker.lorem.sentence()}`,
+    lugar: evento.lugar,
+    horaInicio: evento.tipoEvento === 'evaluacion' ? '09:00' : '10:00',
+    horaFin: evento.tipoEvento === 'evaluacion' ? '11:00' : '13:00',
     organizador: i % 2 === 0 ? admin.rut : profesores[i % profesores.length].rut,
-    destinatarios: ['todos'],
+    destinatarios: evento.tipoEvento === 'evaluacion' ? [CURSOS_CONFIG[i % CURSOS_CONFIG.length].codigo] : ['todos'],
+    tipoEvento: evento.tipoEvento
   });
 }
 
-// ===== MATRÍCULAS (una por cada alumno con datos dinámicos) =====
+// ===== MATRÍCULAS (una por cada alumno con datos dinámicos y estados variados) =====
+// Distribuir estados de forma controlada para asegurar variedad
+const estadosMatricula = ['aprobada', 'pendiente', 'en_revision', 'rechazada'];
+
+// Asignar estados específicos para garantizar variedad:
+// - 6 aprobadas (60%)
+// - 2 pendientes (20%)
+// - 1 en_revision (10%)
+// - 1 rechazada (10%)
+const estadosAsignados = [
+  'aprobada', 'aprobada', 'pendiente', 'aprobada',
+  'en_revision', 'aprobada', 'rechazada', 'aprobada',
+  'pendiente', 'aprobada'
+];
+
 alumnos.forEach((alumno, idx) => {
+  const estado = estadosAsignados[idx] || 'aprobada';
+  const fechaSolicitud = faker.date.recent({ days: 365 }).toISOString();
+
   comunicaciones.push({
     id: `matricula-${String(idx + 1).padStart(3, '0')}`,
-    timestamp: faker.date.recent({ days: 365 }).toISOString(),
+    timestamp: fechaSolicitud,
     tipo: 'matricula',
-    fecha: faker.date.recent({ days: 365 }).toISOString().split('T')[0],
+    fecha: fechaSolicitud.split('T')[0],
     rutAlumno: alumno.rut,
     nombreAlumno: `${alumno.nombre} ${alumno.apellido}`,
     curso: alumno.curso,
     nombreApoderado: alumno.nombreApoderado,
     telefonoApoderado: alumno.telefonoApoderado,
     correoApoderado: alumno.correoApoderado,
-    estado: 'aprobada',
+    estado: estado,
+    observaciones: estado === 'rechazada' ? 'Documentación incompleta. Faltan certificados de nacimiento.' :
+                   estado === 'en_revision' ? 'Pendiente de verificación de antecedentes y cupos disponibles.' :
+                   estado === 'pendiente' ? 'Esperando confirmación de apoderado y pago de matrícula.' :
+                   'Matrícula procesada y aprobada correctamente.',
+    fechaRevision: estado !== 'pendiente' ? faker.date.recent({ days: 30 }).toISOString().split('T')[0] : undefined,
+    revisadoPor: estado !== 'pendiente' ? admin.rut : undefined
   });
 });
 
@@ -555,9 +652,10 @@ for (let i = 0; i < 150; i++) {
     categoria: categoria,
     unidad: `Unidad ${faker.number.int({ min: 1, max: 4 })}`,
     estado: faker.helpers.weightedArrayElement([
-      { weight: 8, value: 'aprobado' },
-      { weight: 1, value: 'pendiente' },
-      { weight: 1, value: 'en_correccion' }
+      { weight: 7, value: 'aprobado' },
+      { weight: 1.5, value: 'pendiente' },
+      { weight: 1, value: 'en_correccion' },
+      { weight: 0.5, value: 'rechazado' }
     ]),
     timestamp: faker.date.recent({ days: 365 }).toISOString()
   });
@@ -697,15 +795,14 @@ const motivosCita = [
   'Terapia grupal'
 ];
 
-// Generar ~50 citas distribuidas en el último año
+// Generar ~70 citas: 50 pasadas + 20 futuras
+// CITAS PASADAS (últimos 365 días)
 for (let i = 0; i < 50; i++) {
   const alumno = faker.helpers.arrayElement(alumnos);
   const fono = faker.helpers.arrayElement(fonos);
   const estado = faker.helpers.weightedArrayElement([
     { weight: 4, value: 'completada' },
-    { weight: 2, value: 'confirmada' },
-    { weight: 1, value: 'pendiente' },
-    { weight: 0.5, value: 'cancelada' }
+    { weight: 1, value: 'cancelada' }
   ]);
 
   const fechaHora = faker.date.recent({ days: 365 }).toISOString().split('.')[0] + 'Z';
@@ -718,7 +815,32 @@ for (let i = 0; i < 50; i++) {
     nombreFono: `${fono.nombre} ${fono.apellido}`,
     motivo: faker.helpers.arrayElement(motivosCita),
     estado: estado,
-    observaciones: estado === 'completada' ? 'Sesión completada satisfactoriamente' : '',
+    observaciones: estado === 'completada' ? 'Sesión completada satisfactoriamente' :
+                   estado === 'cancelada' ? 'Cancelada por el apoderado' : '',
+    duracion: faker.helpers.arrayElement([30, 45, 60])
+  });
+}
+
+// CITAS FUTURAS (próximos 90 días)
+for (let i = 0; i < 20; i++) {
+  const alumno = faker.helpers.arrayElement(alumnos);
+  const fono = faker.helpers.arrayElement(fonos);
+  const estado = faker.helpers.weightedArrayElement([
+    { weight: 5, value: 'confirmada' },
+    { weight: 2, value: 'pendiente' }
+  ]);
+
+  const fechaHora = faker.date.soon({ days: 90 }).toISOString().split('.')[0] + 'Z';
+
+  agendaFono.push({
+    fechaHora: fechaHora,
+    rutAlumno: alumno.rut,
+    nombreAlumno: `${alumno.nombre} ${alumno.apellido}`,
+    rutFono: fono.rut,
+    nombreFono: `${fono.nombre} ${fono.apellido}`,
+    motivo: faker.helpers.arrayElement(motivosCita),
+    estado: estado,
+    observaciones: estado === 'pendiente' ? 'Pendiente de confirmación' : '',
     duracion: faker.helpers.arrayElement([30, 45, 60])
   });
 }
@@ -843,10 +965,15 @@ async function seed() {
     console.log(`   • ${configuracion.length} configuraciones del sistema`);
     console.log(`   • ${categorias.length} categorías de materiales`);
     console.log(`   • ${comunicaciones.length} comunicaciones`);
+    console.log(`     - ${comunicaciones.filter(c => c.tipo === 'matricula' && c.estado === 'aprobada').length} matrículas aprobadas`);
+    console.log(`     - ${comunicaciones.filter(c => c.tipo === 'matricula' && c.estado === 'pendiente').length} matrículas pendientes`);
+    console.log(`     - ${comunicaciones.filter(c => c.tipo === 'matricula' && c.estado === 'en_revision').length} matrículas en revisión`);
+    console.log(`     - ${comunicaciones.filter(c => c.tipo === 'matricula' && c.estado === 'rechazada').length} matrículas rechazadas`);
     console.log(`   • ${asistencias.length} asistencias`);
     console.log(`   • ${recursosAcademicos.length} recursos académicos`);
     console.log(`   • ${retroalimentacion.length} retroalimentaciones`);
     console.log(`   • ${agendaFono.length} citas fonoaudiológicas`);
+    console.log(`   • 3 apoderados con 2 hijos, 4 apoderados con 1 hijo`);
     console.log(`\n📝 Credenciales guardadas en: ${outputPath}\n`);
 
     console.log('🔐 Credenciales de acceso:\n');

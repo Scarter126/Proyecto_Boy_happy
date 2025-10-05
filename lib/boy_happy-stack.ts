@@ -310,28 +310,28 @@ export class BoyHappyStack extends cdk.Stack {
     // LAMBDAS OPTIMIZADAS - Usar apiUrl construida dinámicamente
     // ----------------------------
 
-    // Page Router Lambda (frontend)
-    const pageRouterLambda = createLambda('PageRouterLambda', 'front/page-router', 'handler', {
+    // Frontend Server Lambda (unificada: páginas HTML + assets estáticos)
+    const frontendServerLambda = createLambda('FrontendServerLambda', 'lambdas/frontend-server/handler', 'handler', {
       API_URL: apiUrl,
       CLIENT_ID: process.env.CLIENT_ID || '',
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN || '',
     }, LAMBDA_PROFILES.light);
 
     // Auth Lambdas
-    const hostedLoginLambda = createLambda('HostedLoginLambda', 'api/login', 'handler', {
+    const hostedLoginLambda = createLambda('HostedLoginLambda', 'lambdas/api/login', 'handler', {
       CLIENT_ID: process.env.CLIENT_ID ?? '',
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN ?? '',
       API_URL: apiUrl,
     }, LAMBDA_PROFILES.light);
 
-    const callbackLambda = createLambda('CallbackLambda', 'api/callback', 'handler', {
+    const callbackLambda = createLambda('CallbackLambda', 'lambdas/api/callback', 'handler', {
       CLIENT_ID: process.env.CLIENT_ID ?? '',
       CLIENT_SECRET: process.env.CLIENT_SECRET ?? '',
       COGNITO_DOMAIN: process.env.COGNITO_DOMAIN ?? '',
     }, LAMBDA_PROFILES.light);
 
     // Lambda de Usuarios
-    const usuariosLambda = createLambda('UsuariosLambda', 'api/usuarios', 'handler', {
+    const usuariosLambda = createLambda('UsuariosLambda', 'lambdas/api/usuarios', 'handler', {
       USUARIOS_TABLE: usuariosTable.tableName,
       USER_POOL_ID: process.env.USER_POOL_ID ?? '',
     });
@@ -348,31 +348,31 @@ export class BoyHappyStack extends cdk.Stack {
     }));
 
     // Lambda de Profesionales (PÚBLICO - sin autenticación)
-    const profesionalesLambda = createLambda('ProfesionalesLambda', 'api/profesionales', 'handler', {
+    const profesionalesLambda = createLambda('ProfesionalesLambda', 'lambdas/api/profesionales', 'handler', {
       USUARIOS_TABLE: usuariosTable.tableName,
     }, LAMBDA_PROFILES.light);
     usuariosTable.grantReadData(profesionalesLambda);
 
     // Lambda de Anuncios
-    const anunciosLambda = createLambda('AnunciosLambda', 'api/anuncios', 'handler', {
+    const anunciosLambda = createLambda('AnunciosLambda', 'lambdas/api/anuncios', 'handler', {
       ANUNCIOS_TABLE: comunicacionesTable.tableName,
     });
     comunicacionesTable.grantReadWriteData(anunciosLambda);
 
     // Lambda de Eventos
-    const eventosLambda = createLambda('EventosLambda', 'api/eventos', 'handler', {
+    const eventosLambda = createLambda('EventosLambda', 'lambdas/api/eventos', 'handler', {
       EVENTOS_TABLE: comunicacionesTable.tableName,
     });
     comunicacionesTable.grantReadWriteData(eventosLambda);
 
     // Lambda de Asistencia
-    const asistenciaLambda = createLambda('AsistenciaLambda', 'api/asistencia', 'handler', {
+    const asistenciaLambda = createLambda('AsistenciaLambda', 'lambdas/api/asistencia', 'handler', {
       ASISTENCIA_TABLE: asistenciaTable.tableName,
     });
     asistenciaTable.grantReadWriteData(asistenciaLambda);
 
     // Lambda de Notificaciones
-    const notificacionesLambda = createLambda('NotificacionesLambda', 'api/notificaciones', 'handler', {
+    const notificacionesLambda = createLambda('NotificacionesLambda', 'lambdas/api/notificaciones', 'handler', {
       USUARIOS_TABLE: usuariosTable.tableName,
       SOURCE_EMAIL: 'noreply@boyhappy.cl',
     });
@@ -383,25 +383,25 @@ export class BoyHappyStack extends cdk.Stack {
     }));
 
     // Lambda de Imágenes (S3)
-    const imagesLambda = createLambda('ImagesLambda', 'api/images', 'handler', {
+    const imagesLambda = createLambda('ImagesLambda', 'lambdas/api/images', 'handler', {
       BUCKET_NAME: imagesBucket.bucketName,
     }, LAMBDA_PROFILES.heavy);
     imagesBucket.grantReadWrite(imagesLambda);
 
     // Lambda de Reservar Evaluación (Fono)
-    const reservarEvaluacionLambda = createLambda('ReservarEvaluacionLambda', 'api/reservar-evaluacion', 'handler', {
+    const reservarEvaluacionLambda = createLambda('ReservarEvaluacionLambda', 'lambdas/api/reservar-evaluacion', 'handler', {
       AGENDA_TABLE: agendaFonoTable.tableName,
     });
     agendaFonoTable.grantReadWriteData(reservarEvaluacionLambda);
 
     // Lambda de Notas (FASE 1)
-    const notasLambda = createLambda('NotasLambda', 'api/notas', 'handler', {
+    const notasLambda = createLambda('NotasLambda', 'lambdas/api/notas', 'handler', {
       RECURSOS_TABLE: recursosAcademicosTable.tableName,
     });
     recursosAcademicosTable.grantReadWriteData(notasLambda);
 
     // Lambda de Materiales (FASE 2)
-    const materialesLambda = createLambda('MaterialesLambda', 'api/materiales', 'handler', {
+    const materialesLambda = createLambda('MaterialesLambda', 'lambdas/api/materiales', 'handler', {
       RECURSOS_TABLE: recursosAcademicosTable.tableName,
       MATERIALES_BUCKET: materialesBucket.bucketName,
     }, LAMBDA_PROFILES.heavy);
@@ -409,19 +409,19 @@ export class BoyHappyStack extends cdk.Stack {
     materialesBucket.grantReadWrite(materialesLambda);
 
     // Lambda de Bitácora (FASE 3)
-    const bitacoraLambda = createLambda('BitacoraLambda', 'api/bitacora', 'handler', {
+    const bitacoraLambda = createLambda('BitacoraLambda', 'lambdas/api/bitacora', 'handler', {
       RECURSOS_TABLE: recursosAcademicosTable.tableName,
     });
     recursosAcademicosTable.grantReadWriteData(bitacoraLambda);
 
     // Lambda de Categorías (FASE 4)
-    const categoriasLambda = createLambda('CategoriasLambda', 'api/categorias', 'handler', {
+    const categoriasLambda = createLambda('CategoriasLambda', 'lambdas/api/categorias', 'handler', {
       RECURSOS_TABLE: recursosAcademicosTable.tableName,
     }, LAMBDA_PROFILES.light);
     recursosAcademicosTable.grantReadWriteData(categoriasLambda);
 
     // Lambda de Informes (FASE 5)
-    const informesLambda = createLambda('InformesLambda', 'api/informes', 'handler', {
+    const informesLambda = createLambda('InformesLambda', 'lambdas/api/informes', 'handler', {
       INFORMES_TABLE: informesTable.tableName,
       MATERIALES_BUCKET: materialesBucket.bucketName,
     }, LAMBDA_PROFILES.heavy);
@@ -429,7 +429,7 @@ export class BoyHappyStack extends cdk.Stack {
     materialesBucket.grantReadWrite(informesLambda);
 
     // Lambda de Sesiones Terapéuticas (FASE 6)
-    const sesionesLambda = createLambda('SesionesLambda', 'api/sesiones', 'handler', {
+    const sesionesLambda = createLambda('SesionesLambda', 'lambdas/api/sesiones', 'handler', {
       AGENDA_TABLE: agendaFonoTable.tableName,
       MATERIALES_BUCKET: materialesBucket.bucketName,
     });
@@ -437,25 +437,25 @@ export class BoyHappyStack extends cdk.Stack {
     materialesBucket.grantReadWrite(sesionesLambda);
 
     // Lambda de Bitácora Fonoaudióloga (FASE 6B - CU-45)
-    const bitacoraFonoLambda = createLambda('BitacoraFonoLambda', 'api/bitacora-fono', 'handler', {
+    const bitacoraFonoLambda = createLambda('BitacoraFonoLambda', 'lambdas/api/bitacora-fono', 'handler', {
       AGENDA_TABLE: agendaFonoTable.tableName,
     });
     agendaFonoTable.grantReadWriteData(bitacoraFonoLambda);
 
     // Lambda de Retroalimentación (FASE 7)
-    const retroalimentacionLambda = createLambda('RetroalimentacionLambda', 'api/retroalimentacion', 'handler', {
+    const retroalimentacionLambda = createLambda('RetroalimentacionLambda', 'lambdas/api/retroalimentacion', 'handler', {
       RETROALIMENTACION_TABLE: retroalimentacionTable.tableName,
     });
     retroalimentacionTable.grantReadWriteData(retroalimentacionLambda);
 
     // Lambda de Configuración (FASE 8)
-    const configuracionLambda = createLambda('ConfiguracionLambda', 'api/configuracion', 'handler', {
+    const configuracionLambda = createLambda('ConfiguracionLambda', 'lambdas/api/configuracion', 'handler', {
       CONFIGURACION_TABLE: configuracionTable.tableName,
     }, LAMBDA_PROFILES.light);
     configuracionTable.grantReadWriteData(configuracionLambda);
 
     // Lambda de Reportes (FASE 9)
-    const reportesLambda = createLambda('ReportesLambda', 'api/reportes', 'handler', {
+    const reportesLambda = createLambda('ReportesLambda', 'lambdas/api/reportes', 'handler', {
       REPORTES_TABLE: reportesTable.tableName,
       ASISTENCIA_TABLE: asistenciaTable.tableName,
       RECURSOS_TABLE: recursosAcademicosTable.tableName,
@@ -467,7 +467,7 @@ export class BoyHappyStack extends cdk.Stack {
     usuariosTable.grantReadData(reportesLambda);
 
     // Lambda de Matrículas (FASE 10 - separado de eventos)
-    const matriculasLambda = createLambda('MatriculasLambda', 'api/matriculas', 'handler', {
+    const matriculasLambda = createLambda('MatriculasLambda', 'lambdas/api/matriculas', 'handler', {
       COMUNICACIONES_TABLE: comunicacionesTable.tableName,
       USUARIOS_TABLE: usuariosTable.tableName,
       USER_POOL_ID: process.env.USER_POOL_ID ?? '',
@@ -490,7 +490,7 @@ export class BoyHappyStack extends cdk.Stack {
     }));
 
     // Lambda de Backups (CU-12)
-    const backupLambda = createLambda('BackupLambda', 'api/backup', 'handler', {
+    const backupLambda = createLambda('BackupLambda', 'lambdas/api/backup', 'handler', {
       USUARIOS_TABLE: usuariosTable.tableName,
       COMUNICACIONES_TABLE: comunicacionesTable.tableName,
       ASISTENCIA_TABLE: asistenciaTable.tableName,
@@ -516,7 +516,7 @@ export class BoyHappyStack extends cdk.Stack {
     backupsBucket.grantReadWrite(backupLambda);
 
     // Lambda de Exportar Reportes (CU-25)
-    const exportarReportesLambda = createLambda('ExportarReportesLambda', 'api/exportar-reportes', 'handler', {
+    const exportarReportesLambda = createLambda('ExportarReportesLambda', 'lambdas/api/exportar-reportes', 'handler', {
       ASISTENCIA_TABLE: asistenciaTable.tableName,
       RECURSOS_TABLE: recursosAcademicosTable.tableName,
       USUARIOS_TABLE: usuariosTable.tableName,
@@ -572,13 +572,17 @@ export class BoyHappyStack extends cdk.Stack {
       '/matriculas': matriculasLambda,
       '/backup': backupLambda,
       '/exportar': exportarReportesLambda,
-      // Páginas frontend
-      '/admin': pageRouterLambda,
-      '/profesores': pageRouterLambda,
-      '/alumnos': pageRouterLambda,
-      '/fono': pageRouterLambda,
-      '/galeria': pageRouterLambda,
-      '/toma-hora': pageRouterLambda,
+      // Frontend Server (páginas HTML + assets estáticos)
+      '/admin': frontendServerLambda,
+      '/profesores': frontendServerLambda,
+      '/alumnos': frontendServerLambda,
+      '/fono': frontendServerLambda,
+      '/galeria': frontendServerLambda,
+      '/toma-hora': frontendServerLambda,
+      '/reset-password': frontendServerLambda,
+      // Static files (JS/CSS) - también manejados por frontendServerLambda
+      '/shared': frontendServerLambda,
+      '/scripts': frontendServerLambda,
     };
 
     // Lambda Router centralizado
@@ -596,7 +600,6 @@ const ROUTE_MAP = ${JSON.stringify(
 )};
 
 exports.handler = async (event) => {
-  console.log('Router received event:', JSON.stringify(event, null, 2));
 
   const path = event.path || '/';
   const basePath = '/' + (path.split('/')[1] || '');
@@ -614,8 +617,12 @@ exports.handler = async (event) => {
   if (path.startsWith('/reportes/')) targetLambda = ROUTE_MAP['/reportes'];
   if (path.startsWith('/exportar/')) targetLambda = ROUTE_MAP['/exportar'];
 
+  // Static files (JS/CSS) - /shared/* y /scripts/*
+  if (path.startsWith('/shared/')) targetLambda = ROUTE_MAP['/shared'];
+  if (path.startsWith('/scripts/')) targetLambda = ROUTE_MAP['/scripts'];
+
   // Home page
-  if (path === '/') targetLambda = '${pageRouterLambda.functionName}';
+  if (path === '/') targetLambda = '${frontendServerLambda.functionName}';
 
   if (!targetLambda) {
     return {
@@ -693,12 +700,47 @@ exports.handler = async (event) => {
       fn.grantInvoke(apiRouterLambda);
     });
 
-    // Proxy único que captura todas las rutas
-    const proxy = api.root.addResource('{proxy+}');
-    proxy.addMethod('ANY', new apigateway.LambdaIntegration(apiRouterLambda));
+    // ============================================
+    // API GATEWAY ROUTING
+    // ============================================
 
     // Root para home
-    api.root.addMethod('GET', new apigateway.LambdaIntegration(pageRouterLambda));
+    api.root.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    // Rutas de páginas HTML
+    const adminResource = api.root.addResource('admin');
+    adminResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const profesoresResource = api.root.addResource('profesores');
+    profesoresResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const alumnosResource = api.root.addResource('alumnos');
+    alumnosResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const fonoResource = api.root.addResource('fono');
+    fonoResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const galeriaResource = api.root.addResource('galeria');
+    galeriaResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const tomaHoraResource = api.root.addResource('toma-hora');
+    tomaHoraResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const resetPasswordResource = api.root.addResource('reset-password');
+    resetPasswordResource.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    // Rutas para assets estáticos (JS/CSS)
+    const sharedResource = api.root.addResource('shared');
+    const sharedProxy = sharedResource.addResource('{proxy+}');
+    sharedProxy.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    const scriptsResource = api.root.addResource('scripts');
+    const scriptsProxy = scriptsResource.addResource('{proxy+}');
+    scriptsProxy.addMethod('GET', new apigateway.LambdaIntegration(frontendServerLambda));
+
+    // Proxy para APIs - todo lo demás
+    const proxy = api.root.addResource('{proxy+}');
+    proxy.addMethod('ANY', new apigateway.LambdaIntegration(apiRouterLambda));
 
     // ----------------------------
     // Outputs
@@ -718,6 +760,7 @@ exports.handler = async (event) => {
 
     new cdk.CfnOutput(this, 'WebsiteURL', {
       value: api.url,
+      description: 'URL de producción',
     });
 
     new cdk.CfnOutput(this, 'UsuariosTableName', {

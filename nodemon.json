@@ -1,7 +1,7 @@
 {
   "watch": ["dev-server.js"],
   "ext": "js,json",
-  "ignore": ["node_modules", "src/front/**"],
+  "ignore": ["node_modules"],
   "delay": "1000",
   "verbose": true,
   "env": {
