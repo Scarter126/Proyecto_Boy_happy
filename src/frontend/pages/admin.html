@@ -127,37 +127,6 @@
           </div>
         </div>
 
-        <!-- Alertas Críticas -->
-        <div class="card" style="margin-top: 25px;">
-          <h3><i class="fas fa-exclamation-triangle"></i> Alertas y Acciones Requeridas</h3>
-          <div style="margin-top: 15px;">
-            <template x-if="alertas.length === 0">
-              <p style="color: #4caf50; text-align: center;">
-                <i class="fas fa-check-circle"></i> No hay alertas críticas
-              </p>
-            </template>
-
-            <template x-for="alerta in alertas" :key="alerta.mensaje">
-              <div :style="`padding: 15px; margin-bottom: 10px; border-radius: 8px; background: ${alerta.color}15; border-left: 4px solid ${alerta.color}; display: flex; justify-content: space-between; align-items: center;`">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <i :class="'fas ' + alerta.icono" :style="`color: ${alerta.color}; font-size: 1.5em;`"></i>
-                  <div>
-                    <strong x-text="alerta.mensaje" :style="`color: ${alerta.color};`"></strong>
-                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
-                      Prioridad: <span x-text="alerta.prioridad.toUpperCase()"></span>
-                    </div>
-                  </div>
-                </div>
-                <button class="btn btn-sm" :style="`background: ${alerta.color}; color: white;`"
-                        @click="showSection(alerta.seccion)">
-                  <i class="fas fa-arrow-right"></i>
-                  <span x-text="alerta.accion"></span>
-                </button>
-              </div>
-            </template>
-          </div>
-        </div>
-
         <!-- Resumen por Curso -->
         <div class="card" style="margin-top: 25px;">
           <h3><i class="fas fa-chart-bar"></i> Resumen por Curso</h3>
@@ -216,6 +185,33 @@
                 <!-- Detalle de registros -->
                 <div style="margin-top: 10px; font-size: 0.75em; color: #999; text-align: right;">
                   <span x-text="`${curso.registrosAsistencia} registros`"></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+
+        <!-- Alertas Críticas -->
+        <div class="card" style="margin-top: 25px;">
+          <h3><i class="fas fa-exclamation-triangle"></i> Alertas y Acciones Requeridas</h3>
+          <div style="margin-top: 15px; max-height: 400px; overflow-y: auto;">
+            <template x-if="alertas.length === 0">
+              <p style="color: #4caf50; text-align: center;">
+                <i class="fas fa-check-circle"></i> No hay alertas críticas
+              </p>
+            </template>
+
+            <template x-for="alerta in alertas" :key="alerta.mensaje">
+              <div :style="`padding: 15px; margin-bottom: 10px; border-radius: 8px; background: ${alerta.color}15; border-left: 4px solid ${alerta.color}; display: flex; align-items: center;`">
+                <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                  <i :class="'fas ' + alerta.icono" :style="`color: ${alerta.color}; font-size: 1.5em;`"></i>
+                  <div>
+                    <strong x-text="alerta.mensaje" :style="`color: ${alerta.color};`"></strong>
+                    <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                      Prioridad: <span x-text="alerta.prioridad.toUpperCase()"></span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </template>
@@ -311,7 +307,7 @@
 
       <!-- Tabla renderizada con Alpine -->
       <template x-if="datosComparativos.length > 0">
-        <table class="data-table">
+        <table class="data-table responsive-accordion" x-data="{ openIndexes: [0] }">
           <thead>
             <tr>
               <th>Curso</th>
@@ -326,17 +322,17 @@
             </tr>
           </thead>
           <tbody>
-            <template x-for="d in datosComparativos" :key="d.codigo">
-              <tr>
+            <template x-for="(d, index) in datosComparativos" :key="d.codigo">
+              <tr :class="{ 'accordion-open': openIndexes.includes(index) }" @click="openIndexes.includes(index) ? openIndexes = openIndexes.filter(i => i !== index) : openIndexes.push(index)">
                 <td><strong x-text="d.curso"></strong></td>
-                <td :style="`background: ${getColorFondo(d.asistencia)};`" x-text="d.asistencia + '%'"></td>
-                <td x-text="d.totalEvaluaciones"></td>
-                <td x-text="d.logrado"></td>
-                <td x-text="d.enDesarrollo"></td>
-                <td x-text="d.noLogrado"></td>
-                <td x-text="d.noTrabajado"></td>
-                <td><strong x-text="d.promedioNumerico"></strong></td>
-                <td x-text="d.materiales"></td>
+                <td :style="`background: ${getColorFondo(d.asistencia)};`" data-label="Asistencia" x-text="d.asistencia + '%'"></td>
+                <td data-label="Total Evaluaciones" x-text="d.totalEvaluaciones"></td>
+                <td data-label="Logrado (L)" x-text="d.logrado"></td>
+                <td data-label="En Desarrollo (OD)" x-text="d.enDesarrollo"></td>
+                <td data-label="No Logrado (NL)" x-text="d.noLogrado"></td>
+                <td data-label="No Trabajado (NT)" x-text="d.noTrabajado"></td>
+                <td data-label="Promedio"><strong x-text="d.promedioNumerico"></strong></td>
+                <td data-label="Materiales" x-text="d.materiales"></td>
               </tr>
             </template>
           </tbody>
@@ -457,7 +453,7 @@
         </template>
 
         <template x-if="matriculasFiltradas.length > 0">
-          <table class="data-table">
+          <table class="data-table responsive-accordion" x-data="{ openIndexes: [0] }">
             <thead>
               <tr>
                 <th>Nombre Alumno</th>
@@ -472,20 +468,20 @@
               </tr>
             </thead>
             <tbody>
-              <template x-for="mat in matriculasFiltradas" :key="mat.id">
-                <tr>
-                  <td><strong x-text="mat.nombreAlumno"></strong></td>
-                  <td x-text="mat.nombreApoderado || '-'"></td>
-                  <td x-text="mat.rutAlumno"></td>
-                  <td x-text="mat.correoApoderado"></td>
-                  <td x-text="mat.telefonoApoderado || '-'"></td>
-                  <td x-text="mat.curso || '-'"></td>
-                  <td x-text="formatDate(mat.fecha)"></td>
-                  <td>
+              <template x-for="(mat, index) in matriculasFiltradas" :key="mat.id">
+                <tr :class="{ 'accordion-open': openIndexes.includes(index) }">
+                  <td @click="openIndexes.includes(index) ? openIndexes = openIndexes.filter(i => i !== index) : openIndexes.push(index)"><strong x-text="mat.nombreAlumno"></strong></td>
+                  <td data-label="Nombre Apoderado" x-text="mat.nombreApoderado || '-'"></td>
+                  <td data-label="RUT Alumno" x-text="mat.rutAlumno"></td>
+                  <td data-label="Email" x-text="mat.correoApoderado"></td>
+                  <td data-label="Teléfono" x-text="mat.telefonoApoderado || '-'"></td>
+                  <td data-label="Curso" x-text="mat.curso || '-'"></td>
+                  <td data-label="Fecha" x-text="formatDate(mat.fecha)"></td>
+                  <td data-label="Estado">
                     <span :style="`background: ${getEstadoColor(mat.estado)}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.9em;`"
                           x-text="getEstadoTexto(mat.estado)"></span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                       <button class="btn btn-sm btn-primary" @click="verDetalle(mat)" title="Ver Detalle">
                         <i class="fas fa-eye"></i>
@@ -652,7 +648,7 @@
             No hay registros de asistencia para los filtros seleccionados.
           </p>
 
-          <table :style="(detalleAlumnosFiltrados && detalleAlumnosFiltrados.length > 0) ? '' : 'display: none'" class="data-table" style="width: 100%; margin-top: 15px;">
+          <table :style="(detalleAlumnosFiltrados && detalleAlumnosFiltrados.length > 0) ? '' : 'display: none'" class="data-table responsive-accordion" style="width: 100%; margin-top: 15px;" x-data="{ openIndexes: [0] }">
               <thead>
                 <tr>
                   <th>Alumno</th>
@@ -668,19 +664,19 @@
                 </tr>
               </thead>
               <tbody>
-                <template x-for="a in (detalleAlumnosFiltrados || [])" :key="a.rut">
-                  <tr :style="a.tieneAlerta ? 'background-color: #fff3cd;' : ''">
-                    <td><strong x-text="a.nombre"></strong></td>
-                    <td x-text="a.rut"></td>
-                    <td x-text="a.curso"></td>
-                    <td><span class="badge-presente" x-text="a.presente"></span></td>
-                    <td><span class="badge-ausente" x-text="a.ausente"></span></td>
-                    <td><span class="badge-atrasado" x-text="a.atrasado"></span></td>
-                    <td x-text="a.total"></td>
-                    <td>
+                <template x-for="(a, index) in (detalleAlumnosFiltrados || [])" :key="a.rut">
+                  <tr :style="a.tieneAlerta ? 'background-color: #fff3cd;' : ''" :class="{ 'accordion-open': openIndexes.includes(index) }">
+                    <td @click="openIndexes.includes(index) ? openIndexes = openIndexes.filter(i => i !== index) : openIndexes.push(index)"><strong x-text="a.nombre"></strong></td>
+                    <td data-label="RUT" x-text="a.rut"></td>
+                    <td data-label="Curso" x-text="a.curso"></td>
+                    <td data-label="Presente"><span class="badge-presente" x-text="a.presente"></span></td>
+                    <td data-label="Ausente"><span class="badge-ausente" x-text="a.ausente"></span></td>
+                    <td data-label="Atrasado"><span class="badge-atrasado" x-text="a.atrasado"></span></td>
+                    <td data-label="Total Días" x-text="a.total"></td>
+                    <td data-label="% Asistencia">
                       <strong x-text="a.porcentaje + '%'" :style="`color: ${a.porcentaje >= 85 ? '#4caf50' : a.porcentaje >= 70 ? '#ff9800' : '#f44336'}`"></strong>
                     </td>
-                    <td>
+                    <td data-label="Estado">
                       <span :style="a.porcentaje >= 85 ? '' : 'display: none'" style="color: #4caf50;">
                         <i class="fas fa-check-circle"></i> Excelente
                       </span>
@@ -691,7 +687,7 @@
                         <i class="fas fa-times-circle"></i> Crítico
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Acciones">
                       <button class="btn btn-sm btn-primary" @click="verHistorialAlumno(a)" title="Ver Historial">
                         <i class="fas fa-history"></i>
                       </button>
@@ -1103,7 +1099,7 @@
         No se encontraron materiales
       </p>
 
-      <table :style="(materialesFiltrados && materialesFiltrados.length > 0) ? '' : 'display: none'" class="data-table">
+      <table :style="(materialesFiltrados && materialesFiltrados.length > 0) ? '' : 'display: none'" class="data-table responsive-accordion" x-data="{ openIndexes: [0] }">
             <thead>
               <tr>
                 <th>Título</th>
@@ -1118,23 +1114,23 @@
               </tr>
             </thead>
             <tbody>
-              <template x-for="mat in (materialesFiltrados || [])" :key="mat.id">
-                <tr>
-                  <td><strong x-text="mat.titulo"></strong></td>
-                  <td>
+              <template x-for="(mat, index) in (materialesFiltrados || [])" :key="mat.id">
+                <tr :class="{ 'accordion-open': openIndexes.includes(index) }">
+                  <td @click="openIndexes.includes(index) ? openIndexes = openIndexes.filter(i => i !== index) : openIndexes.push(index)"><strong x-text="mat.titulo"></strong></td>
+                  <td data-label="Categoría">
                     <span :style="`padding: 4px 8px; border-radius: 8px; font-size: 0.85em; ${getCategoriaStyle(mat.categoria)}`"
                           x-text="getCategoriaNombre(mat.categoria)"></span>
                   </td>
-                  <td x-text="mat.curso"></td>
-                  <td x-text="mat.asignatura"></td>
-                  <td x-text="mat.profesor"></td>
-                  <td x-text="mat.nombreArchivo || '-'"></td>
-                  <td x-text="formatDate(mat.fechaSubida || mat.fecha)"></td>
-                  <td>
+                  <td data-label="Curso" x-text="mat.curso"></td>
+                  <td data-label="Asignatura" x-text="mat.asignatura"></td>
+                  <td data-label="Profesor" x-text="mat.profesor"></td>
+                  <td data-label="Archivo" x-text="mat.nombreArchivo || '-'"></td>
+                  <td data-label="Fecha" x-text="formatDate(mat.fechaSubida || mat.fecha)"></td>
+                  <td data-label="Estado">
                     <span :style="`background: ${$store.utils.getEstadoColor(mat.estado)}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em;`"
                           x-text="$store.utils.getEstadoTexto(mat.estado)"></span>
                   </td>
-                  <td>
+                  <td data-label="Acciones">
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                       <button class="btn btn-sm btn-primary" @click="verDetalle(mat)" title="Ver Detalle">
                         <i class="fas fa-eye"></i>
@@ -1455,7 +1451,7 @@
 
         <!-- Tabla con datos -->
         <div :style="(usuarios.data && usuarios.data.length > 0) ? '' : 'display: none'" style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: separate; border-spacing: 0;">
+          <table class="responsive-accordion" style="width: 100%; border-collapse: separate; border-spacing: 0;" x-data="{ openIndexes: [0] }">
             <thead>
               <tr style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);">
                 <th style="padding: 16px; text-align: left; color: white; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">RUT</th>
@@ -1469,16 +1465,17 @@
               </tr>
             </thead>
             <tbody>
-              <template x-for="u in usuariosFiltrados" :key="u.rut">
+              <template x-for="(u, index) in usuariosFiltrados" :key="u.rut">
                 <tr :style="`background: ${u.activo === false ? '#f8fafc' : 'white'}; border-bottom: 1px solid #e2e8f0; transition: all 0.2s;`"
+                    :class="{ 'accordion-open': openIndexes.includes(index) }"
                     @mouseenter="$el.style.background = '#f1f5f9'"
                     @mouseleave="$el.style.background = u.activo === false ? '#f8fafc' : 'white'">
-                  <td style="padding: 14px 16px; color: #334155; font-weight: 500; font-size: 0.9rem;" x-text="u.rut"></td>
-                  <td style="padding: 14px 16px; color: #1e293b; font-weight: 600; font-size: 0.95rem;" x-text="u.nombre"></td>
-                  <td style="padding: 14px 16px; color: #334155; font-size: 0.9rem;" x-text="u.apellido || '-'"></td>
-                  <td style="padding: 14px 16px; color: #64748b; font-size: 0.9rem;" x-text="u.correo"></td>
-                  <td style="padding: 14px 16px; color: #64748b; font-size: 0.9rem;" x-text="u.telefono || '-'"></td>
-                  <td style="padding: 14px 16px;">
+                  <td style="padding: 14px 16px; color: #334155; font-weight: 500; font-size: 0.9rem;" @click="openIndexes.includes(index) ? openIndexes = openIndexes.filter(i => i !== index) : openIndexes.push(index)" x-text="u.rut"></td>
+                  <td style="padding: 14px 16px; color: #1e293b; font-weight: 600; font-size: 0.95rem;" data-label="Nombre" x-text="u.nombre"></td>
+                  <td style="padding: 14px 16px; color: #334155; font-size: 0.9rem;" data-label="Apellido" x-text="u.apellido || '-'"></td>
+                  <td style="padding: 14px 16px; color: #64748b; font-size: 0.9rem;" data-label="Email" x-text="u.correo"></td>
+                  <td style="padding: 14px 16px; color: #64748b; font-size: 0.9rem;" data-label="Teléfono" x-text="u.telefono || '-'"></td>
+                  <td style="padding: 14px 16px;" data-label="Rol">
                     <span
                       :style="`
                         background: ${getRolColor(u.rol)};
@@ -1494,7 +1491,7 @@
                       x-text="getRolLabel(u.rol)">
                     </span>
                   </td>
-                  <td style="padding: 14px 16px;">
+                  <td style="padding: 14px 16px;" data-label="Estado">
                     <span
                       :style="`
                         background: ${u.activo !== false ? '#10b981' : '#ef4444'};
@@ -1509,7 +1506,7 @@
                       x-text="u.activo !== false ? 'Activo' : 'Inactivo'">
                     </span>
                   </td>
-                  <td style="padding: 14px 16px; text-align: center;">
+                  <td style="padding: 14px 16px; text-align: center;" data-label="Acciones">
                     <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
                       <button
                         @click="cambiarRol(u)"
