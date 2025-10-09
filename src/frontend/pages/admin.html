@@ -1190,30 +1190,43 @@
     </div>
 
     <!-- Tab: Información General -->
-    <div id="config-general" class="tab-content" x-show="activeTab === 'general'">
+    <div id="config-general" class="tab-content" x-show="activeTab === 'general'" x-data="informacionGeneralData()">
       <div class="card">
         <h3>Información del Jardín</h3>
-        <div class="form-group">
-          <label for="nombreJardin">Nombre del Jardín</label>
-          <input type="text" id="nombreJardin" placeholder="Nombre del establecimiento">
+
+        <!-- Loading -->
+        <div x-show="loading" style="text-align: center; padding: 20px; color: #a855f7;">
+          <i class="fas fa-spinner fa-spin"></i> Cargando información...
         </div>
-        <div class="form-group">
-          <label for="direccionJardin">Dirección</label>
-          <input type="text" id="direccionJardin" placeholder="Dirección del jardín">
-        </div>
-        <div class="form-row">
+
+        <div x-show="!loading">
           <div class="form-group">
-            <label for="telefonoJardin">Teléfono</label>
-            <input type="tel" id="telefonoJardin" placeholder="+56 9 XXXX XXXX">
+            <label for="nombreJardin">Nombre del Jardín</label>
+            <input type="text" id="nombreJardin" x-model="info.nombre" placeholder="Nombre del establecimiento">
           </div>
           <div class="form-group">
-            <label for="emailJardin">Email</label>
-            <input type="email" id="emailJardin" placeholder="contacto@jardin.cl">
+            <label for="direccionJardin">Dirección</label>
+            <input type="text" id="direccionJardin" x-model="info.direccion" placeholder="Dirección del jardín">
           </div>
-        </div>
-        <div class="form-group">
-          <label for="anoEscolar">Año Escolar</label>
-          <input type="number" id="anoEscolar" min="2020" max="2050" value="2025">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="telefonoJardin">Teléfono</label>
+              <input type="tel" id="telefonoJardin" x-model="info.telefono" placeholder="+56 9 XXXX XXXX">
+            </div>
+            <div class="form-group">
+              <label for="emailJardin">Email</label>
+              <input type="email" id="emailJardin" x-model="info.email" placeholder="contacto@jardin.cl">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="anoEscolar">Año Escolar</label>
+            <input type="number" id="anoEscolar" x-model.number="info.anoEscolar" min="2020" max="2050">
+          </div>
+
+          <button class="btn btn-primary" @click="guardarInformacion()" :disabled="guardando">
+            <i class="fas" :class="guardando ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            <span x-text="guardando ? 'Guardando...' : 'Guardar Información'"></span>
+          </button>
         </div>
       </div>
 
@@ -1245,7 +1258,7 @@
               "
               @mouseenter="$el.style.background = '#f8fafc'"
               @mouseleave="$el.style.background = 'white'">
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                   <div style="
                     background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
                     color: white;
@@ -1262,14 +1275,25 @@
                     <div style="font-size: 0.85rem; color: #64748b;" x-text="'Código: ' + curso.codigo"></div>
                   </div>
                 </div>
-                <span style="
-                  background: #10b981;
-                  color: white;
-                  padding: 4px 12px;
-                  border-radius: 12px;
-                  font-size: 0.8rem;
-                  font-weight: 600;
-                ">Activo</span>
+                <button @click="eliminarCurso(curso)" style="
+                  background: #fee2e2;
+                  color: #ef4444;
+                  border: none;
+                  padding: 8px 14px;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  font-weight: 500;
+                  font-size: 0.85rem;
+                "
+                @mouseenter="$el.style.background = '#fecaca'"
+                @mouseleave="$el.style.background = '#fee2e2'"
+                title="Eliminar curso">
+                  <i class="fas fa-trash"></i> Eliminar
+                </button>
               </div>
             </template>
           </div>
@@ -1327,10 +1351,6 @@
           <i class="fas fa-plus"></i> Agregar Asignatura
         </button>
       </div>
-
-      <button class="btn btn-success" @click="guardarConfiguracion()">
-        <i class="fas fa-save"></i> Guardar Configuración
-      </button>
     </div>
 
     <!-- Tab: Categorías -->

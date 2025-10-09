@@ -2,10 +2,8 @@
 *.js
 !jest.config.jest
 
-# Pero SI incluir los .js de las lambdas en src/
-!src/api/**/*.js
-!src/front/**/*.js
-!src/layers/**/*.js
+# Pero SI incluir todos los .js en src/ y scripts/
+!src/**/*.js
 !scripts/**/*.js
 
 # TypeScript
@@ -13,6 +11,8 @@
 
 # Dependencies
 node_modules
+# Pero ignorar específicamente el node_modules de layers
+src/layers/**/node_modules
 
 # CDK
 .cdk.staging

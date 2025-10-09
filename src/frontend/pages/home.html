@@ -150,7 +150,7 @@
     <div id="imageModal" class="modal"></div>
 
     <!-- Location Section -->
-    <section id="ubicacion" class="location-section">
+    <section id="ubicacion" class="location-section" x-data="ubicacionData()">
         <div class="container">
             <h2 class="section-title">Encuéntranos</h2>
             <div class="location-content">
@@ -158,7 +158,7 @@
                     <div class="info-card">
                         <i class="fas fa-map-marker-alt"></i>
                         <h3>Dirección</h3>
-                        <p>Los Jardines 727<br>Ñuñoa, Santiago<br>Región Metropolitana</p>
+                        <p x-text="direccion || 'Los Jardines 727, Ñuñoa, Santiago'"></p>
                     </div>
                     <div class="info-card">
                         <i class="fas fa-clock"></i>
@@ -168,7 +168,7 @@
                     <div class="info-card">
                         <i class="fas fa-phone"></i>
                         <h3>Contacto</h3>
-                        <p>+56 9 8668 1455<br><a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank" style="color: var(--burgundy-main); text-decoration: none;">@escuelaboyhappy</a></p>
+                        <p><span x-text="telefono || '+56 9 8668 1455'"></span><br><a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank" style="color: var(--burgundy-main); text-decoration: none;">@escuelaboyhappy</a></p>
                     </div>
                 </div>
                 <div id="map" class="map-container"></div>
@@ -282,11 +282,11 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer" x-data="ubicacionData()">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
-                    <h3>Boy Happy</h3>
+                    <h3 x-text="nombre || 'Boy Happy'"></h3>
                     <p>Ayudando a los niños a comunicarse mejor desde 2010</p>
                     <div class="social-links">
                         <a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank"><i class="fab fa-instagram"></i></a>
@@ -311,7 +311,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Boy Happy. Todos los derechos reservados.</p>
+                <p>&copy; <span x-text="anoEscolar || new Date().getFullYear()"></span> <span x-text="nombre || 'Boy Happy'"></span>. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
