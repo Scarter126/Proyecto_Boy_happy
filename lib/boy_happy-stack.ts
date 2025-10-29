@@ -175,8 +175,11 @@ export class BoyHappyStack extends cdk.Stack {
     usuariosTable.grantReadWriteData(usuariosLambda);
     usuariosLambda.addToRolePolicy(new iam.PolicyStatement({
       actions: [
-        'cognito-idp:AdminCreateUser',
-        'cognito-idp:AdminAddUserToGroup',
+        'cognito-idp:AdminCreateUser', 
+        'cognito-idp:AdminAddUserToGroup', 
+        'cognito-idp:AdminUpdateUserAttributes', 
+        'cognito-idp:AdminRemoveUserFromGroup', 
+        'cognito-idp:AdminDeleteUser',
       ],
       resources: [
         `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/${process.env.USER_POOL_ID}`,
