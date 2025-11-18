@@ -283,7 +283,7 @@ export class BoyHappyStack extends cdk.Stack {
     // Outputs
     // ----------------------------
     new cdk.CfnOutput(this, 'API Gateway URL', { value: api.url ?? 'NO URL' });
-    new cdk.CfnOutput(this, 'ImagesBucket', { value: imagesBucket.bucketName });
-    new cdk.CfnOutput(this, 'EduBucket', { value: eduBucket.bucketName });
+    new cdk.CfnOutput(this, 'ImagesBucketout', { value: imagesBucket.bucketName });
+    new cdk.CfnOutput(this, 'EduBucketout', { value: eduBucket.bucketName });
   }
 }
