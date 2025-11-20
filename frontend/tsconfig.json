@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "/shared/*": ["./shared/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler"
+  }
+}

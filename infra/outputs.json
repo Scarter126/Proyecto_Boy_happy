@@ -1,0 +1,19 @@
+{
+  "BoyHappyStack": {
+    "ReportesTableName": "Reportes",
+    "ApoderadoAlumnoTableName": "ApoderadoAlumno",
+    "ApoderadosTableName": "Apoderados",
+    "RecursosAcademicosTableName": "RecursosAcademicos",
+    "ProfesorCursoTableName": "ProfesorCurso",
+    "BoyHappyApiEndpointA98159EF": "https://dehppaauhi.execute-api.us-east-1.amazonaws.com/prod/",
+    "UsuariosTableName": "Usuarios",
+    "ApiGatewayURL": "https://dehppaauhi.execute-api.us-east-1.amazonaws.com/prod/",
+    "ImagesBucketName": "boyhappy-images-590183704612",
+    "InformesTableName": "Informes",
+    "FrontendBucketName": "boyhappy-frontend-590183704612",
+    "FrontendWebsiteURL": "http://boyhappy-frontend-590183704612.s3-website-us-east-1.amazonaws.com",
+    "BackupsBucketName": "boyhappy-backups-590183704612",
+    "MaterialesBucketName": "boyhappy-materiales-590183704612",
+    "ComunicacionesTableName": "Comunicaciones"
+  }
+}

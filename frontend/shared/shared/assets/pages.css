@@ -1,0 +1,394 @@
+/* ============================================
+   ESTILOS ESPECÍFICOS DE PÁGINAS
+   - Galería de Imágenes
+   - Formulario de Matrícula
+   - Modales y overlays
+   ============================================ */
+
+/* ===================
+   GALERÍA DE IMÁGENES
+   =================== */
+
+.gallery-section {
+    padding: 80px 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.section-subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 1.1rem;
+    margin-top: -10px;
+    margin-bottom: 40px;
+}
+
+.gallery-filter {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 12px 24px;
+    border: 2px solid var(--purple-main);
+    background: white;
+    color: var(--purple-main);
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-btn:hover {
+    background: var(--purple-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(123, 31, 162, 0.2);
+}
+
+.filter-btn.active {
+    background: var(--purple-main);
+    color: white;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.gallery-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    height: 250px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.gallery-item:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover img {
+    transform: scale(1.1);
+}
+
+.gallery-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: white;
+}
+
+.gallery-item:hover .gallery-overlay {
+    opacity: 1;
+}
+
+.gallery-overlay i {
+    font-size: 3em;
+    margin-bottom: 10px;
+}
+
+.gallery-overlay p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Modal de imagen */
+.image-modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    margin: auto;
+    padding: 0;
+}
+
+.image-modal-content img {
+    width: 100%;
+    height: auto;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.image-modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10001;
+}
+
+.image-modal-close:hover {
+    color: #ddd;
+}
+
+.image-caption {
+    text-align: center;
+    color: white;
+    margin-top: 15px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+/* ===================
+   FORMULARIO MATRÍCULA
+   =================== */
+
+.enrollment-section {
+    padding: 80px 0;
+    background: white;
+}
+
+.enrollment-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 60px;
+    margin-top: 40px;
+}
+
+.enrollment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.info-item {
+    display: flex;
+    gap: 20px;
+    padding: 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(123, 31, 162, 0.2);
+}
+
+.info-item i {
+    font-size: 2.5em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.info-item h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+}
+
+.info-item p {
+    margin: 0;
+    opacity: 0.95;
+    line-height: 1.5;
+}
+
+.enrollment-form-container {
+    background: #f8f9fa;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.enrollment-form h3 {
+    color: var(--purple-main);
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--purple-light);
+}
+
+.form-notice {
+    background: #e3f2fd;
+    border-left: 4px solid #2196F3;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 6px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.form-notice i {
+    color: #2196F3;
+    font-size: 1.5em;
+    margin-top: 2px;
+}
+
+.form-notice p {
+    margin: 0;
+    color: #1565C0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+    .enrollment-container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .gallery-item {
+        height: 200px;
+    }
+
+    .filter-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .gallery-filter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .enrollment-info {
+        gap: 20px;
+    }
+
+    .info-item {
+        padding: 20px;
+    }
+
+    .enrollment-form-container {
+        padding: 25px;
+    }
+}
+
+/* ===================
+   TABLAS RESPONSIVE CON ACORDEÓN
+   =================== */
+
+@media (max-width: 768px) {
+    /* Ocultar la tabla tradicional en mobile */
+    .data-table.responsive-accordion thead {
+        display: none;
+    }
+
+    .data-table.responsive-accordion tbody {
+        display: block;
+    }
+
+    .data-table.responsive-accordion tbody tr {
+        display: block;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background: white;
+    }
+
+    /* Cabecera del acordeón (primera celda) */
+    .data-table.responsive-accordion tbody tr td:first-child {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+    }
+
+    .data-table.responsive-accordion tbody tr td:first-child::after {
+        content: '\f078';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        transition: transform 0.3s ease;
+    }
+
+    .data-table.responsive-accordion tbody tr.accordion-open td:first-child::after {
+        transform: rotate(180deg);
+    }
+
+    /* Contenido del acordeón (resto de celdas) */
+    .data-table.responsive-accordion tbody tr td:not(:first-child) {
+        display: none;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        border-left: none;
+        border-right: none;
+    }
+
+    .data-table.responsive-accordion tbody tr.accordion-open td:not(:first-child) {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .data-table.responsive-accordion tbody tr td:not(:first-child)::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #666;
+        margin-right: 15px;
+        flex: 0 0 40%;
+    }
+
+    .data-table.responsive-accordion tbody tr td:not(:first-child) span,
+    .data-table.responsive-accordion tbody tr td:not(:first-child) div {
+        flex: 1;
+        text-align: right;
+    }
+
+    /* Última celda sin borde inferior */
+    .data-table.responsive-accordion tbody tr td:last-child {
+        border-bottom: none;
+        padding-bottom: 15px;
+    }
+
+    /* Estilos para badges y botones dentro del acordeón */
+    .data-table.responsive-accordion tbody tr td .badge {
+        font-size: 0.85rem;
+        padding: 4px 8px;
+    }
+
+    .data-table.responsive-accordion tbody tr td button,
+    .data-table.responsive-accordion tbody tr td .btn {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+}

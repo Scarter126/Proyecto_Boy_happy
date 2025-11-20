@@ -1,0 +1,17 @@
+[install]
+auto = "auto"
+
+[install.cache]
+disable = false
+
+[test]
+preload = []
+
+[run]
+hot = true
+
+# JSX Configuration for Preact
+[jsx]
+runtime = "automatic"
+importSource = "preact"
+optimize = true

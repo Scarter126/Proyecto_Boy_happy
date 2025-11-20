@@ -1,0 +1,197 @@
+/**
+ * Estilos personalizados para SweetAlert2
+ * Sistema Boy Happy
+ */
+
+/* Popup principal */
+.swal-popup {
+  font-family: 'Fredoka', 'Comic Neue', sans-serif !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+}
+
+/* Título */
+.swal-title {
+  color: #AD1457 !important;
+  font-weight: 600 !important;
+  font-size: 1.75rem !important;
+}
+
+/* Texto */
+.swal-text {
+  color: #616161 !important;
+  font-size: 1rem !important;
+}
+
+/* Botón Confirmar */
+.swal-btn-confirm {
+  background: linear-gradient(135deg, #AD1457 0%, #7B1FA2 100%) !important;
+  color: white !important;
+  padding: 12px 30px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+}
+
+.swal-btn-confirm:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+}
+
+/* Botón Cancelar */
+.swal-btn-cancel {
+  background: #F5F5F5 !important;
+  color: #616161 !important;
+  padding: 12px 30px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  margin-left: 10px !important;
+}
+
+.swal-btn-cancel:hover {
+  background: #E0E0E0 !important;
+}
+
+/* Botón Deny (rechazar) */
+.swal-btn-deny {
+  background: #ef5350 !important;
+  color: white !important;
+  padding: 12px 30px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  margin-left: 10px !important;
+}
+
+.swal-btn-deny:hover {
+  background: #e53935 !important;
+}
+
+/* Animaciones */
+.swal-show {
+  animation: swalSlideIn 0.3s ease !important;
+}
+
+.swal-hide {
+  animation: swalSlideOut 0.3s ease !important;
+}
+
+.swal-backdrop-show {
+  animation: fadeIn 0.3s ease !important;
+}
+
+.swal-backdrop-hide {
+  animation: fadeOut 0.3s ease !important;
+}
+
+@keyframes swalSlideIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes swalSlideOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Iconos */
+.swal2-icon.swal2-success {
+  border-color: #4CAF50 !important;
+  color: #4CAF50 !important;
+}
+
+.swal2-icon.swal2-error {
+  border-color: #ef5350 !important;
+  color: #ef5350 !important;
+}
+
+.swal2-icon.swal2-warning {
+  border-color: #FFC107 !important;
+  color: #FFC107 !important;
+}
+
+.swal2-icon.swal2-info {
+  border-color: #2196F3 !important;
+  color: #2196F3 !important;
+}
+
+/* Estilos para inputs y selects dentro de modales */
+.swal2-input,
+.swal2-select {
+  width: 100% !important;
+  padding: 10px 15px !important;
+  border: 2px solid #e0e0e0 !important;
+  border-radius: 8px !important;
+  font-size: 0.95rem !important;
+  font-family: 'Fredoka', 'Comic Neue', sans-serif !important;
+  transition: border-color 0.3s ease !important;
+  margin: 5px 0 !important;
+}
+
+.swal2-input:focus,
+.swal2-select:focus {
+  border-color: #AD1457 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(173, 20, 87, 0.1) !important;
+}
+
+.swal2-select {
+  cursor: pointer !important;
+  background-color: white !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  padding-right: 35px !important;
+}
+
+.swal2-textarea {
+  width: 100% !important;
+  padding: 10px 15px !important;
+  border: 2px solid #e0e0e0 !important;
+  border-radius: 8px !important;
+  font-size: 0.95rem !important;
+  font-family: 'Fredoka', 'Comic Neue', sans-serif !important;
+  resize: vertical !important;
+  min-height: 100px !important;
+  transition: border-color 0.3s ease !important;
+}
+
+.swal2-textarea:focus {
+  border-color: #AD1457 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(173, 20, 87, 0.1) !important;
+}
