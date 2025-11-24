@@ -3,12 +3,24 @@ const { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCo
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/bitacora',
+  methods: ['GET', 'POST'],
+  auth: true,
+  roles: ['admin', 'profesor'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.RECURSOS_TABLE],
+  additionalPolicies: []
+};
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
 
 const CATEGORIAS_VALIDAS = ['Conducta', 'Aprendizaje', 'Social', 'Emocional', 'Comunicación'];
 const SEVERIDADES_VALIDAS = ['leve', 'moderada', 'alta'];
@@ -35,6 +47,7 @@ async function getItemById(id) {
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -53,7 +66,7 @@ exports.handler = async (event) => {
       if (!data.rutAlumno || !data.categoria || !data.descripcion || !data.autor) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Campos requeridos: rutAlumno, categoria, descripcion, autor'
           })
@@ -63,7 +76,7 @@ exports.handler = async (event) => {
       if (!CATEGORIAS_VALIDAS.includes(data.categoria)) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: `Categoría inválida. Debe ser una de: ${CATEGORIAS_VALIDAS.join(', ')}`
           })
@@ -73,7 +86,7 @@ exports.handler = async (event) => {
       if (data.severidad && !SEVERIDADES_VALIDAS.includes(data.severidad)) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: `Severidad inválida. Debe ser una de: ${SEVERIDADES_VALIDAS.join(', ')}`
           })
@@ -100,7 +113,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -165,7 +178,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           registros: result.Items,
           total: result.Items.length
@@ -180,7 +193,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -194,7 +207,7 @@ exports.handler = async (event) => {
       if (!existingItem) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Registro no encontrado' })
         };
       }
@@ -216,7 +229,7 @@ exports.handler = async (event) => {
         if (!CATEGORIAS_VALIDAS.includes(data.categoria)) {
           return {
             statusCode: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({
               error: `Categoría inválida. Debe ser una de: ${CATEGORIAS_VALIDAS.join(', ')}`
             })
@@ -230,7 +243,7 @@ exports.handler = async (event) => {
         if (!SEVERIDADES_VALIDAS.includes(data.severidad)) {
           return {
             statusCode: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({
               error: `Severidad inválida. Debe ser una de: ${SEVERIDADES_VALIDAS.join(', ')}`
             })
@@ -252,7 +265,7 @@ exports.handler = async (event) => {
       if (updateParts.length === 1) { // Solo timestamp
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'No se especificaron campos para actualizar' })
         };
       }
@@ -266,7 +279,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Registro actualizado correctamente',
           id
@@ -281,7 +294,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -294,7 +307,7 @@ exports.handler = async (event) => {
       if (!existingItem) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Registro no encontrado' })
         };
       }
@@ -306,7 +319,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Registro eliminado correctamente',
           id
@@ -317,7 +330,7 @@ exports.handler = async (event) => {
     // Ruta no encontrada
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta o método no soportado' })
     };
 
@@ -325,7 +338,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Error interno del servidor',
         error: error.message

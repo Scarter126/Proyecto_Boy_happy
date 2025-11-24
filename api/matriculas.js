@@ -1,6 +1,8 @@
 /**
  * Lambda Metadata para Auto-discovery
  */
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
 exports.metadata = {
   route: '/matriculas',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -11,10 +13,10 @@ exports.metadata = {
   roles: ['admin', 'profesor'],         // Solo admin y profesor pueden gestionar
   profile: 'medium',
   tables: [
-    'Comunicaciones',                   // Tabla principal de matrículas
-    'Usuarios',                         // Para crear usuarios
-    'Apoderados',                       // Gestión de apoderados
-    'ApoderadoAlumno'                   // Relación N:N
+    TABLE_KEYS.COMUNICACIONES_TABLE,                   // Tabla principal de matrículas
+    TABLE_KEYS.USUARIOS_TABLE,                         // Para crear usuarios
+    TABLE_KEYS.APODERADOS_TABLE,                       // Gestión de apoderados
+    TABLE_KEYS.APODERADO_ALUMNO_TABLE                   // Relación N:N
   ],
   additionalPolicies: [
     {
@@ -37,18 +39,19 @@ const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand } = require('@aws-sdk/client-cognito-identity-provider');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { SOURCE_EMAIL } = require('./shared-config');
+const TABLE_NAMES = require('../shared/table-names.cjs');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const sesClient = new SESClient({});
 const cognito = new CognitoIdentityProviderClient({});
 
-const COMUNICACIONES_TABLE = process.env.COMUNICACIONES_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
-const APODERADOS_TABLE = process.env.APODERADOS_TABLE;
-const APODERADO_ALUMNO_TABLE = process.env.APODERADO_ALUMNO_TABLE;
+const COMUNICACIONES_TABLE = TABLE_NAMES.COMUNICACIONES_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
+const APODERADOS_TABLE = TABLE_NAMES.APODERADOS_TABLE;
+const APODERADO_ALUMNO_TABLE = TABLE_NAMES.APODERADO_ALUMNO_TABLE;
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
 /**
@@ -57,6 +60,7 @@ const USER_POOL_ID = process.env.USER_POOL_ID;
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     const { httpMethod, path, queryStringParameters } = event;
 
     // ========================================
@@ -68,7 +72,7 @@ exports.handler = async (event) => {
       if (!data.nombreAlumno || !data.rutAlumno || !data.correoApoderado) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: nombreAlumno, rutAlumno, correoApoderado' })
         };
       }
@@ -94,7 +98,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -121,7 +125,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           matriculas: items,
           total: items.length,
@@ -167,7 +171,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'Curso eliminado correctamente' })
         };
       }
@@ -191,7 +195,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'Curso actualizado correctamente en matrícula' })
         };
       }
@@ -200,7 +204,7 @@ exports.handler = async (event) => {
       // El campo curso ahora vive en la tabla Usuarios, no necesitamos crear matrícula
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'No se encontró una relación apoderado-alumno para este alumno. El curso se maneja en la tabla Usuarios.' })
       };
     }
@@ -222,7 +226,7 @@ exports.handler = async (event) => {
       if (!getResult.Items || getResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Matrícula no encontrada' })
         };
       }
@@ -273,7 +277,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             message: `Matrícula ${data.estado}. Email enviado.`,
             id,
@@ -332,7 +336,7 @@ exports.handler = async (event) => {
         if (updateExpressions.length === 0) {
           return {
             statusCode: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'No hay campos para actualizar' })
           };
         }
@@ -353,7 +357,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             message: 'Matrícula actualizada correctamente',
             id
@@ -373,7 +377,7 @@ exports.handler = async (event) => {
       if (!data.curso) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campo requerido: curso' })
         };
       }
@@ -388,7 +392,7 @@ exports.handler = async (event) => {
       if (!getResult.Items || getResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Matrícula no encontrada' })
         };
       }
@@ -399,7 +403,7 @@ exports.handler = async (event) => {
       if (matricula.estado !== 'aprobada') {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Solo se pueden convertir matrículas aprobadas' })
         };
       }
@@ -413,7 +417,7 @@ exports.handler = async (event) => {
       if (usuarioExistente.Item && usuarioExistente.Item.activo) {
         return {
           statusCode: 409,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Ya existe un usuario activo con este RUT' })
         };
       }
@@ -560,7 +564,7 @@ Equipo Boy Happy`,
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             message: 'Usuario creado exitosamente',
             usuario: nuevoUsuario,
@@ -574,14 +578,14 @@ Equipo Boy Happy`,
         if (error.code === 'UsernameExistsException') {
           return {
             statusCode: 409,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'El correo ya está registrado en Cognito' })
           };
         }
 
         return {
           statusCode: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Error al crear usuario: ' + error.message })
         };
       }
@@ -602,7 +606,7 @@ Equipo Boy Happy`,
       if (!getResult.Items || getResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Matrícula no encontrada' })
         };
       }
@@ -613,7 +617,7 @@ Equipo Boy Happy`,
       if (matricula.usuarioCreado === true) {
         return {
           statusCode: 409,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'No se puede eliminar esta matrícula porque ya fue convertida a usuario. El usuario y sus relaciones permanecerán activos.',
             usuarioCreado: true,
@@ -630,14 +634,14 @@ Equipo Boy Happy`,
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Solicitud eliminada', id })
       };
     }
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta no soportada' })
     };
 
@@ -645,7 +649,7 @@ Equipo Boy Happy`,
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: error.message })
     };
   }

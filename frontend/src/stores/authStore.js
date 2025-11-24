@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { cognitoAuth } from '../services/cognitoAuth';
+import apiClient from '../lib/apiClient';
 
 const useAuthStore = create(
   persist(
@@ -14,8 +15,7 @@ const useAuthStore = create(
   // Init - called on app start
   init: async () => {
     // En modo desarrollo, intentar cargar usuario mockeado primero
-    const isDev = true ||
-                  window.location.hostname === 'localhost' ||
+    const isDev = window.location.hostname === 'localhost' ||
                   window.location.hostname === '127.0.0.1';
 
     if (isDev) {
@@ -223,13 +223,7 @@ const useAuthStore = create(
   login: async (credentials) => {
     set({ loading: true });
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await response.json();
+      const data = await apiClient.post('/login', credentials);
 
       if (data.token) {
         document.cookie = `idToken=${data.token}; path=/; secure; samesite=strict`;

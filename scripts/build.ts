@@ -9,6 +9,10 @@
 
 import { rmSync, mkdirSync, cpSync, readdirSync } from 'fs';
 import { join } from 'path';
+import * as dotenv from 'dotenv';
+
+// Cargar variables de entorno desde .env
+dotenv.config({ path: join(import.meta.dir, '..', '.env') });
 
 const ROOT = join(import.meta.dir, '..');
 const DIST = join(ROOT, 'dist');
@@ -18,6 +22,10 @@ console.log(`
 ║  🏗️  Building BoyHappy para Producción (Bun)         ║
 ╚═══════════════════════════════════════════════════════╝
 `);
+
+console.log('📝 Environment variables:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV || 'production');
+console.log('  - API_URL:', process.env.API_URL || '(not set)');
 
 // === 1. LIMPIAR DIST ===
 console.log('🧹 Limpiando dist/...');

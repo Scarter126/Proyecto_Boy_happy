@@ -2,15 +2,17 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const requireLayer = require('./requireLayer');
 const { authorize, ROLES } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const ASISTENCIA_TABLE = process.env.ASISTENCIA_TABLE;
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
+const ASISTENCIA_TABLE = TABLE_NAMES.ASISTENCIA_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
 
 /**
  * CU-25: Exportar reportes en formatos CSV, XLSX y PDF
@@ -18,9 +20,20 @@ const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
  * Esta lambda genera archivos en Base64 para descarga directa desde el frontend
  * No requiere librerías externas adicionales - usa generación manual optimizada
  */
+exports.metadata = {
+  route: '/exportar',
+  methods: ['GET'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.ASISTENCIA_TABLE, TABLE_KEYS.RECURSOS_TABLE, TABLE_KEYS.USUARIOS_TABLE],
+  additionalPolicies: []
+};
+
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     const authResult = authorize(event);
     if (!authResult.authorized) {
       return authResult.response;
@@ -37,7 +50,7 @@ exports.handler = async (event) => {
       if (!curso) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: curso' })
         };
       }
@@ -51,7 +64,7 @@ exports.handler = async (event) => {
           if (!tieneAcceso) {
             return {
               statusCode: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({ error: `No tiene acceso al curso ${curso}` })
             };
           }
@@ -170,7 +183,7 @@ exports.handler = async (event) => {
           if (!tieneAcceso) {
             return {
               statusCode: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({ error: `No tiene acceso al curso ${curso}` })
             };
           }
@@ -280,7 +293,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta no soportada' })
     };
 
@@ -288,7 +301,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: error.message })
     };
   }

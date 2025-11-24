@@ -2,11 +2,13 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand, GetCommand, DeleteCommand, UpdateCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const requireLayer = require('./requireLayer');
 const { getCorsHeaders } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
 
-const TABLE_NAME = process.env.AGENDA_TABLE;
+const TABLE_NAME = TABLE_NAMES.AGENDA_TABLE;
 
 exports.handler = async (event) => {
   // Obtener headers CORS dinámicos basados en el origen del request
@@ -36,11 +38,7 @@ exports.handler = async (event) => {
         console.warn('⚠️ Tabla de agenda no existe - retornando array vacío para desarrollo');
         return {
           statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Credentials': 'true'
-          },
+          headers: corsHeaders,
           body: JSON.stringify([])
         };
       }
@@ -56,32 +54,20 @@ exports.handler = async (event) => {
     try { data = JSON.parse(event.body); }
     catch (err) { return {
       statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
-      },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Datos inválidos' })
     }; }
 
     if (!data.fechaHora) return {
       statusCode: 400,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
-      },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Falta fechaHora' })
     };
 
     await dynamo.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { fechaHora: data.fechaHora } }));
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
-      },
+      headers: corsHeaders,
       body: JSON.stringify({ message: 'Eliminado correctamente' })
     };
   }
@@ -150,11 +136,7 @@ exports.handler = async (event) => {
     if (existing.Item && existing.Item.nombreAlumno && existing.Item.nombreAlumno.trim() !== '') {
       return {
         statusCode: 409,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Horario ya tomado' })
       };
     }
@@ -173,11 +155,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': 'true'
-      },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: esBloqueo
           ? `Horario ${fechaHora} bloqueado correctamente`
@@ -188,11 +166,7 @@ exports.handler = async (event) => {
 
   return {
     statusCode: 405,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': 'true'
-    },
+    headers: corsHeaders,
     body: JSON.stringify({ error: 'Método no permitido' })
   };
 };
@@ -203,5 +177,5 @@ exports.metadata = {
   methods: ['GET', 'POST', 'DELETE'],
   auth: false,
   profile: 'medium',
-  tables: ['AgendaFono:readwrite']
+  tables: [`${TABLE_KEYS.AGENDA_TABLE}:readwrite`]
 };

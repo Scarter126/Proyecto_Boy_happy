@@ -4,10 +4,12 @@ const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { getCorsHeaders, parseBody } = requireLayer('responseHelper');
 const { authorize, ROLES } = requireLayer('authMiddleware');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
-const TABLE_NAME = process.env.COMUNICACIONES_TABLE;
+const TABLE_NAME = TABLE_NAMES.COMUNICACIONES_TABLE;
 
 exports.handler = async (event) => {
   // Obtener headers CORS dinámicos basados en el origen del request
@@ -234,5 +236,5 @@ exports.metadata = {
   auth: true,
   roles: ['admin', 'profesor', 'fono', 'apoderado'],
   profile: 'medium',
-  tables: ['Comunicaciones:readwrite']
+  tables: [TABLE_KEYS.COMUNICACIONES_TABLE]
 };

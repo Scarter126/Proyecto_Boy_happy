@@ -1,0 +1,24 @@
+/**
+ * Claves para referenciar tablas en metadata de Lambdas
+ * Single source of truth para los identificadores de tablas
+ *
+ * Estas claves se usan en:
+ * 1. metadata.tables de cada Lambda
+ * 2. tablesMap en CDK Stack
+ * 3. Vinculación con shared/table-names.cjs
+ */
+module.exports = {
+  USUARIOS_TABLE: 'USUARIOS_TABLE',
+  COMUNICACIONES_TABLE: 'COMUNICACIONES_TABLE',
+  ASISTENCIA_TABLE: 'ASISTENCIA_TABLE',
+  RECURSOS_TABLE: 'RECURSOS_TABLE',
+  AGENDA_TABLE: 'AGENDA_TABLE',
+  CONFIGURACION_TABLE: 'CONFIGURACION_TABLE',
+  INFORMES_TABLE: 'INFORMES_TABLE',
+  REPORTES_TABLE: 'REPORTES_TABLE',
+  APODERADOS_TABLE: 'APODERADOS_TABLE',
+  APODERADO_ALUMNO_TABLE: 'APODERADO_ALUMNO_TABLE',
+  PROFESOR_CURSO_TABLE: 'PROFESOR_CURSO_TABLE',
+  RETROALIMENTACION_TABLE: 'RETROALIMENTACION_TABLE',
+  MATERIAL_CATEGORIAS_TABLE: 'MATERIAL_CATEGORIAS_TABLE'
+};

@@ -42,7 +42,7 @@ const useConfigStore = create(
       appVersion: '1.0.0',
 
       /** @type {'development'|'production'} Entorno actual */
-      environment: true ? 'development' : 'production',
+      environment: env.NODE_ENV || 'production',
 
       // Features flags - Activar/desactivar funcionalidades
       features: {
@@ -83,7 +83,6 @@ const useConfigStore = create(
       api: {
         // Detectar baseURL automáticamente
         baseURL: (() => {
-          const isDev = true;
           const isLocalhost = typeof window !== 'undefined' &&
                              (window.location.hostname === 'localhost' ||
                               window.location.hostname === '127.0.0.1');
@@ -99,19 +98,21 @@ const useConfigStore = create(
             return `${window.location.protocol}//${window.location.hostname}:${port}`;
           }
 
+          // PRODUCCIÓN: Usar API Gateway URL directamente
           // Si hay API_URL en .env (producción), usarla
-          if (env.API_URL) {
+          if (env.API_URL && env.API_URL !== '') {
             return env.API_URL;
           }
 
-          // Fallback: usar el origen actual (CloudFront)
-          return typeof window !== 'undefined' ? window.location.origin : '';
+          // Fallback: NO usar window.location.origin en producción
+          // porque el frontend está en S3 y el API está en API Gateway
+          return '';
         })(),
       },
 
       // Timeouts configurables por entorno
       timeouts: {
-        api: true ? 60000 : 30000, // 60s dev, 30s prod
+        api: (env.NODE_ENV === 'development') ? 60000 : 30000, // 60s dev, 30s prod
         upload: 120000, // 2 minutos para uploads
         download: 180000, // 3 minutos para downloads
       },
@@ -119,7 +120,7 @@ const useConfigStore = create(
       // Cache configuration
       cache: {
         enabled: false,
-        ttl: true ? 60000 : 300000, // 1min dev, 5min prod
+        ttl: (env.NODE_ENV === 'development') ? 60000 : 300000, // 1min dev, 5min prod
       },
 
       // ==========================================
@@ -385,7 +386,7 @@ const useConfigStore = create(
  * @returns {'development'|'production'}
  */
 export const getEnvironment = () => {
-  return true ? 'development' : 'production';
+  return env.NODE_ENV || 'production';
 };
 
 /**
@@ -414,7 +415,6 @@ export const isProduction = () => {
  */
 export const buildApiUrl = (endpoint) => {
   // Detectar baseURL
-  const isDev = true;
   const isLocalhost = typeof window !== 'undefined' &&
                      (window.location.hostname === 'localhost' ||
                       window.location.hostname === '127.0.0.1');
@@ -454,7 +454,6 @@ export const buildApiUrl = (endpoint) => {
  * @returns {Object} Configuración de API
  */
 export const getApiConfig = () => {
-  const isDev = true;
   const isLocalhost = typeof window !== 'undefined' &&
                      (window.location.hostname === 'localhost' ||
                       window.location.hostname === '127.0.0.1');
@@ -471,17 +470,20 @@ export const getApiConfig = () => {
       const port = window.location.port || '3000';
       baseURL = `${window.location.protocol}//${window.location.hostname}:${port}`;
     }
-  } else if (env.API_URL) {
+  } else if (env.API_URL && env.API_URL !== '') {
     // En producción o dev remoto, usar el API_URL del .env
     baseURL = env.API_URL;
-  } else if (typeof window !== 'undefined') {
-    // Fallback: usar el origen actual
-    baseURL = window.location.origin;
+    console.log('[ConfigStore] Using API_URL from env:', baseURL);
+  } else {
+    // CRÍTICO: NO usar window.location.origin como fallback
+    // porque el frontend está en S3 y el backend en API Gateway
+    console.warn('[ConfigStore] API_URL not found in env, baseURL will be empty');
+    baseURL = '';
   }
 
   return {
     baseURL,
-    timeout: isDev ? 60000 : 30000,
+    timeout: (env.NODE_ENV === 'development') ? 60000 : 30000,
     uploadTimeout: 120000,
     downloadTimeout: 180000,
   };

@@ -5,17 +5,19 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
 const { getItemById } = requireLayer('sharedHelpers');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const s3Client = new S3Client({});
 
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
 const MATERIALES_BUCKET = process.env.MATERIALES_BUCKET;
-const MATERIAL_CATEGORIAS_TABLE = process.env.MATERIAL_CATEGORIAS_TABLE;
+const MATERIAL_CATEGORIAS_TABLE = TABLE_NAMES.MATERIAL_CATEGORIAS_TABLE;
 
 /**
  * Helper: Obtener categorías de un material desde MaterialCategorias
@@ -91,6 +93,9 @@ async function agregarCategorias(materialId, categoriaIds, userEmail) {
 exports.handler = async (event) => {
 
   try {
+    // Obtener headers CORS dinámicos
+    const corsHeaders = getCorsHeaders(event);
+
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -109,7 +114,7 @@ exports.handler = async (event) => {
       if (!data.curso || !data.titulo) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Campos requeridos: curso, titulo'
           })
@@ -131,7 +136,7 @@ exports.handler = async (event) => {
           if (!tieneAcceso) {
             return {
               statusCode: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({
                 error: `El profesor no está asignado al curso ${data.curso}`
               })
@@ -217,7 +222,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -238,7 +243,7 @@ exports.handler = async (event) => {
         if (queryStringParameters?.curso && !cursosAutorizados.includes(queryStringParameters.curso)) {
           return {
             statusCode: 403,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'No autorizado para acceder a materiales de este curso' })
           };
         }
@@ -335,7 +340,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           materiales: materiales,
           total: materiales.length
@@ -356,7 +361,7 @@ exports.handler = async (event) => {
       if (!existingItem) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Material no encontrado' })
         };
       }
@@ -365,7 +370,7 @@ exports.handler = async (event) => {
       if (existingItem.estado !== 'pendiente' && existingItem.estado !== 'en_correccion') {
         return {
           statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Solo se pueden editar materiales en estado pendiente o en corrección'
           })
@@ -417,7 +422,7 @@ exports.handler = async (event) => {
       if (updateParts.length === 2) { // Solo estado y timestamp
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'No se especificaron campos para actualizar' })
         };
       }
@@ -471,7 +476,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Material actualizado correctamente',
           id,
@@ -487,7 +492,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -498,7 +503,7 @@ exports.handler = async (event) => {
       if (!data.revisadoPor) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campo requerido: revisadoPor' })
         };
       }
@@ -508,7 +513,7 @@ exports.handler = async (event) => {
       if (!item) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Material no encontrado' })
         };
       }
@@ -527,7 +532,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Material aprobado correctamente',
           id,
@@ -543,7 +548,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -554,7 +559,7 @@ exports.handler = async (event) => {
       if (!data.revisadoPor || !data.motivo) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: revisadoPor, motivo' })
         };
       }
@@ -564,7 +569,7 @@ exports.handler = async (event) => {
       if (!item) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Material no encontrado' })
         };
       }
@@ -583,7 +588,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Material rechazado',
           id,
@@ -599,7 +604,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -610,7 +615,7 @@ exports.handler = async (event) => {
       if (!data.revisadoPor || !data.observaciones) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: revisadoPor, observaciones' })
         };
       }
@@ -620,7 +625,7 @@ exports.handler = async (event) => {
       if (!item) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Material no encontrado' })
         };
       }
@@ -639,7 +644,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Corrección solicitada',
           id,
@@ -657,7 +662,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -673,7 +678,7 @@ exports.handler = async (event) => {
         console.error('❌ Material no encontrado. ID buscado:', id);
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Material no encontrado' })
         };
       }
@@ -722,7 +727,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Material eliminado correctamente',
           id
@@ -733,7 +738,7 @@ exports.handler = async (event) => {
     // Ruta no encontrada
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta o método no soportado' })
     };
 
@@ -741,7 +746,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Error interno del servidor',
         error: error.message
@@ -751,10 +756,15 @@ exports.handler = async (event) => {
 };
 
 /**
- * Metadata para auto-grant de permisos
+ * Metadata para auto-grant de permisos y routing
  */
 exports.metadata = {
-  tables: ['RecursosAcademicos', 'MaterialCategorias'],
+  route: '/materiales',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.RECURSOS_TABLE, TABLE_KEYS.MATERIAL_CATEGORIAS_TABLE],
   buckets: ['materiales'],
   additionalPolicies: []
 };

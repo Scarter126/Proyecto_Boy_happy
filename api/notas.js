@@ -3,14 +3,26 @@ const { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCo
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
 const { getItemById } = requireLayer('sharedHelpers');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/notas',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.RECURSOS_TABLE],
+  additionalPolicies: []
+};
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
 
 /**
  * Lambda handler para gestión de notas académicas
@@ -28,6 +40,7 @@ const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -46,7 +59,7 @@ exports.handler = async (event) => {
       if (!data.rutAlumno || !data.curso || !data.asignatura || !data.nombreEvaluacion) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: rutAlumno, curso, asignatura, nombreEvaluacion' })
         };
       }
@@ -56,7 +69,7 @@ exports.handler = async (event) => {
       if (!data.nivelLogro || !valoresValidos.includes(data.nivelLogro)) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'El campo "nivelLogro" es requerido y debe ser uno de: L (Logrado), NL (No Logrado), OD (Objetivo en Desarrollo), NT (No Trabajado)'
           })
@@ -84,7 +97,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -105,7 +118,7 @@ exports.handler = async (event) => {
         if (cursosAutorizados.length === 0) {
           return {
             statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ notas: [], total: 0 })
           };
         }
@@ -114,7 +127,7 @@ exports.handler = async (event) => {
         if (queryStringParameters?.curso && !cursosAutorizados.includes(queryStringParameters.curso)) {
           return {
             statusCode: 403,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'No autorizado para acceder a notas de este curso' })
           };
         }
@@ -196,7 +209,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           notas: filteredItems,
           total: filteredItems.length
@@ -211,7 +224,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.rutAlumno) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: rutAlumno' })
         };
       }
@@ -272,7 +285,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           asignaturas: Object.values(asignaturas)
         })
@@ -286,7 +299,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.rutAlumno) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: rutAlumno' })
         };
       }
@@ -361,7 +374,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           rutAlumno,
           curso: cursoAlumno,
@@ -380,7 +393,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -394,7 +407,7 @@ exports.handler = async (event) => {
       if (!existingItem) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Nota no encontrada' })
         };
       }
@@ -411,7 +424,7 @@ exports.handler = async (event) => {
         if (!valoresValidos.includes(data.nivelLogro)) {
           return {
             statusCode: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'nivelLogro debe ser: L (Logrado), NL (No Logrado), OD (Objetivo en Desarrollo), o NT (No Trabajado)' })
           };
         }
@@ -441,7 +454,7 @@ exports.handler = async (event) => {
       if (updateParts.length === 1) { // Solo timestamp
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'No se especificaron campos para actualizar' })
         };
       }
@@ -455,7 +468,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Nota actualizada correctamente',
           id,
@@ -471,7 +484,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -484,7 +497,7 @@ exports.handler = async (event) => {
       if (!existingItem) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Nota no encontrada' })
         };
       }
@@ -496,7 +509,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Nota eliminada correctamente',
           id
@@ -507,7 +520,7 @@ exports.handler = async (event) => {
     // Ruta no encontrada
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta o método no soportado' })
     };
 
@@ -515,7 +528,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Error interno del servidor',
         error: error.message

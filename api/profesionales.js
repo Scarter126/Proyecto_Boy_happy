@@ -1,24 +1,27 @@
 /**
  * Lambda Metadata para Auto-discovery
  */
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
 exports.metadata = {
   route: '/profesionales',               // Ruta HTTP
   methods: ['GET'],                      // Solo lectura (endpoint público)
   auth: false,                           // NO requiere autenticación (público)
   roles: ['*'],                          // Acceso público
   profile: 'light',                      // Lambda light (poca memoria/tiempo)
-  tables: ['Usuarios:read']              // Solo lectura en Usuarios table
+  tables: [`${TABLE_KEYS.USUARIOS_TABLE}:read`]              // Solo lectura en Usuarios table
 };
 
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const requireLayer = require('./requireLayer');
 const { getCorsHeaders } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-const TABLE_NAME = process.env.USUARIOS_TABLE;
+const TABLE_NAME = TABLE_NAMES.USUARIOS_TABLE;
 
 /**
  * Endpoint PÚBLICO para listar profesionales (admin, profesor, fono)

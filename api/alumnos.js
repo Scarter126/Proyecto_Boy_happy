@@ -2,14 +2,26 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const requireLayer = require('./requireLayer');
 const { authorize, ROLES } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError } = requireLayer('responseHelper');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/alumnos',
+  methods: ['GET'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.APODERADO_ALUMNO_TABLE, TABLE_KEYS.USUARIOS_TABLE],
+  additionalPolicies: []
+};
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const APODERADO_ALUMNO_TABLE = process.env.APODERADO_ALUMNO_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
+const APODERADO_ALUMNO_TABLE = TABLE_NAMES.APODERADO_ALUMNO_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
 
 /**
  * API para gestionar información de alumnos
@@ -18,6 +30,7 @@ const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
  */
 exports.handler = async (event) => {
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -48,7 +61,7 @@ exports.handler = async (event) => {
           if (!tieneAcceso) {
             return {
               statusCode: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({ error: `No tiene acceso al curso ${curso}` })
             };
           }
@@ -107,7 +120,7 @@ exports.handler = async (event) => {
       if (authResult.user.rol === 'alumno' && authResult.user.rut !== rut) {
         return {
           statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'No tiene permiso para consultar este alumno' })
         };
       }
@@ -135,7 +148,7 @@ exports.handler = async (event) => {
         if (!tieneAcceso) {
           return {
             statusCode: 403,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: `No tiene acceso al curso del alumno` })
           };
         }

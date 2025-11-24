@@ -3,12 +3,14 @@ const { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, BatchWr
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
 const { success, badRequest, notFound, serverError } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-const MATERIAL_CATEGORIAS_TABLE = process.env.MATERIAL_CATEGORIAS_TABLE;
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
+const MATERIAL_CATEGORIAS_TABLE = TABLE_NAMES.MATERIAL_CATEGORIAS_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
 
 /**
  * Lambda handler para gestionar relaciones Material-Categoría (Many-to-Many)
@@ -273,9 +275,14 @@ exports.handler = async (event) => {
 };
 
 /**
- * Metadata para auto-grant de permisos
+ * Metadata para auto-grant de permisos y routing
  */
 exports.metadata = {
-  tables: ['MaterialCategorias', 'RecursosAcademicos:read'],
+  route: '/material-categorias',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.MATERIAL_CATEGORIAS_TABLE, `${TABLE_KEYS.RECURSOS_TABLE}:read`],
   additionalPolicies: []
 };

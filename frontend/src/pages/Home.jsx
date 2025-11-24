@@ -9,6 +9,7 @@ import { useGaleria } from '../hooks/useGaleria';
 import { useNoticias } from '../hooks/useNoticias';
 import { showLoginModal } from '../utils/loginModal';
 import useAuthStore from '../stores/authStore';
+import apiClient from '../lib/apiClient';
 
 // Fix for default marker icons in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -241,32 +242,25 @@ export default function Home() {
       const fechaHoraCompleta = `${selectedDate.toISOString().split('T')[0]}T${bookingForm.selectedHour}`;
 
       // 3. Hacer fetch al backend
-      const response = await fetch('/api/reservar-evaluacion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // Datos del slot
-          fechaHora: fechaHoraCompleta,
-          rutFono: selectedProfessional,
-          nombreFono: profesionalSeleccionado?.nombre || '',
+      const data = await apiClient.post('/reservar-evaluacion', {
+        // Datos del slot
+        fechaHora: fechaHoraCompleta,
+        rutFono: selectedProfessional,
+        nombreFono: profesionalSeleccionado?.nombre || '',
 
-          // Datos del alumno
-          nombreAlumno: bookingForm.patientName,
-          rutAlumno: bookingForm.studentRut,
-          fechaNacimiento: bookingForm.birthDate,
+        // Datos del alumno
+        nombreAlumno: bookingForm.patientName,
+        rutAlumno: bookingForm.studentRut,
+        fechaNacimiento: bookingForm.birthDate,
 
-          // Datos del apoderado
-          nombreApoderado: bookingForm.guardianName,
-          rutApoderado: bookingForm.guardianRut,
-          correo: bookingForm.parentEmail,
-          telefono: bookingForm.phone
-        })
+        // Datos del apoderado
+        nombreApoderado: bookingForm.guardianName,
+        rutApoderado: bookingForm.guardianRut,
+        correo: bookingForm.parentEmail,
+        telefono: bookingForm.phone
       });
 
-      const data = await response.json();
-
       // 4. Cerrar loading y mostrar resultado
-      if (response.ok) {
         await Swal.fire({
           icon: 'success',
           title: '¡Cita Agendada!',
@@ -283,30 +277,21 @@ export default function Home() {
           confirmButtonColor: '#d91e6b'
         });
 
-        // Reset form
-        setBookingForm({
-          patientName: '',
-          studentRut: '',
-          birthDate: '',
-          guardianName: '',
-          guardianRut: '',
-          parentEmail: '',
-          phone: '',
-          selectedHour: ''
-        });
-        setSelectedDate(null);
-        setSelectedProfessional(null);
-        setAvailableHours([]);
-        setAvailableProfessionals([]);
-      } else {
-        await Swal.fire({
-          icon: 'error',
-          title: 'Error al Reservar',
-          text: data.error || data.message || 'No se pudo completar la reserva. Por favor intenta nuevamente.',
-          confirmButtonText: 'Aceptar',
-          confirmButtonColor: '#d91e6b'
-        });
-      }
+      // Reset form
+      setBookingForm({
+        patientName: '',
+        studentRut: '',
+        birthDate: '',
+        guardianName: '',
+        guardianRut: '',
+        parentEmail: '',
+        phone: '',
+        selectedHour: ''
+      });
+      setSelectedDate(null);
+      setSelectedProfessional(null);
+      setAvailableHours([]);
+      setAvailableProfessionals([]);
     } catch (err) {
       await Swal.fire({
         icon: 'error',

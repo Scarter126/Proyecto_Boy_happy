@@ -5,12 +5,24 @@ const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { SOURCE_EMAIL } = require('./shared-config');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const sesClient = new SESClient({});
 
-const COMUNICACIONES_TABLE = process.env.COMUNICACIONES_TABLE;
+const COMUNICACIONES_TABLE = TABLE_NAMES.COMUNICACIONES_TABLE;
+
+exports.metadata = {
+  route: '/eventos',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.COMUNICACIONES_TABLE],
+  additionalPolicies: ['ses:SendEmail']
+};
 
 exports.handler = async (event) => {
   try {

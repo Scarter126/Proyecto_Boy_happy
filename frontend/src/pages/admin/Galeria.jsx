@@ -28,10 +28,8 @@ import {
 } from '../../components/ui';
 import { formatDate } from '../../utils/helpers';
 import Swal from 'sweetalert2';
-import { getApiConfig } from '../../stores/configStore';
+import apiClient from '../../lib/apiClient';
 import useAuthStore from '../../stores/authStore';
-
-const { baseURL: API_URL } = getApiConfig();
 
 /**
  * AlbumBadge - Badge for album category
@@ -355,40 +353,27 @@ export default function Galeria() {
       reader.onloadend = async () => {
         const imageData = reader.result;
 
-        const response = await fetch(`${API_URL}/api/images`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            imageName: uploadForm.imageFile.name,
-            imageData: imageData,
-            grupo: 'public',
-            album: finalAlbum,
-          }),
+        await apiClient.post('/images', {
+          imageName: uploadForm.imageFile.name,
+          imageData: imageData,
+          grupo: 'public',
+          album: finalAlbum,
         });
 
-        const data = await response.json();
-
-        if (response.ok) {
-          await Swal.fire({
-            icon: 'success',
-            title: 'Éxito',
-            text: 'Imagen subida exitosamente',
-          });
-          setShowUploadModal(false);
-          setUploadForm({
-            imageFile: null,
-            imagePreview: null,
-            album: '',
-            newAlbum: '',
-            useNewAlbum: false,
-          });
-          refetch();
-        } else {
-          throw new Error(data.message || 'Error al subir la imagen');
-        }
+        await Swal.fire({
+          icon: 'success',
+          title: 'Éxito',
+          text: 'Imagen subida exitosamente',
+        });
+        setShowUploadModal(false);
+        setUploadForm({
+          imageFile: null,
+          imagePreview: null,
+          album: '',
+          newAlbum: '',
+          useNewAlbum: false,
+        });
+        refetch();
         setIsUploading(false);
       };
       reader.readAsDataURL(uploadForm.imageFile);
@@ -405,29 +390,16 @@ export default function Galeria() {
   // Handle delete
   const handleDelete = async (key) => {
     try {
-      const response = await fetch(`${API_URL}/api/images`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ key }),
+      await apiClient.delete('/images', { data: { key } });
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Éxito',
+        text: 'Imagen eliminada exitosamente',
+        timer: 1500,
+        showConfirmButton: false,
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        await Swal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: 'Imagen eliminada exitosamente',
-          timer: 1500,
-          showConfirmButton: false,
-        });
-        refetch();
-      } else {
-        throw new Error(data.message || 'Error al eliminar la imagen');
-      }
+      refetch();
     } catch (error) {
       Swal.fire({
         icon: 'error',

@@ -9,10 +9,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getApiConfig } from '../stores/configStore';
+import apiClient from '../lib/apiClient';
 import { customMutationHook } from '../lib/mutationFactory';
-
-const { baseURL: API_URL } = getApiConfig();
 
 // ==========================================
 // QUERIES
@@ -26,11 +24,9 @@ export const useAgenda = () => {
   return useQuery({
     queryKey: ['agenda'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/reservar-evaluacion`);
-      if (!response.ok) {
-        throw new Error('Error al cargar la agenda');
-      }
-      return response.json();
+      // Usar apiClient que tiene el baseURL configurado dinámicamente
+      const data = await apiClient.get('/reservar-evaluacion');
+      return data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 5 * 60 * 1000, // 5 minutos
@@ -47,20 +43,9 @@ export const useAgenda = () => {
  */
 export const useCreateReserva = customMutationHook(
   async (reservaData) => {
-    const response = await fetch(`${API_URL}/api/reservar-evaluacion`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(reservaData),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al crear la reserva');
-    }
-
-    return response.json();
+    // Usar apiClient que tiene el baseURL configurado dinámicamente
+    const data = await apiClient.post('/reservar-evaluacion', reservaData);
+    return data;
   },
   'agenda',
   { success: 'Reserva creada correctamente', error: 'Error al crear la reserva' }

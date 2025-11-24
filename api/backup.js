@@ -4,25 +4,27 @@ const { S3Client, ListObjectsV2Command, CopyObjectCommand, DeleteObjectsCommand,
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const s3Client = new S3Client({});
 
 const TABLAS = [
-  process.env.USUARIOS_TABLE,
-  process.env.COMUNICACIONES_TABLE,
-  process.env.ASISTENCIA_TABLE,
-  process.env.RECURSOS_TABLE,
-  process.env.RETROALIMENTACION_TABLE,
-  process.env.AGENDA_TABLE,
-  process.env.CONFIGURACION_TABLE,
-  process.env.INFORMES_TABLE,
-  process.env.REPORTES_TABLE,
-  process.env.APODERADOS_TABLE,
-  process.env.APODERADO_ALUMNO_TABLE,
-  process.env.PROFESOR_CURSO_TABLE
+  TABLE_NAMES.USUARIOS_TABLE,
+  TABLE_NAMES.COMUNICACIONES_TABLE,
+  TABLE_NAMES.ASISTENCIA_TABLE,
+  TABLE_NAMES.RECURSOS_TABLE,
+  TABLE_NAMES.RETROALIMENTACION_TABLE,
+  TABLE_NAMES.AGENDA_TABLE,
+  TABLE_NAMES.CONFIGURACION_TABLE,
+  TABLE_NAMES.INFORMES_TABLE,
+  TABLE_NAMES.REPORTES_TABLE,
+  TABLE_NAMES.APODERADOS_TABLE,
+  TABLE_NAMES.APODERADO_ALUMNO_TABLE,
+  TABLE_NAMES.PROFESOR_CURSO_TABLE
 ].filter(Boolean);
 
 const BACKUP_BUCKET = process.env.BACKUP_BUCKET;
@@ -36,10 +38,34 @@ const MAX_BACKUPS = 30;
  * - Retención de 30 backups
  * - Backup de DynamoDB + S3
  */
+exports.metadata = {
+  route: '/backup',
+  methods: ['GET', 'POST'],
+  auth: true,
+  roles: ['admin'],
+  profile: 'high',
+  tables: [
+    TABLE_KEYS.USUARIOS_TABLE,
+    TABLE_KEYS.COMUNICACIONES_TABLE,
+    TABLE_KEYS.ASISTENCIA_TABLE,
+    TABLE_KEYS.RECURSOS_TABLE,
+    TABLE_KEYS.RETROALIMENTACION_TABLE,
+    TABLE_KEYS.AGENDA_TABLE,
+    TABLE_KEYS.CONFIGURACION_TABLE,
+    TABLE_KEYS.INFORMES_TABLE,
+    TABLE_KEYS.REPORTES_TABLE,
+    TABLE_KEYS.APODERADOS_TABLE,
+    TABLE_KEYS.APODERADO_ALUMNO_TABLE,
+    TABLE_KEYS.PROFESOR_CURSO_TABLE
+  ],
+  additionalPolicies: ['s3:PutObject', 's3:GetObject', 's3:ListBucket', 's3:DeleteObject']
+};
+
 exports.handler = async (event) => {
   console.log('Backup iniciado:', JSON.stringify(event, null, 2));
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Si es invocación manual (GET), verificar autorización
     if (event.httpMethod === 'GET') {
       const authResult = authorize(event);
@@ -111,7 +137,7 @@ exports.handler = async (event) => {
       // 4. Registrar en tabla de configuración (para consulta del último backup)
       try {
         await docClient.send(new PutCommand({
-          TableName: process.env.CONFIGURACION_TABLE,
+          TableName: TABLE_NAMES.CONFIGURACION_TABLE,
           Item: {
             id: 'ultimo-backup',
             backupId,
@@ -128,7 +154,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Backup completado exitosamente',
           backupId,
@@ -140,7 +166,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Método no soportado' })
     };
 
@@ -148,7 +174,7 @@ exports.handler = async (event) => {
     console.error('Error en backup:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Error en backup',
         error: error.message
@@ -183,6 +209,7 @@ async function obtenerTodosLosItems(tableName) {
  */
 async function limpiarBackupsAntiguos() {
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Listar manifiestos
     const manifiestos = await s3Client.send(new ListObjectsV2Command({
       Bucket: BACKUP_BUCKET,
@@ -241,15 +268,16 @@ async function limpiarBackupsAntiguos() {
  */
 async function obtenerUltimoBackup() {
   try {
+    const corsHeaders = getCorsHeaders(event);
     const result = await docClient.send(new GetCommand({
-      TableName: process.env.CONFIGURACION_TABLE,
+      TableName: TABLE_NAMES.CONFIGURACION_TABLE,
       Key: { id: 'ultimo-backup' }
     }));
 
     if (!result.Item) {
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           mensaje: 'No hay backups registrados',
           ultimoBackup: null
@@ -259,7 +287,7 @@ async function obtenerUltimoBackup() {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({
         ultimoBackup: {
           fecha: result.Item.timestamp,
@@ -273,7 +301,7 @@ async function obtenerUltimoBackup() {
     console.error('Error obteniendo último backup:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: error.message })
     };
   }

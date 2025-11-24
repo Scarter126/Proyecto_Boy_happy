@@ -34,6 +34,7 @@ import {
 import { RolBadge, ActivoBadge } from '../../components/ui/Badge';
 import { formatRut, formatDate, formatNombre, getIniciales } from '../../utils/helpers';
 import Swal from 'sweetalert2';
+import apiClient from '../../lib/apiClient';
 
 function Users() {
   // ==========================================
@@ -223,22 +224,12 @@ function Users() {
         const base64Data = await base64Promise;
 
         // Upload to S3 via /api/images
-        const uploadResponse = await fetch('/api/images', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageName: `usuario_${formData.rut}_${Date.now()}.${fotoFile.name.split('.').pop()}`,
-            imageData: base64Data,
-            grupo: 'public',
-            album: 'profesionales'
-          })
+        const uploadResult = await apiClient.post('/images', {
+          imageName: `usuario_${formData.rut}_${Date.now()}.${fotoFile.name.split('.').pop()}`,
+          imageData: base64Data,
+          grupo: 'public',
+          album: 'profesionales'
         });
-
-        if (!uploadResponse.ok) {
-          throw new Error('Error al subir la foto');
-        }
-
-        const uploadResult = await uploadResponse.json();
         // The S3 URL format is: https://BUCKET_NAME.s3.amazonaws.com/KEY
         const bucketName = 'boyhappy-images-590183704612'; // From outputs.json
         fotoUrl = `https://${bucketName}.s3.amazonaws.com/${uploadResult.key}`;

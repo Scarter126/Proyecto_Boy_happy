@@ -4,12 +4,14 @@ const requireLayer = require('./requireLayer');
 
 const { authorize } = requireLayer('authMiddleware');
 const { success, badRequest, serverError } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const ASISTENCIA_TABLE = process.env.ASISTENCIA_TABLE;
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
+const ASISTENCIA_TABLE = TABLE_NAMES.ASISTENCIA_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
 
 /**
  * Handler para reportes comparativos entre cursos/asignaturas
@@ -508,5 +510,5 @@ exports.metadata = {
   auth: true,
   roles: ['admin'],
   profile: 'medium',
-  tables: ['Asistencia', 'RecursosAcademicos'],
+  tables: [TABLE_KEYS.ASISTENCIA_TABLE, TABLE_KEYS.RECURSOS_TABLE],
 };

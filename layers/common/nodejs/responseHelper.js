@@ -13,7 +13,10 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3005',
   'http://127.0.0.1:3005',
   'http://localhost:3000',
-  'http://127.0.0.1:3000'
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',  // Vite dev server
+  'http://127.0.0.1:5173',  // Vite dev server
+  'http://boyhappy-frontend-590183704612.s3-website-us-east-1.amazonaws.com'
 ];
 
 /**
@@ -50,19 +53,26 @@ const CORS_HEADERS = {
 
 /**
  * Respuesta exitosa (200)
+ * @param {*} data - Datos a retornar
+ * @param {number} statusCode - Código HTTP (default 200)
+ * @param {object} headers - Headers opcionales (si no se proveen, usa CORS_HEADERS por defecto)
  */
-function success(data, statusCode = 200) {
+function success(data, statusCode = 200, headers = null) {
   return {
     statusCode,
-    headers: CORS_HEADERS,
+    headers: headers || CORS_HEADERS,
     body: JSON.stringify(data)
   };
 }
 
 /**
  * Respuesta de error genérica
+ * @param {number} statusCode - Código HTTP
+ * @param {string} message - Mensaje de error
+ * @param {*} details - Detalles adicionales (opcional)
+ * @param {object} headers - Headers opcionales (si no se proveen, usa CORS_HEADERS por defecto)
  */
-function error(statusCode, message, details = null) {
+function error(statusCode, message, details = null, headers = null) {
   const body = { error: message };
   if (details) {
     body.details = details;
@@ -70,7 +80,7 @@ function error(statusCode, message, details = null) {
 
   return {
     statusCode,
-    headers: CORS_HEADERS,
+    headers: headers || CORS_HEADERS,
     body: JSON.stringify(body)
   };
 }
@@ -78,37 +88,37 @@ function error(statusCode, message, details = null) {
 /**
  * Bad Request (400)
  */
-function badRequest(message, details = null) {
-  return error(400, message, details);
+function badRequest(message, details = null, headers = null) {
+  return error(400, message, details, headers);
 }
 
 /**
  * Unauthorized (401)
  */
-function unauthorized(message = 'No autenticado') {
-  return error(401, message);
+function unauthorized(message = 'No autenticado', headers = null) {
+  return error(401, message, null, headers);
 }
 
 /**
  * Forbidden (403)
  */
-function forbidden(message = 'Acceso denegado') {
-  return error(403, message);
+function forbidden(message = 'Acceso denegado', headers = null) {
+  return error(403, message, null, headers);
 }
 
 /**
  * Not Found (404)
  */
-function notFound(message = 'Recurso no encontrado') {
-  return error(404, message);
+function notFound(message = 'Recurso no encontrado', headers = null) {
+  return error(404, message, null, headers);
 }
 
 /**
  * Internal Server Error (500)
  */
-function serverError(message = 'Error interno del servidor', details = null) {
+function serverError(message = 'Error interno del servidor', details = null, headers = null) {
   console.error('Server error:', message, details);
-  return error(500, message, details);
+  return error(500, message, details, headers);
 }
 
 /**

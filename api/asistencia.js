@@ -3,18 +3,31 @@ const { DynamoDBDocumentClient, PutCommand, QueryCommand, UpdateCommand, DeleteC
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, serverError, parseBody } = requireLayer('responseHelper');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/asistencia',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.ASISTENCIA_TABLE],
+  additionalPolicies: []
+};
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const ASISTENCIA_TABLE = process.env.ASISTENCIA_TABLE;
+const ASISTENCIA_TABLE = TABLE_NAMES.ASISTENCIA_TABLE;
 
 exports.handler = async (event) => {
   const { httpMethod, queryStringParameters } = event;
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -82,7 +95,7 @@ exports.handler = async (event) => {
         if (queryStringParameters?.curso && !cursosAutorizados.includes(queryStringParameters.curso)) {
           return {
             statusCode: 403,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'No autorizado para acceder a asistencia de este curso' })
           };
         }

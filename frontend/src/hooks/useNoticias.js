@@ -7,9 +7,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { getApiConfig } from '../stores/configStore';
-
-const { baseURL: API_URL } = getApiConfig();
+import apiClient from '../lib/apiClient';
 
 /**
  * Hook para obtener noticias públicas
@@ -19,11 +17,7 @@ export const useNoticias = () => {
   return useQuery({
     queryKey: ['noticias'],
     queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/anuncios`);
-      if (!response.ok) {
-        throw new Error('Error al cargar noticias');
-      }
-      const result = await response.json();
+      const result = await apiClient.get('/anuncios');
       return result.data || [];
     },
     staleTime: 60 * 60 * 1000, // 1 hora

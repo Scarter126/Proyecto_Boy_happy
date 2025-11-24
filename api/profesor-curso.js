@@ -3,17 +3,29 @@ const { DynamoDBDocumentClient, GetCommand, QueryCommand, PutCommand, DeleteComm
 const requireLayer = require('./requireLayer');
 const { authorize, ROLES } = requireLayer('authMiddleware');
 const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-const PROFESOR_CURSO_TABLE = process.env.PROFESOR_CURSO_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
+const PROFESOR_CURSO_TABLE = TABLE_NAMES.PROFESOR_CURSO_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
 
 /**
  * Construye el Sort Key compuesto para profesor-curso
  * Formato: "1A#jefe" o "1A#asignatura#Matemáticas"
  */
+exports.metadata = {
+  route: '/profesor-curso',
+  methods: ['GET', 'POST', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.PROFESOR_CURSO_TABLE, TABLE_KEYS.USUARIOS_TABLE],
+  additionalPolicies: []
+};
+
 function construirCursoTipo(curso, tipo, asignatura = null) {
   if (tipo === 'jefe') {
     return `${curso}#jefe`;

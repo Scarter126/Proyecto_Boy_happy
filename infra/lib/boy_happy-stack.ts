@@ -17,6 +17,9 @@ import * as path from 'path';
 
 dotenv.config({ path: './.env' });
 
+// Importar constantes de nombres de tablas (única fuente de verdad)
+const TABLE_NAMES = require('../../shared/table-names.cjs');
+
 // ==========================================
 // TIPOS PARA AUTO-DISCOVERY DE LAMBDAS
 // ==========================================
@@ -195,7 +198,7 @@ export class BoyHappyStack extends cdk.Stack {
     // 1. TABLA USUARIOS
     // FREE TIER: PROVISIONED mode con 5 RCU/WCU (gratis permanentemente)
     const usuariosTable = new dynamodb.Table(this, 'UsuariosTable', {
-      tableName: 'Usuarios',
+      tableName: TABLE_NAMES.USUARIOS_TABLE,
       partitionKey: { name: 'rut', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 5,  // FREE TIER: 25 RCU totales compartidas entre todas las tablas
@@ -211,7 +214,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 2. TABLA COMUNICACIONES (fusiona Anuncios + Eventos + Matriculas)
     const comunicacionesTable = new dynamodb.Table(this, 'ComunicacionesTable', {
-      tableName: 'Comunicaciones',
+      tableName: TABLE_NAMES.COMUNICACIONES_TABLE,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -238,7 +241,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 3. TABLA ASISTENCIA
     const asistenciaTable = new dynamodb.Table(this, 'AsistenciaTable', {
-      tableName: 'Asistencia',
+      tableName: TABLE_NAMES.ASISTENCIA_TABLE,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 3,
@@ -262,7 +265,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 4. TABLA RECURSOS ACADEMICOS (fusiona Notas + Materiales + Bitácora + Categorías)
     const recursosAcademicosTable = new dynamodb.Table(this, 'RecursosAcademicosTable', {
-      tableName: 'RecursosAcademicos',
+      tableName: TABLE_NAMES.RECURSOS_TABLE,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'tipo', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -308,7 +311,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 5. TABLA RETROALIMENTACION (unifica todas las observaciones)
     const retroalimentacionTable = new dynamodb.Table(this, 'RetroalimentacionTable', {
-      tableName: 'Retroalimentacion',
+      tableName: TABLE_NAMES.RETROALIMENTACION_TABLE,
       partitionKey: { name: 'rutUsuario', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -327,7 +330,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 6. TABLA AGENDA FONOAUDIOLOGIA (renombrada)
     const agendaFonoTable = new dynamodb.Table(this, 'AgendaFonoTable', {
-      tableName: 'AgendaFonoaudiologia',
+      tableName: TABLE_NAMES.AGENDA_TABLE,
       partitionKey: { name: 'fechaHora', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 2,
@@ -337,7 +340,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 7. TABLA CONFIGURACION
     const configuracionTable = new dynamodb.Table(this, 'ConfiguracionTable', {
-      tableName: 'Configuracion',
+      tableName: TABLE_NAMES.CONFIGURACION_TABLE,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 1,
@@ -347,7 +350,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 7.5. TABLA MATERIALCATEGORIAS (Relación Many-to-Many)
     const materialCategoriasTable = new dynamodb.Table(this, 'MaterialCategoriasTable', {
-      tableName: 'MaterialCategorias',
+      tableName: TABLE_NAMES.MATERIAL_CATEGORIAS_TABLE,
       partitionKey: { name: 'materialId', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'categoriaId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // Auto-scaling para mejor escalabilidad
@@ -364,7 +367,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 8. TABLA INFORMES (NUEVA - FASE 5)
     const informesTable = new dynamodb.Table(this, 'InformesTable', {
-      tableName: 'Informes',
+      tableName: TABLE_NAMES.INFORMES_TABLE,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -389,7 +392,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 9. TABLA REPORTES (NUEVA - FASE 9)
     const reportesTable = new dynamodb.Table(this, 'ReportesTable', {
-      tableName: 'Reportes',
+      tableName: TABLE_NAMES.REPORTES_TABLE,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'fechaGeneracion', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -407,7 +410,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 10. TABLA APODERADOS (NUEVA - Relaciones Apoderado-Alumno)
     const apoderadosTable = new dynamodb.Table(this, 'ApoderadosTable', {
-      tableName: 'Apoderados',
+      tableName: TABLE_NAMES.APODERADOS_TABLE,
       partitionKey: { name: 'rut', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
       readCapacity: 2,
@@ -424,7 +427,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 11. TABLA APODERADO-ALUMNO (Relación N:N)
     const apoderadoAlumnoTable = new dynamodb.Table(this, 'ApoderadoAlumnoTable', {
-      tableName: 'ApoderadoAlumno',
+      tableName: TABLE_NAMES.APODERADO_ALUMNO_TABLE,
       partitionKey: { name: 'apoderadoRut', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'alumnoRut', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -443,7 +446,7 @@ export class BoyHappyStack extends cdk.Stack {
 
     // 12. TABLA PROFESOR-CURSO (Relación 1:N con tipos)
     const profesorCursoTable = new dynamodb.Table(this, 'ProfesorCursoTable', {
-      tableName: 'ProfesorCurso',
+      tableName: TABLE_NAMES.PROFESOR_CURSO_TABLE,
       partitionKey: { name: 'profesorRut', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'cursoTipo', type: dynamodb.AttributeType.STRING }, // "1A#jefe" o "1A#asignatura#Matemáticas"
       billingMode: dynamodb.BillingMode.PROVISIONED,
@@ -557,20 +560,22 @@ export class BoyHappyStack extends cdk.Stack {
 
     // ----------------------------
     // MAPA DE TABLAS PARA AUTO-GRANT
+    // Usa las CLAVES del .env como keys (única fuente de verdad)
     // ----------------------------
     const tablesMap = new Map<string, dynamodb.Table>([
-      ['Usuarios', usuariosTable],
-      ['Comunicaciones', comunicacionesTable],
-      ['RecursosAcademicos', recursosAcademicosTable],
-      ['Asistencia', asistenciaTable],
-      ['Agenda', agendaFonoTable],
-      ['Informes', informesTable],
-      ['Reportes', reportesTable],
-      ['Apoderados', apoderadosTable],
-      ['ApoderadoAlumno', apoderadoAlumnoTable],
-      ['ProfesorCurso', profesorCursoTable],
-      ['Retroalimentacion', retroalimentacionTable],
-      ['MaterialCategorias', materialCategoriasTable]
+      ['USUARIOS_TABLE', usuariosTable],
+      ['COMUNICACIONES_TABLE', comunicacionesTable],
+      ['RECURSOS_TABLE', recursosAcademicosTable],
+      ['ASISTENCIA_TABLE', asistenciaTable],
+      ['AGENDA_TABLE', agendaFonoTable],
+      ['CONFIGURACION_TABLE', configuracionTable],
+      ['INFORMES_TABLE', informesTable],
+      ['REPORTES_TABLE', reportesTable],
+      ['APODERADOS_TABLE', apoderadosTable],
+      ['APODERADO_ALUMNO_TABLE', apoderadoAlumnoTable],
+      ['PROFESOR_CURSO_TABLE', profesorCursoTable],
+      ['RETROALIMENTACION_TABLE', retroalimentacionTable],
+      ['MATERIAL_CATEGORIAS_TABLE', materialCategoriasTable]
     ]);
 
     const bucketsMap = new Map<string, s3.Bucket>([
@@ -638,6 +643,12 @@ export class BoyHappyStack extends cdk.Stack {
       // 3. Políticas adicionales (SES, Cognito, S3, etc)
       if (metadata.additionalPolicies && metadata.additionalPolicies.length > 0) {
         for (const policy of metadata.additionalPolicies) {
+          // Skip policies without resources
+          if (!policy.resources || policy.resources.length === 0) {
+            console.warn(`    ⚠️  Skipping policy without resources: ${policy.actions?.join(', ') || 'unknown'}`);
+            continue;
+          }
+
           const resources = policy.resources.map(r => {
             // Expandir recursos especiales
             if (r === 'userpool') {
@@ -709,19 +720,21 @@ export class BoyHappyStack extends cdk.Stack {
       environment['API_URL'] = apiUrl;
 
       // Agregar USER_POOL_ID si tiene políticas de Cognito
-      if (metadata.additionalPolicies?.some(p => p.resources.includes('userpool'))) {
+      if (metadata.additionalPolicies?.some(p => p.resources?.includes('userpool'))) {
         environment['USER_POOL_ID'] = process.env.USER_POOL_ID || '';
       }
 
       // Agregar variables de tabla automáticamente
       if (metadata.tables) {
         for (const tableSpec of metadata.tables) {
-          const [tableName] = tableSpec.split(':');
-          const table = tablesMap.get(tableName);
+          const [envKey] = tableSpec.split(':');  // Ej: 'AGENDA_TABLE'
+          const table = tablesMap.get(envKey);
           if (table) {
-            // Convención: USUARIOS_TABLE, COMUNICACIONES_TABLE, etc.
-            const envVarName = `${tableName.toUpperCase()}_TABLE`;
-            environment[envVarName] = table.tableName;
+            // Directamente: AGENDA_TABLE = 'AgendaFonoaudiologia'
+            environment[envKey] = table.tableName;
+          } else {
+            console.warn(`⚠️  Table not found in tablesMap: ${envKey}`);
+            console.warn(`    Available keys: ${Array.from(tablesMap.keys()).join(', ')}`);
           }
         }
       }

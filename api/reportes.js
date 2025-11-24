@@ -2,19 +2,21 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { authorize, ROLES } = requireLayer('authMiddleware');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
 const { calcularPromedioConceptual, calcularEstadisticasConceptuales, nivelANota, NIVEL_A_NOTA } = requireLayer('evaluacionHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const ASISTENCIA_TABLE = process.env.ASISTENCIA_TABLE;
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
-const REPORTES_TABLE = process.env.REPORTES_TABLE;
-const AGENDA_TABLE = process.env.AGENDA_TABLE;
+const ASISTENCIA_TABLE = TABLE_NAMES.ASISTENCIA_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
+const REPORTES_TABLE = TABLE_NAMES.REPORTES_TABLE;
+const AGENDA_TABLE = TABLE_NAMES.AGENDA_TABLE;
 
 /**
  * CU-17: Visualizar asistencia
@@ -25,9 +27,26 @@ const AGENDA_TABLE = process.env.AGENDA_TABLE;
  * CU-25: Exportar reportes
  * CU-34: Reporte de asistencia y alertas (docentes)
  */
+exports.metadata = {
+  route: '/reportes',
+  methods: ['GET', 'POST'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono'],
+  profile: 'high',
+  tables: [
+    TABLE_KEYS.ASISTENCIA_TABLE,
+    TABLE_KEYS.RECURSOS_TABLE,
+    TABLE_KEYS.USUARIOS_TABLE,
+    TABLE_KEYS.REPORTES_TABLE,
+    TABLE_KEYS.AGENDA_TABLE
+  ],
+  additionalPolicies: []
+};
+
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -68,7 +87,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(reportes)
       };
     }
@@ -235,7 +254,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.curso) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: curso' })
         };
       }
@@ -251,7 +270,7 @@ exports.handler = async (event) => {
           if (!tieneAcceso) {
             return {
               statusCode: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({ error: `No tiene acceso al curso ${curso}` })
             };
           }
@@ -291,7 +310,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           tipo: 'asistencia',
           curso,
@@ -344,7 +363,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           tipo: 'cumplimiento',
           profesores: profesoresData,
@@ -365,7 +384,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.usuario) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: usuario' })
         };
       }
@@ -389,7 +408,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           tipo: 'actividades',
           usuario,
@@ -415,7 +434,7 @@ exports.handler = async (event) => {
           if (!tieneAcceso) {
             return {
               statusCode: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({ error: `No tiene acceso al curso ${curso}` })
             };
           }
@@ -442,7 +461,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           tipo: 'notas',
           curso,
@@ -487,7 +506,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Reporte generado', id: reporteId, reporte })
       };
     }
@@ -508,7 +527,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           tipo: 'indicadores',
           indicadores: {
@@ -530,7 +549,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta no soportada' })
     };
 
@@ -538,7 +557,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: error.message })
     };
   }

@@ -5,13 +5,14 @@
 
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const TABLE_NAMES = require('./table-names.cjs');
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-// Constantes de tablas (definidas una sola vez)
-const APODERADO_ALUMNO_TABLE = process.env.APODERADO_ALUMNO_TABLE;
-const PROFESOR_CURSO_TABLE = process.env.PROFESOR_CURSO_TABLE;
+// Constantes de tablas (única fuente de verdad)
+const APODERADO_ALUMNO_TABLE = TABLE_NAMES.APODERADO_ALUMNO_TABLE;
+const PROFESOR_CURSO_TABLE = TABLE_NAMES.PROFESOR_CURSO_TABLE;
 
 /**
  * Obtiene el curso de un alumno desde la tabla ApoderadoAlumno

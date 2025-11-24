@@ -5,13 +5,25 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/sesiones',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'fono'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.AGENDA_TABLE],
+  additionalPolicies: []
+};
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const s3Client = new S3Client({});
 
-const AGENDA_TABLE = process.env.AGENDA_TABLE;
+const AGENDA_TABLE = TABLE_NAMES.AGENDA_TABLE;
 const MATERIALES_BUCKET = process.env.MATERIALES_BUCKET;
 
 /**
@@ -24,6 +36,7 @@ const MATERIALES_BUCKET = process.env.MATERIALES_BUCKET;
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -41,7 +54,7 @@ exports.handler = async (event) => {
       if (!data.rutAlumno || !data.archivoData || !data.nombreArchivo) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: rutAlumno, archivoData, nombreArchivo' })
         };
       }
@@ -88,7 +101,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -110,7 +123,7 @@ exports.handler = async (event) => {
         if (!archivo) {
           return {
             statusCode: 404,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'Archivo no encontrado' })
           };
         }
@@ -124,7 +137,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify(archivo)
         };
       }
@@ -158,7 +171,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(archivos)
       };
     }
@@ -170,7 +183,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -190,7 +203,7 @@ exports.handler = async (event) => {
       if (!archivo) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Archivo no encontrado' })
         };
       }
@@ -227,7 +240,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Archivo actualizado correctamente', id })
       };
     }
@@ -239,7 +252,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters?.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -258,7 +271,7 @@ exports.handler = async (event) => {
       if (!archivo) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Archivo no encontrado' })
         };
       }
@@ -284,7 +297,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Archivo eliminado correctamente', id })
       };
     }
@@ -298,7 +311,7 @@ exports.handler = async (event) => {
       if (!data.fechaHora || !data.rutAlumno || !data.fonoaudiologo) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: fechaHora, rutAlumno, fonoaudiologo' })
         };
       }
@@ -327,7 +340,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -372,7 +385,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           sesiones: items,
           total: items.length,
@@ -400,7 +413,7 @@ exports.handler = async (event) => {
       if (!scanResult.Items || scanResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Sesión no encontrada' })
         };
       }
@@ -446,7 +459,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Sesión actualizada correctamente', id })
       };
     }
@@ -466,7 +479,7 @@ exports.handler = async (event) => {
       if (!scanResult.Items || scanResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Sesión no encontrada' })
         };
       }
@@ -494,7 +507,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Sesión eliminada correctamente', id })
       };
     }
@@ -508,7 +521,7 @@ exports.handler = async (event) => {
       if (!data.sesionId || !data.archivoBase64 || !data.nombre) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: sesionId, archivoBase64, nombre' })
         };
       }
@@ -556,7 +569,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Archivo subido correctamente', archivo: archivoInfo })
       };
     }
@@ -589,7 +602,7 @@ exports.handler = async (event) => {
 
             return {
               statusCode: 200,
-              headers: { 'Content-Type': 'application/json' },
+              headers: corsHeaders,
               body: JSON.stringify({ message: 'Archivo eliminado correctamente', id: archivoId })
             };
           }
@@ -598,14 +611,14 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Archivo no encontrado' })
       };
     }
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta o método no soportado' })
     };
 
@@ -613,7 +626,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ message: 'Error interno del servidor', error: error.message })
     };
   }

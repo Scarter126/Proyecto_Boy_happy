@@ -3,12 +3,14 @@ const { DynamoDBDocumentClient, PutCommand, ScanCommand, DeleteCommand } = requi
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-const AGENDA_TABLE = process.env.AGENDA_TABLE;
+const AGENDA_TABLE = TABLE_NAMES.AGENDA_TABLE;
 
 /**
  * CU-45: Documentación de Actividades por Sesión Terapéutica
@@ -17,9 +19,20 @@ const AGENDA_TABLE = process.env.AGENDA_TABLE;
  * - Profesores: Conducta, Aprendizaje, Social (RecursosAcademicos)
  * - Fonoaudióloga: Sesiones terapéuticas, Objetivos, Actividades (AgendaFonoaudiologia)
  */
+exports.metadata = {
+  route: '/bitacora-fono',
+  methods: ['GET', 'POST', 'DELETE'],
+  auth: true,
+  roles: ['fono', 'admin'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.AGENDA_TABLE],
+  additionalPolicies: []
+};
+
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización - solo fonoaudiólogos y admin
     const authResult = authorize(event, ['fono', 'admin']);
     if (!authResult.authorized) {
@@ -38,7 +51,7 @@ exports.handler = async (event) => {
       if (!data.rutAlumno || !data.fechaSesion || !data.objetivosTrabajados || !data.actividadesRealizadas || !data.resultados) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             error: 'Campos requeridos: rutAlumno, fechaSesion, objetivosTrabajados, actividadesRealizadas, resultados'
           })
@@ -68,7 +81,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -107,7 +120,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(items)
       };
     }
@@ -119,7 +132,7 @@ exports.handler = async (event) => {
       if (!queryStringParameters || !queryStringParameters.id) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Parámetro requerido: id' })
         };
       }
@@ -136,7 +149,7 @@ exports.handler = async (event) => {
       if (!registro) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Registro de bitácora no encontrado' })
         };
       }
@@ -149,7 +162,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: 'Registro de bitácora eliminado correctamente',
           id
@@ -159,7 +172,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta o método no soportado' })
     };
 
@@ -167,7 +180,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({
         message: 'Error interno del servidor',
         error: error.message

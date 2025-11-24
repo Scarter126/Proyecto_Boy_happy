@@ -2,6 +2,8 @@
  * Lambda Metadata para Auto-discovery
  * Este objeto se usa en el CDK para auto-configurar routing, permisos y recursos
  */
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
 exports.metadata = {
   route: '/usuarios',                    // Ruta HTTP para esta lambda
   methods: ['GET', 'POST', 'PUT'],       // Métodos HTTP soportados
@@ -9,7 +11,7 @@ exports.metadata = {
   roles: ['admin'],                      // Roles que pueden acceder (ADMIN solamente)
   profile: 'medium',                     // Perfil de lambda (memory/timeout)
 
-  tables: ['Usuarios'],                  // Tablas DynamoDB necesarias (auto-grant)
+  tables: [TABLE_KEYS.USUARIOS_TABLE],                  // Tablas DynamoDB necesarias (auto-grant)
   additionalPolicies: [                  // Políticas IAM adicionales
     {
       actions: [
@@ -27,19 +29,23 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, ScanCommand, PutCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const requireLayer = require('./requireLayer');
 const { authorize, ROLES } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, notFound, serverError, parseBody, getCorsHeaders } = requireLayer('responseHelper');
 const { validarRUT, validarEmail, validarCamposRequeridos } = requireLayer('utils/validation');
 const { obtenerCursosProfesor } = requireLayer('relaciones');
+const TABLE_NAMES = require('../shared/table-names.cjs');
 
 const cognito = new CognitoIdentityProviderClient({});
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-const TABLE_NAME = process.env.USUARIOS_TABLE;
+const TABLE_NAME = TABLE_NAMES.USUARIOS_TABLE;
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
 exports.handler = async (event) => {
   try {
+    // Obtener headers CORS dinámicos basados en el origen del request
+    const corsHeaders = getCorsHeaders(event);
+
     // Validar autorización - ADMIN para todas las operaciones, PROFESOR y FONO solo para GET
     const { httpMethod } = event;
     const allowedRoles = httpMethod === 'GET' ? [ROLES.ADMIN, ROLES.PROFESOR, ROLES.FONO] : [ROLES.ADMIN];
@@ -78,7 +84,7 @@ exports.handler = async (event) => {
       if (!rolesPermitidos.includes(data.rol)) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Rol inválido. Debe ser: profesor, fono o alumno' })
         };
       }
@@ -92,7 +98,7 @@ exports.handler = async (event) => {
       if (existente.Item && existente.Item.activo) {
         return {
           statusCode: 409,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Ya existe un usuario con este RUT' })
         };
       }
@@ -146,7 +152,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify(item)
         };
 
@@ -154,7 +160,7 @@ exports.handler = async (event) => {
         if (error.code === 'UsernameExistsException') {
           return {
             statusCode: 409,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'Usuario ya existe en Cognito' })
           };
         }
@@ -200,7 +206,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(usuarios)
       };
     }
@@ -216,7 +222,7 @@ exports.handler = async (event) => {
       if (!data.nuevoRol) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campo requerido: nuevoRol' })
         };
       }
@@ -226,7 +232,7 @@ exports.handler = async (event) => {
       if (!rolesPermitidos.includes(data.nuevoRol)) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Rol inválido. Debe ser: profesor, fono o alumno' })
         };
       }
@@ -240,7 +246,7 @@ exports.handler = async (event) => {
       if (!usuario.Item) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Usuario no encontrado' })
         };
       }
@@ -252,7 +258,7 @@ exports.handler = async (event) => {
       if (rolActual === data.nuevoRol) {
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'El usuario ya tiene ese rol' })
         };
       }
@@ -285,7 +291,7 @@ exports.handler = async (event) => {
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({
             message: 'Rol actualizado correctamente',
             rolAnterior: rolActual,
@@ -299,7 +305,7 @@ exports.handler = async (event) => {
         // Rollback en DynamoDB si falla Cognito
         return {
           statusCode: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Error al cambiar rol en Cognito: ' + error.message })
         };
       }
@@ -314,7 +320,7 @@ exports.handler = async (event) => {
       if (data.rol && data.rol === 'admin') {
         return {
           statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'No se puede asignar el rol admin desde esta API' })
         };
       }
@@ -325,7 +331,7 @@ exports.handler = async (event) => {
         if (!rolesPermitidos.includes(data.rol)) {
           return {
             statusCode: 400,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'Rol inválido. Debe ser: profesor, fono o alumno' })
           };
         }
@@ -385,7 +391,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Usuario actualizado correctamente' })
       };
     }
@@ -403,14 +409,14 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Usuario desactivado correctamente' })
       };
     }
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Método HTTP no soportado' })
     };
 
@@ -418,7 +424,7 @@ exports.handler = async (event) => {
     console.error('Error en usuarios.handler:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ message: error.message })
     };
   }

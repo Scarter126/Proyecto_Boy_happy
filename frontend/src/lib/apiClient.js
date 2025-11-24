@@ -2,17 +2,22 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getApiConfig } from '../stores/configStore';
 
-// Obtener configuración dinámica de API
-const apiConfig = getApiConfig();
-
 // Normalizar baseURL para evitar dobles barras
 const normalizeURL = (url) => {
   return url.replace(/\/+$/, ''); // Eliminar barras finales
 };
 
+// Obtener configuración dinámica de API (se evalúa cada vez)
+const getBaseURL = () => {
+  const apiConfig = getApiConfig();
+  const baseURL = `${normalizeURL(apiConfig.baseURL)}/api`;
+  console.log('[apiClient] baseURL configurado:', baseURL);
+  return baseURL;
+};
+
+// Crear cliente axios SIN baseURL inicialmente
 const apiClient = axios.create({
-  baseURL: `${normalizeURL(apiConfig.baseURL)}/api`,
-  timeout: apiConfig.timeout,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,6 +27,16 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
+    // CRÍTICO: Configurar baseURL dinámicamente en cada request
+    // Esto asegura que siempre use la URL correcta del API Gateway
+    const baseURL = getBaseURL();
+
+    // Si la URL no es absoluta, agregarle el baseURL
+    if (config.url && !config.url.startsWith('http')) {
+      config.url = `${baseURL}${config.url}`;
+      console.log('[apiClient] Request URL completa:', config.url);
+    }
+
     // Intentar obtener el token de múltiples fuentes
     let token = localStorage.getItem('idToken') || localStorage.getItem('token');
 
@@ -38,8 +53,9 @@ apiClient.interceptors.request.use(
       }
     }
 
-    // Enviar token en header Authorization si existe y no está en cookies
-    if (token && !document.cookie.includes('idToken')) {
+    // Enviar token en header Authorization si existe
+    // El backend puede usar tanto cookies como Authorization header
+    if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
 

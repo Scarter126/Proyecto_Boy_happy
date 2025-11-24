@@ -4,13 +4,25 @@ const requireLayer = require('./requireLayer');
 const { authorize, ROLES } = requireLayer('authMiddleware');
 const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
 const { validarRUT } = requireLayer('validation');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
-const APODERADOS_TABLE = process.env.APODERADOS_TABLE;
-const APODERADO_ALUMNO_TABLE = process.env.APODERADO_ALUMNO_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
+const APODERADOS_TABLE = TABLE_NAMES.APODERADOS_TABLE;
+const APODERADO_ALUMNO_TABLE = TABLE_NAMES.APODERADO_ALUMNO_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
+
+exports.metadata = {
+  route: '/apoderados',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'apoderado'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.APODERADOS_TABLE, TABLE_KEYS.APODERADO_ALUMNO_TABLE, TABLE_KEYS.USUARIOS_TABLE],
+  additionalPolicies: []
+};
 
 exports.handler = async (event) => {
   try {

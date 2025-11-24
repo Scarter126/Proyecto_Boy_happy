@@ -6,6 +6,7 @@ const crypto = require('crypto');
 
 const requireLayer = require('./requireLayer');
 const responseHelper = requireLayer('responseHelper');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -16,6 +17,16 @@ function calculateSecretHash(username, clientId, clientSecret) {
     .update(username + clientId)
     .digest('base64');
 }
+
+exports.metadata = {
+  route: '/login',
+  methods: ['GET', 'POST'],
+  auth: false,
+  roles: [],
+  profile: 'low',
+  tables: [],
+  additionalPolicies: []
+};
 
 exports.handler = async (event) => {
   try {

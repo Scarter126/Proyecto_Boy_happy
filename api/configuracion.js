@@ -2,21 +2,42 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, notFound, serverError, parseBody, getCorsHeaders } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
-const CONFIG_TABLE = process.env.CONFIGURACION_TABLE;
-const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
-const ASISTENCIA_TABLE = process.env.ASISTENCIA_TABLE;
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
-const PROFESOR_CURSO_TABLE = process.env.PROFESOR_CURSO_TABLE;
-const APODERADO_ALUMNO_TABLE = process.env.APODERADO_ALUMNO_TABLE;
+const CONFIG_TABLE = TABLE_NAMES.CONFIGURACION_TABLE;
+const USUARIOS_TABLE = TABLE_NAMES.USUARIOS_TABLE;
+const ASISTENCIA_TABLE = TABLE_NAMES.ASISTENCIA_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
+const PROFESOR_CURSO_TABLE = TABLE_NAMES.PROFESOR_CURSO_TABLE;
+const APODERADO_ALUMNO_TABLE = TABLE_NAMES.APODERADO_ALUMNO_TABLE;
 
 /**
  * CU-11: Configurar parámetros globales
  */
+
+exports.metadata = {
+  route: '/configuracion',
+  methods: ['GET', 'PUT'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono', 'apoderado', 'alumno'], // Todos pueden leer configuración
+  profile: 'medium',
+  tables: [
+    TABLE_KEYS.CONFIGURACION_TABLE,
+    `${TABLE_KEYS.ASISTENCIA_TABLE}:read`,       // Para validación al eliminar curso
+    `${TABLE_KEYS.RECURSOS_TABLE}:read`,         // Para validación al eliminar curso
+    `${TABLE_KEYS.PROFESOR_CURSO_TABLE}:read`,   // Para validación al eliminar curso
+    `${TABLE_KEYS.APODERADO_ALUMNO_TABLE}:read`  // Para validación al eliminar curso
+  ],
+  additionalPolicies: []
+};
+
 exports.handler = async (event) => {
+  const corsHeaders = getCorsHeaders(event);
+
   try {
     // Validar autorización
     const authResult = authorize(event);
@@ -47,16 +68,16 @@ exports.handler = async (event) => {
               telefono: '+56 9 8668 1455',
               email: 'contacto@boyhappy.cl',
               anoEscolar: new Date().getFullYear()
-            });
+            }, 200, corsHeaders);
           }
-          return notFound(`Configuración con key '${queryStringParameters.key}' no encontrada`);
+          return notFound(`Configuración con key '${queryStringParameters.key}' no encontrada`, corsHeaders);
         }
 
-        return success(result.Item);
+        return success(result.Item, 200, corsHeaders);
       }
 
       const result = await docClient.send(new ScanCommand({ TableName: CONFIG_TABLE }));
-      return success({ parametros: result.Items, total: result.Items.length });
+      return success({ parametros: result.Items, total: result.Items.length }, 200, corsHeaders);
     }
 
     // PUT: Actualizar configuración
@@ -64,14 +85,14 @@ exports.handler = async (event) => {
       const body = parseBody(event);
 
       if (!body) {
-        return badRequest('Body inválido o vacío');
+        return badRequest('Body inválido o vacío', null, corsHeaders);
       }
 
       // Si viene con array de parámetros (bulk update)
       if (body.parametros && Array.isArray(body.parametros)) {
         for (const param of body.parametros) {
           if (!param.id || param.valor === undefined) {
-            return badRequest('Cada parámetro debe tener id y valor');
+            return badRequest('Cada parámetro debe tener id y valor', null, corsHeaders);
           }
 
           await docClient.send(new PutCommand({
@@ -83,7 +104,7 @@ exports.handler = async (event) => {
             }
           }));
         }
-        return success({ message: 'Parámetros actualizados correctamente' });
+        return success({ message: 'Parámetros actualizados correctamente' }, 200, corsHeaders);
       }
 
       // Si viene con key y action (add/remove de cursos o asignaturas)
@@ -106,7 +127,7 @@ exports.handler = async (event) => {
             const existsInCursosNombres = currentData.cursosNombres.some(c => c.codigo === body.curso.codigo);
 
             if (existsInCursos || existsInCursosNombres) {
-              return badRequest(`El curso con código '${body.curso.codigo}' ya existe`);
+              return badRequest(`El curso con código '${body.curso.codigo}' ya existe`, null, corsHeaders);
             }
 
             // Agregar al array de códigos
@@ -118,7 +139,7 @@ exports.handler = async (event) => {
 
             // Verificar que no exista
             if (currentData.asignaturas.includes(body.asignatura)) {
-              return badRequest(`La asignatura '${body.asignatura}' ya existe`);
+              return badRequest(`La asignatura '${body.asignatura}' ya existe`, null, corsHeaders);
             }
 
             currentData.asignaturas.push(body.asignatura);
@@ -140,20 +161,20 @@ exports.handler = async (event) => {
 
               // Validar que el item tenga value y label
               if (!body.item.value || !body.item.label) {
-                return badRequest('El item debe tener "value" y "label"');
+                return badRequest('El item debe tener "value" y "label"', null, corsHeaders);
               }
 
               // Verificar que no exista
               if (currentData.items.some(item => item.value === body.item.value)) {
-                return badRequest(`El item con value '${body.item.value}' ya existe`);
+                return badRequest(`El item con value '${body.item.value}' ya existe`, null, corsHeaders);
               }
 
               currentData.items.push(body.item);
             } else {
-              return badRequest('Datos inválidos para acción "add"');
+              return badRequest('Datos inválidos para acción "add"', null, corsHeaders);
             }
           } else {
-            return badRequest('Datos inválidos para acción "add"');
+            return badRequest('Datos inválidos para acción "add"', null, corsHeaders);
           }
         }
 
@@ -167,7 +188,7 @@ exports.handler = async (event) => {
             const cursoIndex = currentData.cursosNombres.findIndex(c => c.codigo === body.codigo);
 
             if (cursoIndex === -1) {
-              return notFound(`Curso con código '${body.codigo}' no encontrado`);
+              return notFound(`Curso con código '${body.codigo}' no encontrado`, corsHeaders);
             }
 
             // Actualizar el nombre
@@ -177,7 +198,7 @@ exports.handler = async (event) => {
 
             const index = currentData.asignaturas.indexOf(body.asignatura);
             if (index === -1) {
-              return notFound(`Asignatura '${body.asignatura}' no encontrada`);
+              return notFound(`Asignatura '${body.asignatura}' no encontrada`, corsHeaders);
             }
 
             // Actualizar el nombre
@@ -199,7 +220,7 @@ exports.handler = async (event) => {
 
               const itemIndex = currentData.items.findIndex(item => item.value === body.value);
               if (itemIndex === -1) {
-                return notFound(`Item con value '${body.value}' no encontrado`);
+                return notFound(`Item con value '${body.value}' no encontrado`, corsHeaders);
               }
 
               // Actualizar el item completo
@@ -208,10 +229,10 @@ exports.handler = async (event) => {
                 ...body.nuevoItem
               };
             } else {
-              return badRequest('Datos inválidos para acción "update"');
+              return badRequest('Datos inválidos para acción "update"', null, corsHeaders);
             }
           } else {
-            return badRequest('Datos inválidos para acción "update"');
+            return badRequest('Datos inválidos para acción "update"', null, corsHeaders);
           }
         }
 
@@ -227,7 +248,7 @@ exports.handler = async (event) => {
             const indexCursosNombres = currentData.cursosNombres.findIndex(c => c.codigo === body.codigo);
 
             if (indexCursos === -1 && indexCursosNombres === -1) {
-              return notFound(`Curso con código '${body.codigo}' no encontrado`);
+              return notFound(`Curso con código '${body.codigo}' no encontrado`, corsHeaders);
             }
 
             // VALIDACIÓN: Verificar si hay datos asociados al curso
@@ -325,7 +346,8 @@ exports.handler = async (event) => {
 
               return badRequest(
                 `No se puede eliminar el curso "${cursoNombre}" porque tiene datos asociados: ${detalles}. Debes reasignar o eliminar estos datos primero.`,
-                { datosAsociados }
+                { datosAsociados },
+                corsHeaders
               );
             }
 
@@ -341,7 +363,7 @@ exports.handler = async (event) => {
 
             const index = currentData.asignaturas.indexOf(body.asignatura);
             if (index === -1) {
-              return notFound(`Asignatura '${body.asignatura}' no encontrada`);
+              return notFound(`Asignatura '${body.asignatura}' no encontrada`, corsHeaders);
             }
 
             currentData.asignaturas.splice(index, 1);
@@ -362,19 +384,19 @@ exports.handler = async (event) => {
 
               const itemIndex = currentData.items.findIndex(item => item.value === body.value);
               if (itemIndex === -1) {
-                return notFound(`Item con value '${body.value}' no encontrado`);
+                return notFound(`Item con value '${body.value}' no encontrado`, corsHeaders);
               }
 
               // Eliminar el item
               currentData.items.splice(itemIndex, 1);
             } else {
-              return badRequest('Datos inválidos para acción "remove"');
+              return badRequest('Datos inválidos para acción "remove"', null, corsHeaders);
             }
           } else {
-            return badRequest('Datos inválidos para acción "remove"');
+            return badRequest('Datos inválidos para acción "remove"', null, corsHeaders);
           }
         } else {
-          return badRequest(`Acción '${body.action}' no soportada`);
+          return badRequest(`Acción '${body.action}' no soportada`, null, corsHeaders);
         }
 
         // Guardar cambios
@@ -384,7 +406,7 @@ exports.handler = async (event) => {
           Item: currentData
         }));
 
-        return success({ message: `Configuración '${body.key}' actualizada correctamente`, data: currentData });
+        return success({ message: `Configuración '${body.key}' actualizada correctamente`, data: currentData }, 200, corsHeaders);
       }
 
       // Si viene con key específica (single update)
@@ -397,16 +419,16 @@ exports.handler = async (event) => {
             timestamp: new Date().toISOString()
           }
         }));
-        return success({ message: `Configuración '${body.key}' actualizada correctamente` });
+        return success({ message: `Configuración '${body.key}' actualizada correctamente` }, 200, corsHeaders);
       }
 
-      return badRequest('Debe proporcionar "parametros" (array), o "key" con/sin "action"');
+      return badRequest('Debe proporcionar "parametros" (array), o "key" con/sin "action"', null, corsHeaders);
     }
 
-    return badRequest(`Método ${httpMethod} no soportado`);
+    return badRequest(`Método ${httpMethod} no soportado`, null, corsHeaders);
 
   } catch (error) {
     console.error('Error en configuracion.js:', error);
-    return serverError(error.message);
+    return serverError(error.message, null, corsHeaders);
   }
 };

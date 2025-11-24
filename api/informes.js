@@ -5,13 +5,15 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
-const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { success, badRequest, getCorsHeaders, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const s3Client = new S3Client({});
 
-const INFORMES_TABLE = process.env.INFORMES_TABLE;
+const INFORMES_TABLE = TABLE_NAMES.INFORMES_TABLE;
 const MATERIALES_BUCKET = process.env.MATERIALES_BUCKET;
 
 /**
@@ -19,9 +21,20 @@ const MATERIALES_BUCKET = process.env.MATERIALES_BUCKET;
  * CU-47: Modificar informes
  * CU-48: Eliminar informes
  */
+exports.metadata = {
+  route: '/informes',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'fono'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.INFORMES_TABLE],
+  additionalPolicies: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject']
+};
+
 exports.handler = async (event) => {
 
   try {
+    const corsHeaders = getCorsHeaders(event);
     // Validar autorización
     const authResult = authorize(event);
     if (!authResult.authorized) {
@@ -39,7 +52,7 @@ exports.handler = async (event) => {
       if (!data.rutAlumno || !data.tipoEvaluacion) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Campos requeridos: rutAlumno, tipoEvaluacion' })
         };
       }
@@ -69,7 +82,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(item)
       };
     }
@@ -89,14 +102,14 @@ exports.handler = async (event) => {
         if (!result.Items || result.Items.length === 0) {
           return {
             statusCode: 404,
-            headers: { 'Content-Type': 'application/json' },
+            headers: corsHeaders,
             body: JSON.stringify({ error: 'Informe no encontrado' })
           };
         }
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify(result.Items[0])
         };
       }
@@ -124,7 +137,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify(items)
       };
     }
@@ -175,7 +188,7 @@ exports.handler = async (event) => {
       if (updateParts.length === 1) {
         return {
           statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'No hay campos para actualizar' })
         };
       }
@@ -190,7 +203,7 @@ exports.handler = async (event) => {
       if (!getResult.Items || getResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Informe no encontrado' })
         };
       }
@@ -206,7 +219,7 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Informe actualizado correctamente', id })
       };
     }
@@ -227,7 +240,7 @@ exports.handler = async (event) => {
       if (!getResult.Items || getResult.Items.length === 0) {
         return {
           statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
+          headers: corsHeaders,
           body: JSON.stringify({ error: 'Informe no encontrado' })
         };
       }
@@ -242,14 +255,14 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         body: JSON.stringify({ message: 'Informe eliminado correctamente', id })
       };
     }
 
     return {
       statusCode: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Ruta o método no soportado' })
     };
 
@@ -257,7 +270,7 @@ exports.handler = async (event) => {
     console.error('Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: corsHeaders,
       body: JSON.stringify({ message: 'Error interno del servidor', error: error.message })
     };
   }

@@ -1,5 +1,16 @@
 // lambdas/callback.js
 const querystring = require('querystring');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/callback',
+  methods: ['GET'],
+  auth: false,
+  roles: [],
+  profile: 'low',
+  tables: [],
+  additionalPolicies: []
+};
 
 exports.handler = async (event) => {
   try {

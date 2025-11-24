@@ -4,10 +4,22 @@ const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { authorize } = requireLayer('authMiddleware');
 const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const TABLE_NAMES = require('../shared/table-names.cjs');
+const TABLE_KEYS = require('../shared/table-keys.cjs');
+
+exports.metadata = {
+  route: '/categorias',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor'],
+  profile: 'medium',
+  tables: [TABLE_KEYS.RECURSOS_TABLE],
+  additionalPolicies: []
+};
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
-const RECURSOS_TABLE = process.env.RECURSOS_TABLE;
+const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
 
 /**
  * Helper: Construir árbol jerárquico de categorías
