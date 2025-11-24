@@ -193,15 +193,24 @@ function Anuncios() {
   };
 
   // Open modal for editing an existing announcement
-  const handleEditAnuncio = (anuncio) => {
-    setEditingAnuncio(anuncio);
-    setFormData({
-      titulo: anuncio.titulo,
-      contenido: anuncio.contenido,
-      prioridad: anuncio.prioridad || 'media',
-      visibilidad: anuncio.visibilidad || 'todos',
-    });
-    setIsModalOpen(true);
+  const handleEditAnuncio = async (anuncio) => {
+    try {
+      // Traer anuncio desde el backend (opcional si quieres datos frescos)
+      const data = await apiClient.get(`/anuncios/${anuncio.id}`);
+
+      // Abrir modal con datos actualizados
+      setEditingAnuncio(data);
+      setFormData({
+        titulo: data.titulo,
+        contenido: data.contenido,
+        prioridad: data.prioridad || 'media',
+        visibilidad: data.visibilidad || 'todos',
+      });
+      setIsModalOpen(true);
+
+    } catch (error) {
+      console.error('Error al traer anuncio:', error);
+    }
   };
 
   // Handle form input changes
@@ -495,10 +504,9 @@ function Anuncios() {
               key={anuncio.id}
               className="card"
               style={{
-                borderLeft: `4px solid ${
-                  anuncio.prioridad === 'alta' ? '#e53e3e' :
-                  anuncio.prioridad === 'media' ? '#ed8936' : '#48bb78'
-                }`,
+                borderLeft: `4px solid ${anuncio.prioridad === 'alta' ? '#e53e3e' :
+                    anuncio.prioridad === 'media' ? '#ed8936' : '#48bb78'
+                  }`,
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 cursor: 'pointer'
               }}
