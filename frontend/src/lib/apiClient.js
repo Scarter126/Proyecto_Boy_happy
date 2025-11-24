@@ -3,11 +3,9 @@ import Swal from 'sweetalert2';
 import { getApiConfig } from '../stores/configStore';
 
 // Normalizar baseURL para evitar dobles barras
-const normalizeURL = (url) => {
-  return url.replace(/\/+$/, ''); // Eliminar barras finales
-};
+const normalizeURL = (url) => url.replace(/\/+$/, '');
 
-// Obtener configuración dinámica de API (se evalúa cada vez)
+// Obtener configuración dinámica de API
 const getBaseURL = () => {
   const apiConfig = getApiConfig();
   const baseURL = `${normalizeURL(apiConfig.baseURL)}/api`;
@@ -15,7 +13,7 @@ const getBaseURL = () => {
   return baseURL;
 };
 
-// Crear cliente axios SIN baseURL inicialmente
+// Crear cliente axios
 const apiClient = axios.create({
   timeout: 30000,
   headers: {
@@ -27,61 +25,50 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    // CRÍTICO: Configurar baseURL dinámicamente en cada request
-    // Esto asegura que siempre use la URL correcta del API Gateway
     const baseURL = getBaseURL();
 
-    // Si la URL no es absoluta, agregarle el baseURL
     if (config.url && !config.url.startsWith('http')) {
       config.url = `${baseURL}${config.url}`;
       console.log('[apiClient] Request URL completa:', config.url);
     }
 
-    // Intentar obtener el token de múltiples fuentes
-    let token = localStorage.getItem('idToken') || localStorage.getItem('token');
+    // Agregar token solo para Galería (/images)
+    if (config.url.includes('/images')) {
+      let token = localStorage.getItem('idToken') || localStorage.getItem('token');
 
-    // Si no hay token, intentar desde auth-storage (Zustand persist)
-    if (!token) {
-      try {
-        const authStorage = localStorage.getItem('auth-storage');
-        if (authStorage) {
-          const parsed = JSON.parse(authStorage);
-          token = parsed.state?.token;
+      if (!token) {
+        try {
+          const authStorage = localStorage.getItem('auth-storage');
+          if (authStorage) {
+            const parsed = JSON.parse(authStorage);
+            token = parsed.state?.token;
+          }
+        } catch (e) {
+          console.warn('Error parseando auth-storage:', e);
         }
-      } catch (e) {
-        console.warn('Error parseando auth-storage:', e);
       }
-    }
 
-    // Enviar token en header Authorization si existe
-    // El backend puede usar tanto cookies como Authorization header
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor
 apiClient.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
+  (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // Verificar si es un usuario mock (desarrollo)
       const authStorage = localStorage.getItem('auth-storage');
       const isMockToken = authStorage && JSON.parse(authStorage).state?.token?.startsWith('mock.');
 
       if (isMockToken) {
-        // En modo desarrollo con mock user, solo loguear el error, no redirigir
         console.warn('⚠️ [Dev] API 401 con mock user - El backend requiere autenticación real');
       } else {
-        // En producción o sin mock, limpiar sesión y redirigir
         console.error('❌ No autenticado - Redirigiendo a login');
         localStorage.removeItem('auth-storage');
         localStorage.removeItem('userData');
