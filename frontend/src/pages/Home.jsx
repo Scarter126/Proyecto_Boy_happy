@@ -679,7 +679,7 @@ export default function Home() {
               <div className="info-card">
                 <i className="fas fa-clock"></i>
                 <h3>Horario</h3>
-                <p>Lunes a Viernes<br />Cierra a las 7:00 PM</p>
+                <p>Lunes a Viernes<br />De 9:00 AM a 6:00 PM</p>
               </div>
               <div className="info-card">
                 <i className="fas fa-phone"></i>
