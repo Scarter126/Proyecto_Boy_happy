@@ -231,7 +231,6 @@ function ImageCard({ image, onDelete, onPreview }) {
 
 export default function Galeria() {
   const { data: galeriaData, isLoading, refetch } = useGaleria();
-  const token = useAuthStore((state) => state.token);
 
   const galleryImages = galeriaData?.images || [];
   const albums = galeriaData?.albums || [];
