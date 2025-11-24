@@ -77,13 +77,13 @@ export default function Home() {
 
     const map = L.map(mapRef.current, {
       scrollWheelZoom: false,
-    }).setView([-33.4518, -70.6184], 15); // Los Jardines 727, Ñuñoa
+    }).setView([-33.462287172344276, -70.5896728460072], 15); // Los Jardines 727, Ñuñoa
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
-    L.marker([-33.4518, -70.6184])
+    L.marker([-33.462287172344276, -70.5896728460072])
       .addTo(map)
       .bindPopup('<strong>Boy Happy</strong><br/>Los Jardines 727, Ñuñoa');
 
