@@ -416,9 +416,9 @@ export default function Home() {
           }}
           title={
             isPast ? 'Fecha pasada' :
-            isTooFarFuture ? 'Fecha fuera del rango (máx 3 meses)' :
-            isBooked ? 'Día con reservas existentes' :
-            'Disponible'
+              isTooFarFuture ? 'Fecha fuera del rango (máx 3 meses)' :
+                isBooked ? 'Día con reservas existentes' :
+                  'Disponible'
           }
         >
           {day}
@@ -488,49 +488,70 @@ export default function Home() {
       </section>
 
       {/* News Carousel Section */}
-      {/* News Section - Solo mostrar si hay noticias o está cargando */}
-      {(loadingNoticias || noticias.length > 0) && (
-        <section id="noticias" className="news-section">
-          <div className="container">
-            <h2 className="section-title">Noticias Importantes</h2>
+      <section id="noticias" className="news-section">
+        <div className="container">
+          <h2 className="section-title">Noticias Importantes</h2>
 
-            {loadingNoticias ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <i className="fas fa-spinner fa-spin" style={{ fontSize: '3em', color: 'var(--purple-main)' }}></i>
-                <p style={{ marginTop: '15px', color: '#666' }}>Cargando noticias...</p>
-              </div>
-            ) : (
-              <div className="carousel-container">
-                <button className="carousel-btn prev" onClick={() => setCurrentSlide((prev) => (prev - 1 + noticias.length) % noticias.length)}>❮</button>
-                <div className="carousel-wrapper">
-                  <div className="carousel-track">
-                    {noticias.map((item, index) => (
-                      <div key={item.id || index} className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}>
-                        <div className="news-card">
-                          <div className="news-icon">📰</div>
-                          <h3>{item.titulo}</h3>
-                          <p>{item.contenido}</p>
-                          <span className="news-date">{item.fecha}</span>
-                        </div>
+          {loadingNoticias ? (
+            // LOADING SPINNER
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <i className="fas fa-spinner fa-spin" style={{ fontSize: '3em', color: 'var(--purple-main)' }}></i>
+              <p style={{ marginTop: '15px', color: '#666' }}>Cargando noticias...</p>
+            </div>
+          ) : noticias.length === 0 ? (
+            // PLACEHOLDER SIN NOTICIAS
+            <div style={{ textAlign: 'center', padding: '50px', color: '#666' }}>
+              <div style={{ fontSize: '3.5rem', marginBottom: '15px' }}>📰</div>
+              <p style={{ fontSize: '1.2rem' }}>No hay noticias disponibles por ahora.</p>
+            </div>
+          ) : (
+            // CARRUSEL DE NOTICIAS
+            <div className="carousel-container">
+              <button
+                className="carousel-btn prev"
+                onClick={() => setCurrentSlide((prev) => (prev - 1 + noticias.length) % noticias.length)}
+              >
+                ❮
+              </button>
+
+              <div className="carousel-wrapper">
+                <div className="carousel-track">
+                  {noticias.map((item, index) => (
+                    <div
+                      key={item.id || index}
+                      className={`carousel-slide ${index === currentSlide ? 'active' : ''}`}
+                    >
+                      <div className="news-card">
+                        <div className="news-icon">📰</div>
+                        <h3>{item.titulo}</h3>
+                        <p>{item.contenido}</p>
+                        <span className="news-date">{item.fecha}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-                <button className="carousel-btn next" onClick={() => setCurrentSlide((prev) => (prev + 1) % noticias.length)}>❯</button>
-                <div className="carousel-indicators">
-                  {noticias.map((_, index) => (
-                    <span
-                      key={index}
-                      className={`indicator ${index === currentSlide ? 'active' : ''}`}
-                      onClick={() => setCurrentSlide(index)}
-                    />
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-        </section>
-      )}
+
+              <button
+                className="carousel-btn next"
+                onClick={() => setCurrentSlide((prev) => (prev + 1) % noticias.length)}
+              >
+                ❯
+              </button>
+
+              <div className="carousel-indicators">
+                {noticias.map((_, index) => (
+                  <span
+                    key={index}
+                    className={`indicator ${index === currentSlide ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(index)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* Professionals Section */}
       {/* Professionals Section - Solo mostrar si hay profesionales o está cargando */}
@@ -564,65 +585,76 @@ export default function Home() {
       )}
 
       {/* Gallery Section */}
-      {/* Gallery Section - Solo mostrar si hay imágenes o está cargando */}
-      {(loadingGaleria || galleryImages.length > 0) && (
-        <section id="galeria" className="gallery-section">
-          <div className="container">
-            <h2 className="section-title">Galería de Momentos</h2>
-            <p className="section-subtitle">Descubre los mejores momentos de nuestra comunidad educativa</p>
+      <section id="galeria" className="gallery-section">
+        <div className="container">
+          <h2 className="section-title">Galería de Momentos</h2>
+          <p className="section-subtitle">Descubre los mejores momentos de nuestra comunidad educativa</p>
 
-            {loadingGaleria ? (
-              <div className="gallery-grid">
-                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
-                  <i className="fas fa-spinner fa-spin" style={{ fontSize: '3em', color: 'var(--purple-main)' }}></i>
-                  <p style={{ marginTop: '15px', color: '#666' }}>Cargando galería...</p>
-                </div>
+          {loadingGaleria ? (
+            // LOADING
+            <div className="gallery-grid">
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
+                <i className="fas fa-spinner fa-spin" style={{ fontSize: '3em', color: 'var(--purple-main)' }}></i>
+                <p style={{ marginTop: '15px', color: '#666' }}>Cargando galería...</p>
               </div>
-            ) : (
-              <>
-                <div className="gallery-filter">
+            </div>
+          ) : galleryImages.length === 0 ? (
+            // PLACEHOLDER GENERAL – NO HAY IMÁGENES
+            <div style={{ textAlign: 'center', padding: '50px', color: '#666' }}>
+              <div style={{ fontSize: '3.5rem', marginBottom: '15px' }}>📷</div>
+              <p style={{ fontSize: '1.2rem' }}>Aún no hay imágenes en la galería.</p>
+            </div>
+          ) : (
+            <>
+              {/* Filtros */}
+              <div className="gallery-filter">
+                <button
+                  className={`filter-btn ${selectedAlbum === 'todos' ? 'active' : ''}`}
+                  onClick={() => setSelectedAlbum('todos')}
+                >
+                  <i className="fas fa-images"></i> Todos
+                </button>
+
+                {albums.map((album) => (
                   <button
-                    className={`filter-btn ${selectedAlbum === 'todos' ? 'active' : ''}`}
-                    onClick={() => setSelectedAlbum('todos')}
+                    key={album}
+                    className={`filter-btn ${selectedAlbum === album ? 'active' : ''}`}
+                    onClick={() => setSelectedAlbum(album)}
                   >
-                    <i className="fas fa-images"></i> Todos
+                    {album}
                   </button>
-                  {albums.map((album) => (
-                    <button
-                      key={album}
-                      className={`filter-btn ${selectedAlbum === album ? 'active' : ''}`}
-                      onClick={() => setSelectedAlbum(album)}
+                ))}
+              </div>
+
+              {/* Grid */}
+              <div className="gallery-grid">
+                {filteredImages.length === 0 ? (
+                  <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
+                    <i className="fas fa-images" style={{ fontSize: '3em', color: '#ccc' }}></i>
+                    <p style={{ marginTop: '15px', color: '#666' }}>No hay imágenes en este álbum</p>
+                  </div>
+                ) : (
+                  filteredImages.map((image) => (
+                    <div
+                      key={image.id}
+                      className="gallery-item"
+                      onClick={() => setSelectedImage(image)}
                     >
-                      {album}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="gallery-grid">
-                  {filteredImages.length === 0 ? (
-                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
-                      <i className="fas fa-images" style={{ fontSize: '3em', color: '#ccc' }}></i>
-                      <p style={{ marginTop: '15px', color: '#666' }}>No hay imágenes en este álbum</p>
-                    </div>
-                  ) : (
-                    filteredImages.map((image) => (
-                      <div key={image.id} className="gallery-item" onClick={() => setSelectedImage(image)}>
-                        <img src={image.url} alt={image.descripcion} />
-                        <div className="gallery-overlay">
-                          <i className="fas fa-search-plus"></i>
-                          <p>{image.descripcion}</p>
-                        </div>
+                      <img src={image.url} alt={image.descripcion} />
+                      <div className="gallery-overlay">
+                        <i className="fas fa-search-plus"></i>
+                        <p>{image.descripcion}</p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
 
-      {/* Image Modal */}
+      {/* image Modal */}
       {selectedImage && (
         <div className="modal-overlay" onClick={() => setSelectedImage(null)} style={{ display: 'flex' }}>
           <div className="image-modal-content">
@@ -642,17 +674,17 @@ export default function Home() {
               <div className="info-card">
                 <i className="fas fa-map-marker-alt"></i>
                 <h3>Dirección</h3>
-                <p>Los Jardines 727<br/>Ñuñoa, Santiago<br/>Región Metropolitana</p>
+                <p>Los Jardines 727<br />Ñuñoa, Santiago<br />Región Metropolitana</p>
               </div>
               <div className="info-card">
                 <i className="fas fa-clock"></i>
                 <h3>Horario</h3>
-                <p>Lunes a Viernes<br/>Cierra a las 7:00 PM</p>
+                <p>Lunes a Viernes<br />Cierra a las 7:00 PM</p>
               </div>
               <div className="info-card">
                 <i className="fas fa-phone"></i>
                 <h3>Contacto</h3>
-                <p>+56 9 8668 1455<br/><a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank" rel="noreferrer" style={{ color: 'var(--burgundy-main)', textDecoration: 'none' }}>@escuelaboyhappy</a></p>
+                <p>+56 9 8668 1455<br /><a href="https://www.instagram.com/escuelaboyhappy/?hl=es-la" target="_blank" rel="noreferrer" style={{ color: 'var(--burgundy-main)', textDecoration: 'none' }}>@escuelaboyhappy</a></p>
               </div>
             </div>
             <div ref={mapRef} className="map-container"></div>
