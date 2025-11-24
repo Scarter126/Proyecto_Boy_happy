@@ -428,14 +428,27 @@ export default function Galeria() {
       <StatCardGrid stats={stats} />
 
       {/* Action Bar */}
-      <ActionBar
-        searchPlaceholder="Buscar por álbum..."
-        searchValue={searchTerm}
-        onSearchChange={setSearchTerm}
-        onAdd={() => setShowUploadModal(true)}
-        addButtonText="Subir Imagen"
-        addButtonIcon="fa-upload"
-      />
+      <ActionBar count={galleryImages.length}>
+        <input
+          type="text"
+          placeholder="Buscar por álbum…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '8px',
+            border: '1px solid #ddd',
+          }}
+        />
+
+        <button
+          className="btn btn-primary"
+          onClick={() => setShowUploadModal(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <i className="fa fa-upload"></i> Subir Imagen
+        </button>
+      </ActionBar>
 
       {/* Filters */}
       <FilterPanel>
