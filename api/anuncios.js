@@ -2,7 +2,7 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, ScanCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
-const { success, badRequest, serverError, parseBody } = requireLayer('responseHelper');
+const { getCorsHeaders, parseBody } = requireLayer('responseHelper');
 const { authorize, ROLES } = requireLayer('authMiddleware');
 
 const client = new DynamoDBClient({});
@@ -10,6 +10,28 @@ const docClient = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.COMUNICACIONES_TABLE;
 
 exports.handler = async (event) => {
+  // Obtener headers CORS dinámicos basados en el origen del request
+  const corsHeaders = getCorsHeaders(event);
+
+  // Crear helpers de respuesta con CORS dinámico
+  const success = (data, statusCode = 200) => ({
+    statusCode,
+    headers: corsHeaders,
+    body: JSON.stringify(data)
+  });
+
+  const badRequest = (message, details = null) => ({
+    statusCode: 400,
+    headers: corsHeaders,
+    body: JSON.stringify({ error: message, ...(details && { details }) })
+  });
+
+  const serverError = (message, details = null) => ({
+    statusCode: 500,
+    headers: corsHeaders,
+    body: JSON.stringify({ error: message, ...(details && { details }) })
+  });
+
   const { httpMethod } = event;
 
   try {
@@ -203,4 +225,14 @@ exports.handler = async (event) => {
 
     return serverError(err.message);
   }
+};
+
+// Metadata para auto-discovery de CDK
+exports.metadata = {
+  route: '/anuncios',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  auth: true,
+  roles: ['admin', 'profesor', 'fono', 'apoderado'],
+  profile: 'medium',
+  tables: ['Comunicaciones:readwrite']
 };

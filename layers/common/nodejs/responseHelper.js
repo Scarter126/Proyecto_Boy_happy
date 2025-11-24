@@ -2,18 +2,50 @@
  * Helper para crear respuestas HTTP estandarizadas con headers CORS
  *
  * Uso:
- * const { success, error, badRequest } = require('/opt/nodejs/responseHelper');
+ * const { success, error, badRequest, getCorsHeaders } = require('/opt/nodejs/responseHelper');
  *
  * return success(data);
  * return error(500, 'Error message');
  */
 
+// Orígenes permitidos para CORS
+const ALLOWED_ORIGINS = [
+  'http://localhost:3005',
+  'http://127.0.0.1:3005',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+/**
+ * Obtiene headers CORS dinámicos basados en el origen del request
+ * Si el origen está en la whitelist, se permite; sino, se usa localhost por defecto
+ */
+function getCorsHeaders(event) {
+  const origin = event?.headers?.origin || event?.headers?.Origin || 'http://localhost:3005';
+
+  // Verificar si el origen está en la whitelist o es un bucket S3
+  const isAllowed = ALLOWED_ORIGINS.includes(origin) ||
+                    origin.includes('.s3-website') ||
+                    origin.includes('.s3.amazonaws.com');
+
+  const allowedOrigin = isAllowed ? origin : 'http://localhost:3005';
+
+  return {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With'
+  };
+}
+
+// Headers CORS por defecto (para backwards compatibility)
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'http://localhost:3005',
   'Access-Control-Allow-Credentials': 'true',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Amz-Date, X-Api-Key, X-Amz-Security-Token'
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With'
 };
 
 /**
@@ -113,5 +145,6 @@ module.exports = {
   serverError,
   parseBody,
   validateRequired,
+  getCorsHeaders,
   CORS_HEADERS
 };

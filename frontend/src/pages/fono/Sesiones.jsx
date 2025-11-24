@@ -503,7 +503,8 @@ function Sesiones() {
       {!isLoading && !isError && filteredSesiones.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {filteredSesiones.map((sesion) => {
-            const alumno = alumnos.find(a => a.rut === sesion.alumno_id) || {};
+            const alumno = alumnos.find(a => a.rut === sesion.alumno_id);
+            const nombreAlumno = alumno ? formatNombre(alumno) : `RUT: ${sesion.alumno_id || 'Sin asignar'}`;
             const estadoInfo = ESTADOS_SESION.find(e => e.value === sesion.estado);
             const tipoInfo = TIPOS_SESION.find(t => t.value === sesion.tipo);
             const areaInfo = AREAS_TRABAJO.find(a => a.value === sesion.area);
@@ -518,7 +519,7 @@ function Sesiones() {
                         width: '50px',
                         height: '50px',
                         borderRadius: '50%',
-                        backgroundColor: '#667eea',
+                        backgroundColor: alumno ? '#667eea' : '#9ca3af',
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',
@@ -527,11 +528,11 @@ function Sesiones() {
                         fontWeight: 'bold'
                       }}
                     >
-                      {getIniciales(formatNombre(alumno))}
+                      {alumno ? getIniciales(formatNombre(alumno)) : '?'}
                     </div>
                     <div>
                       <h3 style={{ margin: 0, fontSize: '1.1em', color: '#1f2937' }}>
-                        {formatNombre(alumno)}
+                        {nombreAlumno}
                       </h3>
                       <p style={{ margin: '4px 0 0', fontSize: '0.9em', color: '#6b7280' }}>
                         <i className="fas fa-calendar"></i> {formatDate(sesion.fecha)}
@@ -1020,9 +1021,15 @@ function Sesiones() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Complete session details here - similar structure to Evaluaciones detail modal */}
-              <p style={{ color: '#4b5563' }}>
-                Ver detalles completos de la sesion de {formatNombre(alumnos.find(a => a.rut === selectedSesion.alumno_id) || {})}
-              </p>
+              {(() => {
+                const alumnoDetalle = alumnos.find(a => a.rut === selectedSesion.alumno_id);
+                const nombreAlumnoDetalle = alumnoDetalle ? formatNombre(alumnoDetalle) : `RUT: ${selectedSesion.alumno_id || 'Sin asignar'}`;
+                return (
+                  <p style={{ color: '#4b5563' }}>
+                    Ver detalles completos de la sesion de {nombreAlumnoDetalle}
+                  </p>
+                );
+              })()}
             </div>
 
             <div style={{

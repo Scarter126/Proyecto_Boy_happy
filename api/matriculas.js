@@ -38,6 +38,7 @@ const { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGro
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { SOURCE_EMAIL } = require('./shared-config');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -49,7 +50,6 @@ const USUARIOS_TABLE = process.env.USUARIOS_TABLE;
 const APODERADOS_TABLE = process.env.APODERADOS_TABLE;
 const APODERADO_ALUMNO_TABLE = process.env.APODERADO_ALUMNO_TABLE;
 const USER_POOL_ID = process.env.USER_POOL_ID;
-const SOURCE_EMAIL = process.env.SOURCE_EMAIL || 'noreply@boyhappy.cl';
 
 /**
  * Sistema de matrículas (separado de eventos.js)

@@ -28,6 +28,7 @@ function AdminLayout() {
     { icon: 'fa-file-alt', label: 'Matrículas', path: '/admin/matriculas' },
     { icon: 'fa-calendar-check', label: 'Asistencia', path: '/admin/asistencia' },
     { icon: 'fa-folder-open', label: 'Materiales', path: '/admin/materiales' },
+    { icon: 'fa-images', label: 'Galería', path: '/admin/galeria' },
     { icon: 'fa-bullhorn', label: 'Comunicaciones', path: '/admin/anuncios' },
     { icon: 'fa-cogs', label: 'Configuración', path: '/admin/configuracion' },
   ];

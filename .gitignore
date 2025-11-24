@@ -33,6 +33,7 @@ layers/**/node_modules
 cdk.out/
 infra/cdk.out/
 infra/.cdk.staging/
+infra/outputs.json
 
 # ============================================
 # CONFIGURACIÓN Y SECRETS

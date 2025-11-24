@@ -143,10 +143,10 @@ const useDevStore = create(
        * @returns {boolean}
        */
       isDevMode: () => {
-        const isDev = true;
+        // Detectar desarrollo por hostname (más confiable que import.meta.env)
         const isLocalhost = window.location.hostname === 'localhost' ||
                            window.location.hostname === '127.0.0.1';
-        return isDev || isLocalhost;
+        return isLocalhost;
       },
 
       // ==========================================

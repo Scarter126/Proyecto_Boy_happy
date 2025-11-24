@@ -4,13 +4,13 @@ const { SESClient, SendEmailCommand } = require('@aws-sdk/client-ses');
 const { v4: uuidv4 } = require('uuid');
 const requireLayer = require('./requireLayer');
 const { success, badRequest, notFound, serverError, parseBody } = requireLayer('responseHelper');
+const { SOURCE_EMAIL } = require('./shared-config');
 
 const dynamoClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const sesClient = new SESClient({});
 
-const EVENTOS_TABLE = process.env.EVENTOS_TABLE;
-const MATRICULAS_TABLE = process.env.MATRICULAS_TABLE;
+const COMUNICACIONES_TABLE = process.env.COMUNICACIONES_TABLE;
 
 exports.handler = async (event) => {
   try {
@@ -35,12 +35,12 @@ exports.handler = async (event) => {
           hora: data.hora || "",
           tipo: data.tipo
         };
-        await docClient.send(new PutCommand({ TableName: EVENTOS_TABLE, Item: item }));
+        await docClient.send(new PutCommand({ TableName: COMUNICACIONES_TABLE, Item: item }));
         return success(item);
       }
 
       if (httpMethod === "GET") {
-        const result = await docClient.send(new ScanCommand({ TableName: EVENTOS_TABLE }));
+        const result = await docClient.send(new ScanCommand({ TableName: COMUNICACIONES_TABLE }));
         return success(result.Items || []);
       }
 
@@ -52,7 +52,7 @@ exports.handler = async (event) => {
 
         // Buscar el evento/anuncio primero para obtener el timestamp (composite key: id + timestamp)
         const getResult = await docClient.send(new ScanCommand({
-          TableName: EVENTOS_TABLE,
+          TableName: COMUNICACIONES_TABLE,
           FilterExpression: 'id = :id',
           ExpressionAttributeValues: { ':id': id }
         }));
@@ -65,7 +65,7 @@ exports.handler = async (event) => {
 
         // Eliminar usando composite key
         await docClient.send(new DeleteCommand({
-          TableName: EVENTOS_TABLE,
+          TableName: COMUNICACIONES_TABLE,
           Key: {
             id: item.id,
             timestamp: item.timestamp
@@ -85,7 +85,7 @@ exports.handler = async (event) => {
 
         // Buscar el evento primero para obtener el timestamp (composite key: id + timestamp)
         const getResult = await docClient.send(new ScanCommand({
-          TableName: EVENTOS_TABLE,
+          TableName: COMUNICACIONES_TABLE,
           FilterExpression: 'id = :id',
           ExpressionAttributeValues: { ':id': id }
         }));
@@ -98,7 +98,7 @@ exports.handler = async (event) => {
 
         // Actualizar evento usando composite key
         await docClient.send(new UpdateCommand({
-          TableName: EVENTOS_TABLE,
+          TableName: COMUNICACIONES_TABLE,
           Key: {
             id: existing.id,
             timestamp: existing.timestamp
@@ -132,12 +132,12 @@ exports.handler = async (event) => {
           estado: 'pendiente', // Commit 1.4.2: Estado inicial
           fechaRegistro: new Date().toISOString()
         };
-        await docClient.send(new PutCommand({ TableName: MATRICULAS_TABLE, Item: item }));
+        await docClient.send(new PutCommand({ TableName: COMUNICACIONES_TABLE, Item: item }));
         return { statusCode: 200, body: JSON.stringify(item) };
       }
 
       if (httpMethod === "GET") {
-        const result = await docClient.send(new ScanCommand({ TableName: MATRICULAS_TABLE }));
+        const result = await docClient.send(new ScanCommand({ TableName: COMUNICACIONES_TABLE }));
         return { statusCode: 200, body: JSON.stringify(result.Items) };
       }
 
@@ -148,7 +148,7 @@ exports.handler = async (event) => {
 
         // Actualizar estado
         await docClient.send(new UpdateCommand({
-          TableName: MATRICULAS_TABLE,
+          TableName: COMUNICACIONES_TABLE,
           Key: { id },
           UpdateExpression: 'SET estado = :e, motivo = :m',
           ExpressionAttributeValues: {
@@ -159,15 +159,13 @@ exports.handler = async (event) => {
 
         // Commit 1.4.5: Obtener datos de la matrícula para enviar email
         const result = await docClient.send(new GetCommand({
-          TableName: MATRICULAS_TABLE,
+          TableName: COMUNICACIONES_TABLE,
           Key: { id }
         }));
 
         const matricula = result.Item;
 
         // Enviar email automático
-        const SOURCE_EMAIL = process.env.SOURCE_EMAIL || 'noreply@boyhappy.cl';
-
         let mensaje;
         let asunto;
 

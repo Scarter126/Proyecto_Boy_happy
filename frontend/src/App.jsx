@@ -44,7 +44,10 @@ function App() {
         <AppRouter />
         <DevPanel />
       </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {/* ReactQueryDevtools solo en desarrollo (localhost) */}
+      {(typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) &&
+        <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );
 }

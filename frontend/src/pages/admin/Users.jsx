@@ -59,7 +59,12 @@ function Users() {
     rol: 'alumno',
     activo: true,
     curso: '',
+    especialidad: '',
+    descripcion: '',
+    foto: '',
   });
+
+  const [fotoFile, setFotoFile] = useState(null);
 
   // ==========================================
   // REACT QUERY HOOKS
@@ -137,7 +142,11 @@ function Users() {
       rol: 'alumno',
       activo: true,
       curso: '',
+      especialidad: '',
+      descripcion: '',
+      foto: '',
     });
+    setFotoFile(null);
     setIsModalOpen(true);
   };
 
@@ -152,7 +161,11 @@ function Users() {
       rol: user.rol,
       activo: user.activo,
       curso: user.curso || '',
+      especialidad: user.especialidad || '',
+      descripcion: user.descripcion || '',
+      foto: user.foto || '',
     });
+    setFotoFile(null);
     setIsModalOpen(true);
   };
 
@@ -165,26 +178,96 @@ function Users() {
     }));
   };
 
+  // Handle file input change for photo
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Archivo inválido',
+          text: 'Por favor selecciona una imagen válida (JPG, PNG, etc.)'
+        });
+        return;
+      }
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Archivo muy grande',
+          text: 'La imagen no debe superar 2MB'
+        });
+        return;
+      }
+      setFotoFile(file);
+    }
+  };
+
   // Submit form (create or update)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      let fotoUrl = formData.foto;
+
+      // If there's a new photo file, upload it to S3 first
+      if (fotoFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(fotoFile);
+        });
+
+        const base64Data = await base64Promise;
+
+        // Upload to S3 via /api/images
+        const uploadResponse = await fetch('/api/images', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageName: `usuario_${formData.rut}_${Date.now()}.${fotoFile.name.split('.').pop()}`,
+            imageData: base64Data,
+            grupo: 'public',
+            album: 'profesionales'
+          })
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Error al subir la foto');
+        }
+
+        const uploadResult = await uploadResponse.json();
+        // The S3 URL format is: https://BUCKET_NAME.s3.amazonaws.com/KEY
+        const bucketName = 'boyhappy-images-590183704612'; // From outputs.json
+        fotoUrl = `https://${bucketName}.s3.amazonaws.com/${uploadResult.key}`;
+      }
+
+      const dataToSubmit = {
+        ...formData,
+        foto: fotoUrl
+      };
+
       if (editingUser) {
         // Update existing user
-        // Actualizar usuario (el campo curso ya está incluido en formData)
         await updateMutation.mutateAsync({
           rut: editingUser.rut,
-          ...formData
+          ...dataToSubmit
         });
       } else {
-        // Create new user (el campo curso ya está incluido en formData)
-        await createMutation.mutateAsync(formData);
+        // Create new user
+        await createMutation.mutateAsync(dataToSubmit);
       }
       setIsModalOpen(false);
     } catch (error) {
       // Error handling is done in the mutation hooks
       console.error('Error submitting form:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo guardar el usuario'
+      });
     }
   };
 
@@ -793,6 +876,82 @@ function Users() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                )}
+
+                {/* Especialidad (solo para profesionales: admin, profesor, fono) */}
+                {['admin', 'profesor', 'fono'].includes(formData.rol) && (
+                  <div className="form-group" style={{ flex: '1 1 100%' }}>
+                    <label htmlFor="especialidad">
+                      Especialidad
+                    </label>
+                    <input
+                      id="especialidad"
+                      type="text"
+                      name="especialidad"
+                      value={formData.especialidad}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Trastornos del Lenguaje, Matemáticas, Ciencias"
+                    />
+                  </div>
+                )}
+
+                {/* Descripción (solo para profesionales: admin, profesor, fono) */}
+                {['admin', 'profesor', 'fono'].includes(formData.rol) && (
+                  <div className="form-group" style={{ flex: '1 1 100%' }}>
+                    <label htmlFor="descripcion">
+                      Descripción / Biografía
+                    </label>
+                    <textarea
+                      id="descripcion"
+                      name="descripcion"
+                      value={formData.descripcion}
+                      onChange={handleInputChange}
+                      placeholder="Breve descripción del profesional..."
+                      rows="3"
+                      style={{ resize: 'vertical', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                )}
+
+                {/* Foto (solo para profesionales: admin, profesor, fono) */}
+                {['admin', 'profesor', 'fono'].includes(formData.rol) && (
+                  <div className="form-group" style={{ flex: '1 1 100%' }}>
+                    <label htmlFor="foto">
+                      Foto de Perfil
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <input
+                        id="foto"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        style={{ padding: '8px' }}
+                      />
+                      {(fotoFile || formData.foto) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <img
+                            src={fotoFile ? URL.createObjectURL(fotoFile) : formData.foto}
+                            alt="Preview"
+                            style={{
+                              width: '80px',
+                              height: '80px',
+                              objectFit: 'cover',
+                              borderRadius: '50%',
+                              border: '2px solid #e0e0e0'
+                            }}
+                          />
+                          {fotoFile && (
+                            <span style={{ fontSize: '12px', color: '#666' }}>
+                              Nueva foto seleccionada
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <small style={{ fontSize: '12px', color: '#666' }}>
+                        Tamaño máximo: 2MB. Formatos: JPG, PNG, GIF, WEBP
+                      </small>
+                    </div>
                   </div>
                 )}
 

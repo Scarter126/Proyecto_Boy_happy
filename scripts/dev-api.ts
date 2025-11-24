@@ -7,13 +7,53 @@
  * - Simula API Gateway events
  * - Endpoints de desarrollo (/health, /dev/*)
  * - CORS habilitado para desarrollo
+ * - Usa .env como única fuente de verdad
  */
 
-import { readdirSync, watch } from 'fs';
+import { readdirSync, readFileSync, watch } from 'fs';
 import { join } from 'path';
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const API_DIR = join(import.meta.dir, '../api');
+
+/**
+ * Load S3 bucket names from CDK outputs in development
+ * Production lambdas get these injected automatically by CDK
+ */
+try {
+  const outputsPath = join(import.meta.dir, '../infra/outputs.json');
+  const outputsContent = readFileSync(outputsPath, 'utf-8');
+  const outputs = JSON.parse(outputsContent);
+  const stackOutputs = outputs.BoyHappyStack || {};
+
+  // Validate that required bucket outputs exist
+  const requiredBuckets = ['ImagesBucketName', 'MaterialesBucketName', 'BackupsBucketName'];
+  const missingBuckets = requiredBuckets.filter(bucket => !stackOutputs[bucket]);
+
+  if (missingBuckets.length > 0) {
+    console.error('❌ Missing bucket outputs in outputs.json:', missingBuckets);
+    console.error('   Run "bun run deploy" to generate all outputs first');
+    throw new Error(`Missing bucket outputs: ${missingBuckets.join(', ')}`);
+  }
+
+  // Set bucket environment variables
+  process.env.IMAGES_BUCKET = stackOutputs.ImagesBucketName;
+  process.env.MATERIALES_BUCKET = stackOutputs.MaterialesBucketName;
+  process.env.BACKUPS_BUCKET = stackOutputs.BackupsBucketName;
+
+  console.log('✅ Buckets cargados desde outputs.json:');
+  console.log('   IMAGES_BUCKET:', process.env.IMAGES_BUCKET);
+  console.log('   MATERIALES_BUCKET:', process.env.MATERIALES_BUCKET);
+  console.log('   BACKUPS_BUCKET:', process.env.BACKUPS_BUCKET);
+} catch (error: any) {
+  if (error.code === 'ENOENT') {
+    console.error('❌ outputs.json no encontrado en', join(import.meta.dir, '../infra/outputs.json'));
+    console.error('   Ejecuta "bun run deploy" para generar outputs.json primero');
+  } else {
+    console.error('❌ Error cargando buckets desde outputs.json:', error.message);
+  }
+  throw error;
+}
 
 /**
  * Descubre todas las lambdas API disponibles

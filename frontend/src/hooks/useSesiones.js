@@ -26,8 +26,48 @@ export const useSesiones = (filters = {}) => {
     queryKey: ['sesiones', filters],
     queryFn: async () => {
       const response = await apiClient.get(url);
-      // Backend returns { sesiones: [], total: ... }, extract sesiones array
-      return response.sesiones || response || [];
+      // Backend returns { sesiones: [], total: ... }, extract and transform sesiones array
+      const sesionesBackend = response.sesiones || response || [];
+
+      // Transform backend format to frontend format
+      return sesionesBackend
+        .filter(sesion => sesion.id && sesion.id.startsWith('sesion-')) // Solo sesiones, no archivos
+        .map(sesion => {
+          // Parse fechaHora (formato: "2025-11-25T10:00:00")
+          const fechaHoraParts = sesion.fechaHora ? sesion.fechaHora.split('T') : ['', ''];
+          const fecha = fechaHoraParts[0] || '';
+          const hora_inicio = fechaHoraParts[1] ? fechaHoraParts[1].substring(0, 5) : '';
+
+          return {
+            id: sesion.id,
+            alumno_id: sesion.rutAlumno || '',
+            fecha: fecha,
+            hora_inicio: hora_inicio,
+            duracion: 45, // Default value - backend no tiene este campo
+            tipo: 'individual', // Default value - backend no tiene este campo
+            area: sesion.motivo || '',
+            objetivos: '', // Backend no tiene este campo
+            actividades: Array.isArray(sesion.actividadesRealizadas)
+              ? sesion.actividadesRealizadas.join(', ')
+              : (sesion.actividadesRealizadas || ''),
+            materiales_utilizados: Array.isArray(sesion.materialUtilizado)
+              ? sesion.materialUtilizado.join(', ')
+              : (sesion.materialUtilizado || ''),
+            observaciones: sesion.observaciones || '',
+            logros: sesion.avanceSesion || '',
+            dificultades: '', // Backend no tiene este campo
+            tareas_casa: Array.isArray(sesion.tareasCasa)
+              ? sesion.tareasCasa.join(', ')
+              : (sesion.tareasCasa || ''),
+            estado: sesion.estado || 'completada',
+            fonoaudiologo: sesion.fonoaudiologo || '',
+            archivosSesion: sesion.archivosSesion || [],
+            proximaSesion: sesion.proximaSesion || null,
+            timestamp: sesion.timestamp || '',
+            // Mantener datos originales del backend por si se necesitan
+            _backend: sesion
+          };
+        });
     },
     staleTime: 2 * 60 * 1000,
   });

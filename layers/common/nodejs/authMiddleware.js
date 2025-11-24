@@ -18,6 +18,7 @@
 
 // Importar roles desde constantes compartidas (single source of truth)
 const { ROLES } = require('./shared-constants');
+const { getCorsHeaders } = require('./responseHelper');
 
 // Matriz de permisos por recurso y método HTTP
 const PERMISSIONS_MATRIX = {
@@ -277,6 +278,9 @@ function extractUserFromToken(event) {
 function authorize(event, allowedRoles = null) {
   const { httpMethod, resource, path } = event;
 
+  // Obtener headers CORS dinámicos basados en el origen del request
+  const corsHeaders = getCorsHeaders(event);
+
   // Usar path como resource si resource es /{proxy+}
   let effectiveResource = (resource === '/{proxy+}' || !resource) ? path : resource;
 
@@ -328,11 +332,7 @@ function authorize(event, allowedRoles = null) {
       user: null,
       response: {
         statusCode: 401,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'No autenticado',
           message: 'Debe iniciar sesión para acceder a este recurso'
@@ -407,11 +407,7 @@ function authorize(event, allowedRoles = null) {
       user,
       response: {
         statusCode: 403,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Acceso denegado',
           message: `No tiene permisos para ejecutar esta operación. Roles requeridos: ${rolesPermitidos.join(', ')}`,
@@ -450,6 +446,7 @@ function canAccessUserData(user, targetRut) {
  * Útil para operaciones como GET /notas?rutAlumno=xxx
  */
 function authorizeResourceAccess(event, resourceOwnerRut) {
+  const corsHeaders = getCorsHeaders(event);
   const authResult = authorize(event);
 
   if (!authResult.authorized) {
@@ -465,11 +462,7 @@ function authorizeResourceAccess(event, resourceOwnerRut) {
       user,
       response: {
         statusCode: 403,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Credentials': 'true'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({
           error: 'Acceso denegado',
           message: 'No puede acceder a recursos de otros usuarios'

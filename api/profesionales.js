@@ -12,6 +12,8 @@ exports.metadata = {
 
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const requireLayer = require('./requireLayer');
+const { getCorsHeaders } = requireLayer('responseHelper');
 
 const ddbClient = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(ddbClient);
@@ -26,6 +28,9 @@ const TABLE_NAME = process.env.USUARIOS_TABLE;
  * Retorna solo: nombre, rol, especialidad (si existe)
  */
 exports.handler = async (event) => {
+  // Obtener headers CORS dinámicos basados en el origen del request
+  const corsHeaders = getCorsHeaders(event);
+
   try {
     const { httpMethod } = event;
 
@@ -33,10 +38,7 @@ exports.handler = async (event) => {
     if (httpMethod !== 'GET') {
       return {
         statusCode: 405,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({ error: 'Método no permitido' })
       };
     }
@@ -66,11 +68,10 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...corsHeaders,
         'Cache-Control': 'public, max-age=86400' // Cache 24 horas
       },
-      body: JSON.stringify(profesionales)
+      body: JSON.stringify({ data: profesionales })
     };
 
   } catch (error) {
@@ -81,11 +82,8 @@ exports.handler = async (event) => {
       console.warn('⚠️ Tabla de usuarios no existe - retornando array vacío para desarrollo');
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify([])
+        headers: corsHeaders,
+        body: JSON.stringify({ data: [] })
       };
     }
 

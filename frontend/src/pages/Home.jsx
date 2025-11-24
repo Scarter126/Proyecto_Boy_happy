@@ -164,13 +164,14 @@ export default function Home() {
     }
 
     // Get slots for this specific date
+    // NOTA: El backend ya filtra slots ocupados, todos los slots aquí están disponibles
     const slotsForDate = reservas.filter(slot => {
       if (!slot.fechaHora) return false;
       const slotDate = slot.fechaHora.split('T')[0];
       return slotDate === dateStr;
     });
 
-    // Extract unique professionals from these slots
+    // Extract unique professionals from these available slots
     const professionalsMap = new Map();
     slotsForDate.forEach(slot => {
       if (slot.rutFono && slot.nombreFono) {
@@ -193,6 +194,7 @@ export default function Home() {
     }
 
     // Filter slots for this date and professional
+    // NOTA: El backend ya filtra slots ocupados, todos los slots aquí están disponibles
     const dateStr = selectedDate.toISOString().split('T')[0];
     const slotsForDateAndProfessional = reservas.filter(slot => {
       if (!slot.fechaHora || !slot.rutFono) return false;
@@ -200,7 +202,7 @@ export default function Home() {
       return slotDate === dateStr && slot.rutFono === professionalId;
     });
 
-    // Extract hours from these slots
+    // Extract hours from these available slots
     const hours = slotsForDateAndProfessional
       .map(slot => slot.fechaHora.split('T')[1]) // Extract time part (e.g., "10:00")
       .filter(Boolean)
@@ -215,31 +217,72 @@ export default function Home() {
   };
 
   const submitEnrollment = async () => {
+    // 1. Cerrar modal de confirmación
+    setShowConfirmModal(false);
+
+    // 2. Mostrar modal de loading
+    Swal.fire({
+      title: 'Procesando...',
+      text: 'Estamos agendando tu cita',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
     try {
-      const response = await fetch('/api/matriculas', {
+      // Encontrar el nombre del profesional seleccionado
+      const profesionalSeleccionado = availableProfessionals.find(
+        p => p.id === selectedProfessional
+      );
+
+      // Construir fechaHora en formato ISO
+      const fechaHoraCompleta = `${selectedDate.toISOString().split('T')[0]}T${bookingForm.selectedHour}`;
+
+      // 3. Hacer fetch al backend
+      const response = await fetch('/api/reservar-evaluacion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // Datos del slot
+          fechaHora: fechaHoraCompleta,
+          rutFono: selectedProfessional,
+          nombreFono: profesionalSeleccionado?.nombre || '',
+
+          // Datos del alumno
           nombreAlumno: bookingForm.patientName,
           rutAlumno: bookingForm.studentRut,
+          fechaNacimiento: bookingForm.birthDate,
+
+          // Datos del apoderado
           nombreApoderado: bookingForm.guardianName,
-          rutApoderado: bookingForm.guardianRut || '',
-          correoApoderado: bookingForm.parentEmail,
-          telefonoApoderado: bookingForm.phone || '',
-          curso: 'Por asignar'
+          rutApoderado: bookingForm.guardianRut,
+          correo: bookingForm.parentEmail,
+          telefono: bookingForm.phone
         })
       });
 
       const data = await response.json();
+
+      // 4. Cerrar loading y mostrar resultado
       if (response.ok) {
         await Swal.fire({
           icon: 'success',
-          title: '¡Éxito!',
-          text: '¡Solicitud de matrícula enviada exitosamente!',
+          title: '¡Cita Agendada!',
+          html: `
+            <p>Tu cita ha sido reservada exitosamente.</p>
+            <p><strong>Fecha:</strong> ${selectedDate.toLocaleDateString('es-CL')}</p>
+            <p><strong>Hora:</strong> ${bookingForm.selectedHour}</p>
+            <p><strong>Profesional:</strong> ${availableProfessionals.find(p => p.id === selectedProfessional)?.nombre}</p>
+            <p style="margin-top: 15px; font-size: 14px; color: #666;">
+              Recibirás un correo de confirmación en ${bookingForm.parentEmail}
+            </p>
+          `,
           confirmButtonText: 'Aceptar',
           confirmButtonColor: '#d91e6b'
         });
-        setShowConfirmModal(false);
+
         // Reset form
         setBookingForm({
           patientName: '',
@@ -253,11 +296,13 @@ export default function Home() {
         });
         setSelectedDate(null);
         setSelectedProfessional(null);
+        setAvailableHours([]);
+        setAvailableProfessionals([]);
       } else {
         await Swal.fire({
           icon: 'error',
-          title: 'Error',
-          text: 'Error al enviar la solicitud: ' + (data.error || data.message || 'Error desconocido'),
+          title: 'Error al Reservar',
+          text: data.error || data.message || 'No se pudo completar la reserva. Por favor intenta nuevamente.',
           confirmButtonText: 'Aceptar',
           confirmButtonColor: '#d91e6b'
         });
@@ -265,12 +310,12 @@ export default function Home() {
     } catch (err) {
       await Swal.fire({
         icon: 'error',
-        title: 'Error',
-        text: 'Error al enviar la solicitud',
+        title: 'Error de Conexión',
+        text: 'No se pudo conectar con el servidor. Por favor verifica tu conexión e intenta nuevamente.',
         confirmButtonText: 'Aceptar',
         confirmButtonColor: '#d91e6b'
       });
-      console.error(err);
+      console.error('Error al enviar reserva:', err);
     }
   };
 
@@ -721,6 +766,7 @@ export default function Home() {
                     type="date"
                     value={bookingForm.birthDate}
                     onChange={(e) => setBookingForm({ ...bookingForm, birthDate: e.target.value })}
+                    onBlur={(e) => setBookingForm({ ...bookingForm, birthDate: e.target.value })}
                     required
                   />
                 </div>
@@ -785,14 +831,14 @@ export default function Home() {
           <div className="modal-content">
             <span className="close" onClick={() => setShowConfirmModal(false)}>&times;</span>
             <div className="modal-header">
-              <h2>Confirmar Solicitud de Matrícula</h2>
-              <p>Por favor verifica los datos antes de enviar</p>
+              <h2>Confirmar Reserva de Cita</h2>
+              <p>Por favor verifica los datos antes de confirmar</p>
             </div>
             <div className="booking-summary">
               <div className="summary-item">
                 <i className="fas fa-user"></i>
                 <div>
-                  <strong>Estudiante:</strong>
+                  <strong>Alumno:</strong>
                   <span>{bookingForm.patientName}</span>
                 </div>
               </div>
@@ -806,14 +852,28 @@ export default function Home() {
               <div className="summary-item">
                 <i className="fas fa-calendar-check"></i>
                 <div>
-                  <strong>Fecha:</strong>
+                  <strong>Fecha y Hora:</strong>
                   <span>{selectedDate?.toLocaleDateString('es-CL')} - {bookingForm.selectedHour}</span>
+                </div>
+              </div>
+              <div className="summary-item">
+                <i className="fas fa-user-md"></i>
+                <div>
+                  <strong>Profesional:</strong>
+                  <span>{availableProfessionals.find(p => p.id === selectedProfessional)?.nombre || 'No seleccionado'}</span>
+                </div>
+              </div>
+              <div className="summary-item">
+                <i className="fas fa-envelope"></i>
+                <div>
+                  <strong>Correo de Confirmación:</strong>
+                  <span>{bookingForm.parentEmail}</span>
                 </div>
               </div>
             </div>
             <div className="modal-actions">
               <button className="btn-primary" onClick={submitEnrollment}>
-                <i className="fas fa-check"></i> Confirmar Solicitud
+                <i className="fas fa-check"></i> Confirmar Reserva
               </button>
               <button className="btn-secondary" onClick={() => setShowConfirmModal(false)}>
                 <i className="fas fa-times"></i> Cancelar

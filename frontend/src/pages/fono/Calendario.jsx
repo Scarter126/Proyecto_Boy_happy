@@ -16,6 +16,7 @@ import {
   useUpdateEvento,
   useDeleteEvento
 } from '../../hooks/useEventos';
+import { useSesiones } from '../../hooks/useSesiones';
 import { useUsuariosPorRol } from '../../hooks/useUsuarios';
 import {
   SectionHeader,
@@ -31,7 +32,8 @@ const TIPOS_SESION = [
   { value: 'evaluacion', label: 'Evaluacion', color: '#9f7aea' },
   { value: 'terapia', label: 'Terapia', color: '#48bb78' },
   { value: 'seguimiento', label: 'Seguimiento', color: '#ed8936' },
-  { value: 'reunion', label: 'Reunion', color: '#667eea' }
+  { value: 'reunion', label: 'Reunion', color: '#667eea' },
+  { value: 'sesion-registrada', label: 'Sesión Registrada', color: '#10b981' } // Verde para sesiones ya realizadas
 ];
 
 function Calendario() {
@@ -77,48 +79,114 @@ function Calendario() {
     return filters;
   }, [selectedMonth, tipoFilter, alumnoFilter]);
 
-  const { data: eventos = [], isLoading, isError, error, refetch } = useEventos(eventosFilters);
+  const { data: eventos = [], isLoading: isLoadingEventos, isError: isErrorEventos, error: errorEventos, refetch: refetchEventos } = useEventos(eventosFilters);
+
+  // Obtener sesiones registradas para mostrarlas en el calendario
+  const sesionesFilters = useMemo(() => {
+    const filters = {};
+    if (selectedMonth) {
+      const [year, month] = selectedMonth.split('-');
+      const primerDia = `${year}-${month}-01`;
+      const ultimoDia = new Date(parseInt(year), parseInt(month), 0).getDate();
+      const ultimoDiaStr = `${year}-${month}-${String(ultimoDia).padStart(2, '0')}`;
+      filters.fechaDesde = primerDia;
+      filters.fechaHasta = ultimoDiaStr;
+    }
+    if (alumnoFilter) filters.alumno_id = alumnoFilter;
+    return filters;
+  }, [selectedMonth, alumnoFilter]);
+
+  const { data: sesiones = [], isLoading: isLoadingSesiones, isError: isErrorSesiones, error: errorSesiones, refetch: refetchSesiones } = useSesiones(sesionesFilters);
+
   const { data: alumnos = [] } = useUsuariosPorRol('alumno');
 
   const createMutation = useCreateEvento();
   const updateMutation = useUpdateEvento();
   const deleteMutation = useDeleteEvento();
 
+  const isLoading = isLoadingEventos || isLoadingSesiones;
+  const isError = isErrorEventos || isErrorSesiones;
+  const error = errorEventos || errorSesiones;
+  const refetch = () => {
+    refetchEventos();
+    refetchSesiones();
+  };
+
   // ==========================================
   // COMPUTED VALUES
   // ==========================================
 
-  const stats = useMemo(() => {
-    if (!Array.isArray(eventos)) return { total: 0, porTipo: {} };
+  // Combinar eventos y sesiones registradas
+  const todosLosEventos = useMemo(() => {
+    const eventosFormateados = Array.isArray(eventos) ? eventos.map(e => ({ ...e, origen: 'evento' })) : [];
 
-    const porTipo = eventos.reduce((acc, evento) => {
+    // Convertir sesiones al formato de eventos para mostrarlas en el calendario
+    const sesionesFormateadas = Array.isArray(sesiones) ? sesiones.map(sesion => {
+      const alumno = alumnos.find(a => a.rut === sesion.alumno_id);
+      const nombreAlumno = formatNombre(alumno || {});
+
+      // Calcular hora_fin basada en duración
+      const [horaInicio, minInicio] = sesion.hora_inicio ? sesion.hora_inicio.split(':').map(Number) : [9, 0];
+      const totalMinutos = (horaInicio * 60 + minInicio + (sesion.duracion || 45));
+      const horaFin = Math.floor(totalMinutos / 60);
+      const minFin = totalMinutos % 60;
+      const hora_fin = `${String(horaFin).padStart(2, '0')}:${String(minFin).padStart(2, '0')}`;
+
+      return {
+        id: sesion.id,
+        titulo: `Sesión: ${nombreAlumno || 'Sin alumno'}`,
+        descripcion: `${sesion.area || ''} - ${sesion.actividades || 'Sin actividades'}`.trim(),
+        fecha: sesion.fecha,
+        hora_inicio: sesion.hora_inicio,
+        hora_fin: hora_fin,
+        tipo: 'sesion-registrada',
+        alumno_id: sesion.alumno_id,
+        ubicacion: '',
+        origen: 'sesion',
+        _sesionData: sesion // Mantener datos originales
+      };
+    }) : [];
+
+    return [...eventosFormateados, ...sesionesFormateadas].sort((a, b) => {
+      if (a.fecha === b.fecha) {
+        return (a.hora_inicio || '').localeCompare(b.hora_inicio || '');
+      }
+      return a.fecha.localeCompare(b.fecha);
+    });
+  }, [eventos, sesiones, alumnos]);
+
+  const stats = useMemo(() => {
+    if (!Array.isArray(todosLosEventos)) return { total: 0, porTipo: {}, sesionesRegistradas: 0 };
+
+    const porTipo = todosLosEventos.reduce((acc, evento) => {
       acc[evento.tipo] = (acc[evento.tipo] || 0) + 1;
       return acc;
     }, {});
 
     const hoy = new Date().toISOString().split('T')[0];
-    const proximamente = eventos.filter(e => e.fecha >= hoy).length;
+    const proximamente = todosLosEventos.filter(e => e.fecha >= hoy).length;
 
     return {
-      total: eventos.length,
+      total: todosLosEventos.length,
       porTipo,
       proximamente,
-      completados: eventos.filter(e => e.fecha < hoy).length
+      completados: todosLosEventos.filter(e => e.fecha < hoy).length,
+      sesionesRegistradas: sesiones.length
     };
-  }, [eventos]);
+  }, [todosLosEventos, sesiones]);
 
   // Group events by date for calendar view
   const eventosPorFecha = useMemo(() => {
-    if (!Array.isArray(eventos)) return {};
+    if (!Array.isArray(todosLosEventos)) return {};
 
-    return eventos.reduce((acc, evento) => {
+    return todosLosEventos.reduce((acc, evento) => {
       if (!acc[evento.fecha]) {
         acc[evento.fecha] = [];
       }
       acc[evento.fecha].push(evento);
       return acc;
     }, {});
-  }, [eventos]);
+  }, [todosLosEventos]);
 
   // Generate calendar days for selected month
   const calendarDays = useMemo(() => {
@@ -293,6 +361,16 @@ function Calendario() {
 
         <div className="indicator-card">
           <div className="card-icon">
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div className="card-content">
+            <h3>{stats.sesionesRegistradas || 0}</h3>
+            <p>Sesiones Registradas</p>
+          </div>
+        </div>
+
+        <div className="indicator-card">
+          <div className="card-icon">
             <i className="fas fa-clock"></i>
           </div>
           <div className="card-content">
@@ -303,21 +381,11 @@ function Calendario() {
 
         <div className="indicator-card">
           <div className="card-icon">
-            <i className="fas fa-clipboard-check"></i>
-          </div>
-          <div className="card-content">
-            <h3>{stats.porTipo.evaluacion || 0}</h3>
-            <p>Evaluaciones</p>
-          </div>
-        </div>
-
-        <div className="indicator-card">
-          <div className="card-icon">
             <i className="fas fa-user-md"></i>
           </div>
           <div className="card-content">
             <h3>{stats.porTipo.terapia || 0}</h3>
-            <p>Terapias</p>
+            <p>Terapias Agendadas</p>
           </div>
         </div>
       </StatCardGrid>
@@ -393,7 +461,7 @@ function Calendario() {
       </FilterPanel>
 
       {/* Action Bar */}
-      <ActionBar count={eventos.length}>
+      <ActionBar count={todosLosEventos.length}>
       </ActionBar>
 
       {/* Loading State */}
@@ -520,10 +588,10 @@ function Calendario() {
           </div>
 
           {/* Empty State for Calendar */}
-          {eventos.length === 0 && (
+          {todosLosEventos.length === 0 && (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b7280' }}>
               <i className="fas fa-calendar-times fa-3x" style={{ marginBottom: '15px' }}></i>
-              <p>No hay eventos programados para este mes</p>
+              <p>No hay eventos ni sesiones registradas para este mes</p>
             </div>
           )}
         </div>

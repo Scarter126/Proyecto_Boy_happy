@@ -3,9 +3,9 @@
  * Migrado a factory pattern
  *
  * Features:
- * - Carga todas las reservas existentes
- * - Cache de 1 hora para reducir peticiones
- * - Procesa fechas ocupadas para el calendario
+ * - Carga solo slots DISPONIBLES (filtrados en backend)
+ * - Cache de 5 minutos para datos actualizados
+ * - Procesa fechas con slots disponibles para el calendario
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -19,8 +19,8 @@ const { baseURL: API_URL } = getApiConfig();
 // ==========================================
 
 /**
- * Hook para obtener todas las reservas
- * Cache: 1 hora
+ * Hook para obtener slots disponibles
+ * Cache: 5 minutos (reducido para evitar mostrar slots ya tomados)
  */
 export const useAgenda = () => {
   return useQuery({
@@ -32,9 +32,9 @@ export const useAgenda = () => {
       }
       return response.json();
     },
-    staleTime: 60 * 60 * 1000, // 1 hora
-    gcTime: 60 * 60 * 1000, // 1 hora (antes cacheTime)
-    refetchOnWindowFocus: false, // No refetch al volver a la ventana
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnWindowFocus: true, // Refetch al volver a la ventana para datos frescos
   });
 };
 
@@ -67,50 +67,56 @@ export const useCreateReserva = customMutationHook(
 );
 
 /**
- * Procesa las reservas para obtener fechas ocupadas
+ * Procesa los slots disponibles para obtener fechas únicas
  * Devuelve un Set de strings en formato YYYY-MM-DD
+ *
+ * NOTA: El backend ya filtra slots ocupados, así que todos los slots
+ * en el array son disponibles
  */
-export const getBookedDates = (reservas) => {
-  if (!reservas || !Array.isArray(reservas)) {
+export const getBookedDates = (slots) => {
+  if (!slots || !Array.isArray(slots)) {
     return new Set();
   }
 
-  const bookedDates = new Set();
+  const availableDates = new Set();
 
-  reservas.forEach(reserva => {
-    if (reserva.fechaHora) {
+  slots.forEach(slot => {
+    if (slot.fechaHora) {
       // Extraer fecha de fechaHora (formato: "2025-11-20T10:00")
-      const dateStr = reserva.fechaHora.split('T')[0];
-      bookedDates.add(dateStr);
+      const dateStr = slot.fechaHora.split('T')[0];
+      availableDates.add(dateStr);
     }
   });
 
-  return bookedDates;
+  return availableDates;
 };
 
 /**
- * Procesa las reservas para obtener horarios ocupados por fecha
- * Devuelve un Map de fecha -> Set de horarios
+ * Procesa los slots disponibles para agrupar horarios por fecha
+ * Devuelve un Map de fecha -> Set de horarios disponibles
+ *
+ * NOTA: El backend ya filtra slots ocupados, así que todos los horarios
+ * retornados están disponibles para reservar
  */
-export const getBookedHoursByDate = (reservas) => {
-  if (!reservas || !Array.isArray(reservas)) {
+export const getBookedHoursByDate = (slots) => {
+  if (!slots || !Array.isArray(slots)) {
     return new Map();
   }
 
-  const bookedHours = new Map();
+  const availableHours = new Map();
 
-  reservas.forEach(reserva => {
-    if (reserva.fechaHora) {
+  slots.forEach(slot => {
+    if (slot.fechaHora) {
       // Extraer fecha y hora de fechaHora (formato: "2025-11-20T10:00")
-      const [dateStr, hora] = reserva.fechaHora.split('T');
+      const [dateStr, hora] = slot.fechaHora.split('T');
 
-      if (!bookedHours.has(dateStr)) {
-        bookedHours.set(dateStr, new Set());
+      if (!availableHours.has(dateStr)) {
+        availableHours.set(dateStr, new Set());
       }
 
-      bookedHours.get(dateStr).add(hora);
+      availableHours.get(dateStr).add(hora);
     }
   });
 
-  return bookedHours;
+  return availableHours;
 };

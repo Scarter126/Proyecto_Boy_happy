@@ -132,6 +132,13 @@ exports.handler = async (event) => {
           item.curso = data.curso;
         }
 
+        // Agregar campos profesionales solo para admin, profesor, fono
+        if (['admin', 'profesor', 'fono'].includes(data.rol)) {
+          if (data.especialidad) item.especialidad = data.especialidad;
+          if (data.descripcion) item.descripcion = data.descripcion;
+          if (data.foto) item.foto = data.foto;
+        }
+
         await docClient.send(new PutCommand({
           TableName: TABLE_NAME,
           Item: item
@@ -351,6 +358,18 @@ exports.handler = async (event) => {
       if (data.activo !== undefined) {
         updateExpressions.push('activo = :ac');
         expressionAttributeValues[':ac'] = data.activo;
+      }
+      if (data.especialidad !== undefined) {
+        updateExpressions.push('especialidad = :esp');
+        expressionAttributeValues[':esp'] = data.especialidad;
+      }
+      if (data.descripcion !== undefined) {
+        updateExpressions.push('descripcion = :desc');
+        expressionAttributeValues[':desc'] = data.descripcion;
+      }
+      if (data.foto !== undefined) {
+        updateExpressions.push('foto = :foto');
+        expressionAttributeValues[':foto'] = data.foto;
       }
 
       // Siempre actualizar fechaActualizacion

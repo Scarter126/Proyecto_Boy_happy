@@ -1,14 +1,33 @@
-const { S3Client, PutObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const requireLayer = require('./requireLayer');
+const { getCorsHeaders } = requireLayer('responseHelper');
+
 const s3Client = new S3Client({});
 
-const BUCKET_NAME = process.env.BUCKET_NAME;
+const IMAGES_BUCKET = process.env.IMAGES_BUCKET;
 
 exports.handler = async (event) => {
+  // Obtener headers CORS dinámicos basados en el origen del request
+  const corsHeaders = getCorsHeaders(event);
+
   console.log('Images handler - Method:', event.httpMethod, 'QueryParams:', event.queryStringParameters);
 
   try {
     const method = event.httpMethod;
     const queryParams = event.queryStringParameters || {};
+
+    // Validación de autenticación para POST y DELETE
+    if (method === 'POST' || method === 'DELETE') {
+      // Verificar que el usuario esté autenticado (el cognito:username debe existir)
+      const user = event.requestContext?.authorizer?.claims?.['cognito:username'];
+      if (!user) {
+        return {
+          statusCode: 401,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'No autorizado. Debes iniciar sesión para realizar esta acción.' })
+        };
+      }
+    }
 
     // GET: Listar imágenes o álbumes
     if (method === 'GET') {
@@ -30,10 +49,7 @@ exports.handler = async (event) => {
       const imagenes = await listarImagenes(album);
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: corsHeaders,
         body: JSON.stringify(imagenes)
       };
     }
@@ -100,7 +116,7 @@ exports.handler = async (event) => {
       const key = `${folder}/${Date.now()}_${imageName}`;
 
       const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME,
+        Bucket: IMAGES_BUCKET,
         Key: key,
         Body: base64Data,
         ContentEncoding: 'base64',
@@ -111,12 +127,50 @@ exports.handler = async (event) => {
 
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: corsHeaders,
         body: JSON.stringify({
           message: `Imagen subida exitosamente al grupo "${grupo}"`,
+          key,
+        }),
+      };
+    }
+
+    // DELETE: Eliminar imagen
+    if (method === 'DELETE') {
+      const isBase64Encoded = event.isBase64Encoded || false;
+      const contentType = event.headers?.['Content-Type'] || event.headers?.['content-type'] || 'application/json';
+
+      let body = event.body;
+      if (isBase64Encoded && contentType.includes('application/json')) {
+        body = Buffer.from(event.body, 'base64').toString('utf-8');
+      }
+
+      const parsed = typeof body === 'string' ? JSON.parse(body) : body;
+      const { key } = parsed;
+
+      if (!key) {
+        return {
+          statusCode: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ message: 'Falta el parámetro requerido: key' }),
+        };
+      }
+
+      const command = new DeleteObjectCommand({
+        Bucket: IMAGES_BUCKET,
+        Key: key
+      });
+
+      await s3Client.send(command);
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          message: 'Imagen eliminada exitosamente',
           key,
         }),
       };
@@ -148,7 +202,7 @@ exports.handler = async (event) => {
 async function listarAlbumes() {
   try {
     const command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
+      Bucket: IMAGES_BUCKET,
       Prefix: 'public/',
       Delimiter: '/'
     });
@@ -171,7 +225,7 @@ async function listarImagenes(album = null) {
     const prefix = album ? `public/${album}/` : 'public/';
 
     const command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
+      Bucket: IMAGES_BUCKET,
       Prefix: prefix
     });
 
@@ -182,7 +236,7 @@ async function listarImagenes(album = null) {
         const albumName = obj.Key.split('/')[1] || 'Sin álbum';
         return {
           key: obj.Key,
-          url: `https://${BUCKET_NAME}.s3.amazonaws.com/${obj.Key}`,
+          url: `https://${IMAGES_BUCKET}.s3.amazonaws.com/${obj.Key}`,
           album: albumName,
           size: obj.Size,
           lastModified: obj.LastModified
@@ -195,3 +249,12 @@ async function listarImagenes(album = null) {
     return [];
   }
 }
+
+// Metadata para auto-discovery de CDK
+exports.metadata = {
+  route: '/images',
+  methods: ['GET', 'POST', 'DELETE'],
+  auth: false, // Permitir GET público, validación manual para POST/DELETE
+  profile: 'medium',
+  buckets: ['Images:readwrite']
+};

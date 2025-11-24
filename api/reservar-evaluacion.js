@@ -1,5 +1,7 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand, GetCommand, DeleteCommand, UpdateCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const requireLayer = require('./requireLayer');
+const { getCorsHeaders } = requireLayer('responseHelper');
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
@@ -7,16 +9,26 @@ const dynamo = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.AGENDA_TABLE;
 
 exports.handler = async (event) => {
+  // Obtener headers CORS dinámicos basados en el origen del request
+  const corsHeaders = getCorsHeaders(event);
   // ------------------------
   // GET → Listar agendados y bloqueos
   // ------------------------
   if (event.httpMethod === 'GET') {
     try {
       const result = await dynamo.send(new ScanCommand({ TableName: TABLE_NAME }));
+
+      // Filtrar solo slots disponibles (sin nombreAlumno asignado)
+      // Un slot está disponible si NO tiene nombreAlumno o es string vacío
+      // Los bloqueos (nombreAlumno === 'Ocupado') y reservas NO aparecen
+      const slotsDisponibles = (result.Items || []).filter(slot => {
+        return !slot.nombreAlumno || slot.nombreAlumno.trim() === '';
+      });
+
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result.Items || [])
+        headers: corsHeaders,
+        body: JSON.stringify(slotsDisponibles)
       };
     } catch (error) {
       // Si la tabla no existe (desarrollo local), retornar array vacío
@@ -24,7 +36,11 @@ exports.handler = async (event) => {
         console.warn('⚠️ Tabla de agenda no existe - retornando array vacío para desarrollo');
         return {
           statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': 'true'
+          },
           body: JSON.stringify([])
         };
       }
@@ -37,13 +53,37 @@ exports.handler = async (event) => {
   // ------------------------
   if (event.httpMethod === 'DELETE') {
     let data;
-    try { data = JSON.parse(event.body); } 
-    catch (err) { return { statusCode: 400, body: 'Datos inválidos' }; }
+    try { data = JSON.parse(event.body); }
+    catch (err) { return {
+      statusCode: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
+      },
+      body: JSON.stringify({ error: 'Datos inválidos' })
+    }; }
 
-    if (!data.fechaHora) return { statusCode: 400, body: 'Falta fechaHora' };
+    if (!data.fechaHora) return {
+      statusCode: 400,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
+      },
+      body: JSON.stringify({ error: 'Falta fechaHora' })
+    };
 
     await dynamo.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { fechaHora: data.fechaHora } }));
-    return { statusCode: 200, body: 'Eliminado correctamente' };
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
+      },
+      body: JSON.stringify({ message: 'Eliminado correctamente' })
+    };
   }
 
   // ------------------------
@@ -51,20 +91,32 @@ exports.handler = async (event) => {
   // ------------------------
   if (event.httpMethod === 'POST') {
     let data;
-    try { data = JSON.parse(event.body); } 
-    catch (err) { return { statusCode: 400, body: 'Datos inválidos' }; }
+    try { data = JSON.parse(event.body); }
+    catch (err) { return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Datos inválidos' }) }; }
 
     const { tipo, fechaHora, nombreAlumno, rutAlumno, fechaNacimiento, telefono, correo, nombreApoderado, rutApoderado, rutFono, nombreFono } = data;
 
-    if (!fechaHora) return { statusCode: 400, body: 'Falta fechaHora' };
+    if (!fechaHora) return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Falta fechaHora' })
+    };
 
     // ------------------------
     // ACEPTAR PACIENTE
     // ------------------------
     if (tipo === 'aceptar') {
       const existing = await dynamo.send(new GetCommand({ TableName: TABLE_NAME, Key: { fechaHora } }));
-      if (!existing.Item) return { statusCode: 404, body: 'Reserva no encontrada' };
-      if (existing.Item.nombreAlumno === 'Ocupado') return { statusCode: 400, body: 'No se puede aceptar un bloqueo' };
+      if (!existing.Item) return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Reserva no encontrada' })
+      };
+      if (existing.Item.nombreAlumno === 'Ocupado') return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'No se puede aceptar un bloqueo' })
+      };
 
       await dynamo.send(new UpdateCommand({
         TableName: TABLE_NAME,
@@ -73,7 +125,11 @@ exports.handler = async (event) => {
         ExpressionAttributeValues: { ':v': true }
       }));
 
-      return { statusCode: 200, body: 'Paciente aceptado correctamente' };
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ message: 'Paciente aceptado correctamente' })
+      };
     }
 
     // ------------------------
@@ -82,11 +138,26 @@ exports.handler = async (event) => {
     const esBloqueo = nombreAlumno === 'Ocupado';
 
     if (!esBloqueo && (!nombreAlumno || !rutAlumno || !fechaNacimiento || !telefono || !correo || !nombreApoderado || !rutApoderado || !rutFono || !nombreFono)) {
-      return { statusCode: 400, body: 'Faltan datos obligatorios' };
+      return {
+        statusCode: 400,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'Faltan datos obligatorios' })
+      };
     }
 
     const existing = await dynamo.send(new GetCommand({ TableName: TABLE_NAME, Key: { fechaHora } }));
-    if (existing.Item) return { statusCode: 409, body: 'Horario ya tomado' };
+    // Validar si el slot ya tiene un alumno asignado (no solo si existe)
+    if (existing.Item && existing.Item.nombreAlumno && existing.Item.nombreAlumno.trim() !== '') {
+      return {
+        statusCode: 409,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': 'true'
+        },
+        body: JSON.stringify({ error: 'Horario ya tomado' })
+      };
+    }
 
     const item = { fechaHora, timestamp: new Date().toISOString() };
 
@@ -102,11 +173,35 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: esBloqueo
-        ? `Horario ${fechaHora} bloqueado correctamente`
-        : `Reserva para ${nombreAlumno} creada correctamente`
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': 'true'
+      },
+      body: JSON.stringify({
+        message: esBloqueo
+          ? `Horario ${fechaHora} bloqueado correctamente`
+          : `Reserva para ${nombreAlumno} creada correctamente`
+      })
     };
   }
 
-  return { statusCode: 405, body: 'Método no permitido' };
+  return {
+    statusCode: 405,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': 'true'
+    },
+    body: JSON.stringify({ error: 'Método no permitido' })
+  };
+};
+
+// Metadata para auto-discovery de CDK
+exports.metadata = {
+  route: '/reservar-evaluacion',
+  methods: ['GET', 'POST', 'DELETE'],
+  auth: false,
+  profile: 'medium',
+  tables: ['AgendaFono:readwrite']
 };

@@ -12,6 +12,7 @@ import Materiales from './pages/admin/Materiales';
 import Matriculas from './pages/admin/Matriculas';
 import Asistencia from './pages/admin/Asistencia';
 import Comparativo from './pages/admin/Comparativo';
+import Galeria from './pages/admin/Galeria';
 import ProfesorDashboard from './pages/profesor/Dashboard';
 import ProfesorAvanceAlumnos from './pages/profesor/AvanceAlumnos';
 import ProfesorAsistencia from './pages/profesor/Asistencia';
@@ -96,6 +97,7 @@ function AppRouter() {
         <Route path="matriculas" element={<Matriculas />} />
         <Route path="asistencia" element={<Asistencia />} />
         <Route path="comparativo" element={<Comparativo />} />
+        <Route path="galeria" element={<Galeria />} />
       </Route>
 
       {/* Protected routes - Profesor */}

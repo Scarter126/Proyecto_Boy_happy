@@ -29,6 +29,7 @@ interface LambdaMetadata {
   roles?: string[];
   profile?: 'light' | 'medium' | 'heavy';
   tables?: string[];
+  buckets?: string[];
   additionalPolicies?: Array<{
     actions: string[];
     resources: string[];
@@ -527,10 +528,15 @@ export class BoyHappyStack extends cdk.Stack {
         stageName: 'prod',
       },
       defaultCorsPreflightOptions: {
-        // CORS: Permitir todos los orígenes (validación en lambdas mediante authMiddleware)
-        // NOTA: CloudFront wildcard (*.cloudfront.net) NO está soportado en API Gateway
-        // Para producción, especifica el dominio exacto de CloudFront después del deploy
-        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        // CORS: Orígenes específicos para desarrollo local + producción S3
+        // CRITICAL: allowCredentials: true requiere orígenes específicos (NO wildcards)
+        allowOrigins: [
+          'http://localhost:3005',     // Frontend dev server (Vite default)
+          'http://127.0.0.1:3005',
+          'http://localhost:3000',     // Fallback dev port
+          'http://127.0.0.1:3000',
+          frontendBucket.bucketWebsiteUrl  // S3 Static Website URL (producción)
+        ],
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: [
           'Content-Type',
@@ -557,7 +563,7 @@ export class BoyHappyStack extends cdk.Stack {
       ['Comunicaciones', comunicacionesTable],
       ['RecursosAcademicos', recursosAcademicosTable],
       ['Asistencia', asistenciaTable],
-      ['AgendaFono', agendaFonoTable],
+      ['Agenda', agendaFonoTable],
       ['Informes', informesTable],
       ['Reportes', reportesTable],
       ['Apoderados', apoderadosTable],
@@ -608,7 +614,28 @@ export class BoyHappyStack extends cdk.Stack {
         }
       }
 
-      // 2. Políticas adicionales (SES, Cognito, S3, etc)
+      // 2. Permisos de S3 Buckets
+      if (metadata.buckets && metadata.buckets.length > 0) {
+        for (const bucketSpec of metadata.buckets) {
+          // Formato: "bucketName" o "bucketName:readwrite" o "bucketName:readonly"
+          const [bucketName, permission = 'readwrite'] = bucketSpec.split(':');
+          const bucket = bucketsMap.get(bucketName.toLowerCase());
+
+          if (bucket) {
+            if (permission === 'readwrite') {
+              bucket.grantReadWrite(lambdaFunction);
+              console.log(`    📦 Granted readwrite access to bucket: ${bucketName}`);
+            } else if (permission === 'readonly') {
+              bucket.grantRead(lambdaFunction);
+              console.log(`    📦 Granted readonly access to bucket: ${bucketName}`);
+            }
+          } else {
+            console.warn(`    ⚠️  Bucket not found: ${bucketName}`);
+          }
+        }
+      }
+
+      // 3. Políticas adicionales (SES, Cognito, S3, etc)
       if (metadata.additionalPolicies && metadata.additionalPolicies.length > 0) {
         for (const policy of metadata.additionalPolicies) {
           const resources = policy.resources.map(r => {
@@ -695,6 +722,19 @@ export class BoyHappyStack extends cdk.Stack {
             // Convención: USUARIOS_TABLE, COMUNICACIONES_TABLE, etc.
             const envVarName = `${tableName.toUpperCase()}_TABLE`;
             environment[envVarName] = table.tableName;
+          }
+        }
+      }
+
+      // Agregar variables de bucket automáticamente
+      if (metadata.buckets) {
+        for (const bucketSpec of metadata.buckets) {
+          const [bucketName] = bucketSpec.split(':');
+          const bucket = bucketsMap.get(bucketName.toLowerCase());
+          if (bucket) {
+            // Convención: IMAGES_BUCKET, MATERIALES_BUCKET, etc.
+            const envVarName = `${bucketName.toUpperCase()}_BUCKET`;
+            environment[envVarName] = bucket.bucketName;
           }
         }
       }
@@ -920,44 +960,9 @@ exports.handler = async (event) => {
       exportName: 'BoyHappyApiURL'
     });
 
-    new cdk.CfnOutput(this, 'UsuariosTableName', {
-      value: usuariosTable.tableName,
-      description: 'Nombre de la tabla de Usuarios',
-    });
-
-    new cdk.CfnOutput(this, 'ComunicacionesTableName', {
-      value: comunicacionesTable.tableName,
-      description: 'Nombre de la tabla de Comunicaciones (anuncios+eventos+matriculas)',
-    });
-
-    new cdk.CfnOutput(this, 'RecursosAcademicosTableName', {
-      value: recursosAcademicosTable.tableName,
-      description: 'Nombre de la tabla de Recursos Académicos (notas+materiales+bitácora+categorías)',
-    });
-
-    new cdk.CfnOutput(this, 'InformesTableName', {
-      value: informesTable.tableName,
-      description: 'Nombre de la tabla de Informes Fonoaudiológicos',
-    });
-
-    new cdk.CfnOutput(this, 'ReportesTableName', {
-      value: reportesTable.tableName,
-      description: 'Nombre de la tabla de Reportes Consolidados',
-    });
-
-    new cdk.CfnOutput(this, 'ApoderadosTableName', {
-      value: apoderadosTable.tableName,
-      description: 'Nombre de la tabla de Apoderados',
-    });
-
-    new cdk.CfnOutput(this, 'ApoderadoAlumnoTableName', {
-      value: apoderadoAlumnoTable.tableName,
-      description: 'Nombre de la tabla de relación Apoderado-Alumno',
-    });
-
-    new cdk.CfnOutput(this, 'ProfesorCursoTableName', {
-      value: profesorCursoTable.tableName,
-      description: 'Nombre de la tabla de relación Profesor-Curso',
-    });
+    // NOTA: Los nombres de tablas NO se exportan como outputs porque:
+    // - Las lambdas reciben los nombres automáticamente vía auto-inyección CDK
+    // - No hay scripts externos que necesiten acceder a estos valores
+    // - Mantiene outputs.json simple y solo con información útil para el usuario
   }
 }
