@@ -136,6 +136,26 @@ exports.handler = async (event) => {
         return success(filteredItems);
       }
 
+      // Buscar por fecha solamente (sin curso) - usar Scan con filtro
+      if (queryStringParameters?.fecha) {
+        const result = await docClient.send(new ScanCommand({
+          TableName: ASISTENCIA_TABLE,
+          FilterExpression: 'fecha = :f',
+          ExpressionAttributeValues: {
+            ':f': queryStringParameters.fecha
+          },
+          Limit: 1000
+        }));
+
+        // Filter by authorized courses for profesores
+        let filteredItems = result.Items || [];
+        if (cursosAutorizados) {
+          filteredItems = filteredItems.filter(item => cursosAutorizados.includes(item.curso));
+        }
+
+        return success(filteredItems);
+      }
+
       // Buscar por curso solamente (sin fecha) - usar Scan con filtro
       if (queryStringParameters?.curso) {
         const result = await docClient.send(new ScanCommand({
