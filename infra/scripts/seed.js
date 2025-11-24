@@ -10,7 +10,7 @@
  * Datos generados:
  * - 15 usuarios (1 admin, 3 profesores, 2 fonos, 10 alumnos)
  * - 5 configuraciones del sistema
- * - 6 categorías de materiales
+ * - 31 categorías de materiales (12 raíz + 18 subcategorías + 1 inactiva)
  * - ~23 comunicaciones (5 anuncios + 8 eventos [incluye tipo 'evaluacion'] + 10 matrículas con estados variados)
  * - ~800 asistencias (último año)
  * - ~850 recursos académicos (500 notas + 150 materiales con estados variados + 100 bitácoras + 100 sesiones)
@@ -415,6 +415,7 @@ const configuracion = [
 // ========================================
 
 const categorias = [
+  // ========== CATEGORÍAS RAÍZ ==========
   {
     id: 'categoria-guias',
     tipo: 'categoria',
@@ -423,6 +424,7 @@ const categorias = [
     color: '#4CAF50',
     icono: 'fa-file-alt',
     tipoRecurso: 'material',
+    parentId: 'ROOT',
     activa: true,
     timestamp: '2024-01-01T00:00:00Z'
   },
@@ -434,6 +436,7 @@ const categorias = [
     color: '#FF6B35',
     icono: 'fa-presentation',
     tipoRecurso: 'material',
+    parentId: 'ROOT',
     activa: true,
     timestamp: '2024-01-01T00:00:00Z'
   },
@@ -445,6 +448,7 @@ const categorias = [
     color: '#2196F3',
     icono: 'fa-video',
     tipoRecurso: 'material',
+    parentId: 'ROOT',
     activa: true,
     timestamp: '2024-01-01T00:00:00Z'
   },
@@ -456,6 +460,7 @@ const categorias = [
     color: '#9C27B0',
     icono: 'fa-book',
     tipoRecurso: 'material',
+    parentId: 'ROOT',
     activa: true,
     timestamp: '2024-01-01T00:00:00Z'
   },
@@ -467,6 +472,7 @@ const categorias = [
     color: '#FDB927',
     icono: 'fa-clipboard-check',
     tipoRecurso: 'material',
+    parentId: 'ROOT',
     activa: true,
     timestamp: '2024-01-01T00:00:00Z'
   },
@@ -478,7 +484,304 @@ const categorias = [
     color: '#607D8B',
     icono: 'fa-folder',
     tipoRecurso: 'material',
+    parentId: 'ROOT',
     activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== NUEVAS CATEGORÍAS RAÍZ ==========
+  {
+    id: 'categoria-juegos',
+    tipo: 'categoria',
+    nombre: 'Juegos Didácticos',
+    descripcion: 'Juegos y actividades lúdicas educativas',
+    color: '#E91E63',
+    icono: 'fa-puzzle-piece',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-manualidades',
+    tipo: 'categoria',
+    nombre: 'Manualidades',
+    descripcion: 'Proyectos de arte y manualidades',
+    color: '#00BCD4',
+    icono: 'fa-scissors',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-musica',
+    tipo: 'categoria',
+    nombre: 'Música y Canciones',
+    descripcion: 'Material musical y canciones infantiles',
+    color: '#FF5722',
+    icono: 'fa-music',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-psicomotricidad',
+    tipo: 'categoria',
+    nombre: 'Psicomotricidad',
+    descripcion: 'Actividades de desarrollo motor',
+    color: '#795548',
+    icono: 'fa-running',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-planificaciones',
+    tipo: 'categoria',
+    nombre: 'Planificaciones',
+    descripcion: 'Planificaciones y programas de estudio',
+    color: '#3F51B5',
+    icono: 'fa-calendar-alt',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-recursos-apoderados',
+    tipo: 'categoria',
+    nombre: 'Recursos para Apoderados',
+    descripcion: 'Material informativo para padres y apoderados',
+    color: '#009688',
+    icono: 'fa-users',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== SUBCATEGORÍAS DE GUÍAS ==========
+  {
+    id: 'categoria-guias-matematicas',
+    tipo: 'categoria',
+    nombre: 'Guías de Matemáticas',
+    descripcion: 'Fichas y guías de trabajo de matemáticas',
+    color: '#66BB6A',
+    icono: 'fa-calculator',
+    tipoRecurso: 'material',
+    parentId: 'categoria-guias',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-guias-lenguaje',
+    tipo: 'categoria',
+    nombre: 'Guías de Lenguaje',
+    descripcion: 'Fichas y guías de trabajo de lenguaje',
+    color: '#81C784',
+    icono: 'fa-spell-check',
+    tipoRecurso: 'material',
+    parentId: 'categoria-guias',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-guias-ciencias',
+    tipo: 'categoria',
+    nombre: 'Guías de Ciencias',
+    descripcion: 'Fichas y guías de trabajo de ciencias naturales',
+    color: '#A5D6A7',
+    icono: 'fa-leaf',
+    tipoRecurso: 'material',
+    parentId: 'categoria-guias',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== SUBCATEGORÍAS DE VIDEOS ==========
+  {
+    id: 'categoria-videos-cuentos',
+    tipo: 'categoria',
+    nombre: 'Cuentos Animados',
+    descripcion: 'Videos de cuentos e historias animadas',
+    color: '#42A5F5',
+    icono: 'fa-book-open',
+    tipoRecurso: 'material',
+    parentId: 'categoria-videos',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-videos-tutoriales',
+    tipo: 'categoria',
+    nombre: 'Tutoriales',
+    descripcion: 'Videos tutoriales paso a paso',
+    color: '#64B5F6',
+    icono: 'fa-chalkboard-teacher',
+    tipoRecurso: 'material',
+    parentId: 'categoria-videos',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-videos-canciones',
+    tipo: 'categoria',
+    nombre: 'Videos Musicales',
+    descripcion: 'Canciones y videos musicales educativos',
+    color: '#90CAF9',
+    icono: 'fa-headphones',
+    tipoRecurso: 'material',
+    parentId: 'categoria-videos',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== SUBCATEGORÍAS DE EVALUACIONES ==========
+  {
+    id: 'categoria-evaluaciones-diagnosticas',
+    tipo: 'categoria',
+    nombre: 'Evaluaciones Diagnósticas',
+    descripcion: 'Evaluaciones de diagnóstico inicial',
+    color: '#FFD54F',
+    icono: 'fa-stethoscope',
+    tipoRecurso: 'material',
+    parentId: 'categoria-evaluaciones',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-evaluaciones-formativas',
+    tipo: 'categoria',
+    nombre: 'Evaluaciones Formativas',
+    descripcion: 'Evaluaciones de proceso y seguimiento',
+    color: '#FFCA28',
+    icono: 'fa-chart-line',
+    tipoRecurso: 'material',
+    parentId: 'categoria-evaluaciones',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-evaluaciones-sumativas',
+    tipo: 'categoria',
+    nombre: 'Evaluaciones Sumativas',
+    descripcion: 'Evaluaciones finales de unidad o semestre',
+    color: '#FFC107',
+    icono: 'fa-award',
+    tipoRecurso: 'material',
+    parentId: 'categoria-evaluaciones',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== SUBCATEGORÍAS DE LECTURAS ==========
+  {
+    id: 'categoria-lecturas-cuentos',
+    tipo: 'categoria',
+    nombre: 'Cuentos Infantiles',
+    descripcion: 'Cuentos y fábulas para niños',
+    color: '#AB47BC',
+    icono: 'fa-hat-wizard',
+    tipoRecurso: 'material',
+    parentId: 'categoria-lecturas',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-lecturas-poesia',
+    tipo: 'categoria',
+    nombre: 'Poesía y Rimas',
+    descripcion: 'Poemas y rimas infantiles',
+    color: '#BA68C8',
+    icono: 'fa-feather-alt',
+    tipoRecurso: 'material',
+    parentId: 'categoria-lecturas',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-lecturas-informativo',
+    tipo: 'categoria',
+    nombre: 'Textos Informativos',
+    descripcion: 'Material de lectura informativa',
+    color: '#CE93D8',
+    icono: 'fa-newspaper',
+    tipoRecurso: 'material',
+    parentId: 'categoria-lecturas',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== SUBCATEGORÍAS DE JUEGOS ==========
+  {
+    id: 'categoria-juegos-memoria',
+    tipo: 'categoria',
+    nombre: 'Juegos de Memoria',
+    descripcion: 'Memorice y juegos de memoria',
+    color: '#EC407A',
+    icono: 'fa-brain',
+    tipoRecurso: 'material',
+    parentId: 'categoria-juegos',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-juegos-logica',
+    tipo: 'categoria',
+    nombre: 'Juegos de Lógica',
+    descripcion: 'Puzzles y juegos de razonamiento',
+    color: '#F06292',
+    icono: 'fa-lightbulb',
+    tipoRecurso: 'material',
+    parentId: 'categoria-juegos',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-juegos-grupales',
+    tipo: 'categoria',
+    nombre: 'Juegos Grupales',
+    descripcion: 'Actividades y juegos para grupos',
+    color: '#F48FB1',
+    icono: 'fa-people-arrows',
+    tipoRecurso: 'material',
+    parentId: 'categoria-juegos',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== SUBCATEGORÍAS DE PSICOMOTRICIDAD ==========
+  {
+    id: 'categoria-psico-fina',
+    tipo: 'categoria',
+    nombre: 'Motricidad Fina',
+    descripcion: 'Actividades de motricidad fina',
+    color: '#8D6E63',
+    icono: 'fa-hand-paper',
+    tipoRecurso: 'material',
+    parentId: 'categoria-psicomotricidad',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'categoria-psico-gruesa',
+    tipo: 'categoria',
+    nombre: 'Motricidad Gruesa',
+    descripcion: 'Actividades de motricidad gruesa',
+    color: '#A1887F',
+    icono: 'fa-walking',
+    tipoRecurso: 'material',
+    parentId: 'categoria-psicomotricidad',
+    activa: true,
+    timestamp: '2024-01-01T00:00:00Z'
+  },
+  // ========== CATEGORÍA INACTIVA (para testing) ==========
+  {
+    id: 'categoria-archivo',
+    tipo: 'categoria',
+    nombre: 'Archivo Histórico',
+    descripcion: 'Material archivado de años anteriores',
+    color: '#9E9E9E',
+    icono: 'fa-archive',
+    tipoRecurso: 'material',
+    parentId: 'ROOT',
+    activa: false,
     timestamp: '2024-01-01T00:00:00Z'
   }
 ];
@@ -664,8 +967,18 @@ for (let i = 0; i < 500; i++) {
 
 // ===== MATERIALES (~150 registros) =====
 const categoriasMateriales = [
+  // Categorías raíz
   'categoria-guias', 'categoria-presentaciones', 'categoria-videos',
-  'categoria-lecturas', 'categoria-evaluaciones', 'categoria-general'
+  'categoria-lecturas', 'categoria-evaluaciones', 'categoria-general',
+  'categoria-juegos', 'categoria-manualidades', 'categoria-musica',
+  'categoria-psicomotricidad', 'categoria-planificaciones',
+  // Subcategorías
+  'categoria-guias-matematicas', 'categoria-guias-lenguaje', 'categoria-guias-ciencias',
+  'categoria-videos-cuentos', 'categoria-videos-tutoriales', 'categoria-videos-canciones',
+  'categoria-evaluaciones-diagnosticas', 'categoria-evaluaciones-formativas', 'categoria-evaluaciones-sumativas',
+  'categoria-lecturas-cuentos', 'categoria-lecturas-poesia', 'categoria-lecturas-informativo',
+  'categoria-juegos-memoria', 'categoria-juegos-logica', 'categoria-juegos-grupales',
+  'categoria-psico-fina', 'categoria-psico-gruesa'
 ];
 const titulosMateriales = [
   'Guía de trabajo', 'Presentación multimedia', 'Video educativo',

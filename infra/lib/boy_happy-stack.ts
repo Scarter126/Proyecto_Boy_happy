@@ -724,6 +724,12 @@ export class BoyHappyStack extends cdk.Stack {
         environment['USER_POOL_ID'] = process.env.USER_POOL_ID || '';
       }
 
+      // Agregar SOURCE_EMAIL y CONTACT_EMAIL si tiene políticas de SES
+      if (metadata.additionalPolicies?.some(p => p.actions?.includes('ses:SendEmail'))) {
+        environment['SOURCE_EMAIL'] = process.env.SOURCE_EMAIL || 'noreply@boyhappy.cl';
+        environment['CONTACT_EMAIL'] = process.env.CONTACT_EMAIL || 'admin@boyhappy.cl';
+      }
+
       // Agregar variables de tabla automáticamente
       if (metadata.tables) {
         for (const tableSpec of metadata.tables) {
@@ -814,13 +820,16 @@ const ROUTE_MAP = ${JSON.stringify(
   )
 )};
 
+// Router Lambda - Updated: 2025-11-24T22:00:00Z - Fix /api/ prefix handling
 exports.handler = async (event) => {
 
   let path = event.path || '/';
+  const originalPath = path;
 
-  // Eliminar prefijo /api/ si existe
+  // Eliminar prefijo /api/ si existe (frontend puede enviar /api/categorias)
   if (path.startsWith('/api/')) {
     path = path.replace('/api/', '/');
+    console.log('Cleaned /api/ prefix:', originalPath, '->', path);
   }
 
   const basePath = '/' + (path.split('/')[1] || '');
@@ -856,10 +865,18 @@ exports.handler = async (event) => {
   try {
     console.log('Invoking lambda:', targetLambda, 'with path:', path);
 
+    // IMPORTANTE: Modificar el event para que el path no tenga /api/
+    // Los lambdas esperan rutas sin el prefijo /api/
+    const modifiedEvent = {
+      ...event,
+      path: path,  // Usar el path limpio (sin /api/)
+      resource: path
+    };
+
     const response = await lambdaClient.send(new InvokeCommand({
       FunctionName: targetLambda,
       InvocationType: 'RequestResponse',
-      Payload: JSON.stringify(event)
+      Payload: JSON.stringify(modifiedEvent)
     }));
 
     if (response.FunctionError) {

@@ -229,8 +229,42 @@ export default function ConfigListManager({
   // RENDER HELPERS
   // ==========================================
 
+  // Helper para detectar si un campo es de tipo icono
+  const isIconField = (fieldName) => {
+    const iconFieldNames = ['icon', 'icono', 'iconfa', 'fa-icon'];
+    return iconFieldNames.includes(fieldName.toLowerCase());
+  };
+
   const renderFormField = (field, data, onChange) => {
     const value = data[field.name] || '';
+    const isIcon = isIconField(field.name);
+
+    // Para campos de tipo select
+    if (field.type === 'select' && field.options) {
+      return (
+        <div key={field.name} className="form-group" style={{ flex: field.flex || '1 1 200px' }}>
+          <label htmlFor={`${configKey}-${field.name}`}>
+            {field.icon && <i className={`fas ${field.icon}`}></i>} {field.label}
+            {field.required && <span style={{ color: 'red' }}> *</span>}
+          </label>
+          <select
+            id={`${configKey}-${field.name}`}
+            value={value}
+            onChange={(e) => onChange(field.name, e.target.value)}
+          >
+            <option value="">Seleccionar...</option>
+            {field.options.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {field.help && (
+            <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+              {field.help}
+            </small>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div key={field.name} className="form-group" style={{ flex: field.flex || '1 1 200px' }}>
@@ -246,11 +280,26 @@ export default function ConfigListManager({
           placeholder={field.placeholder || ''}
           maxLength={field.maxLength}
         />
-        {field.help && (
+        {/* Mensaje de ayuda - especial para campos de icono */}
+        {isIcon ? (
+          <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+            Ej: fa-calculator, fa-book, fa-flask
+            <br />
+            <a
+              href="https://fontawesome.com/search?o=r&m=free"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#667eea', textDecoration: 'underline' }}
+            >
+              Ver iconos disponibles
+            </a>
+            {field.help && <span style={{ marginLeft: '8px' }}>({field.help})</span>}
+          </small>
+        ) : field.help ? (
           <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
             {field.help}
           </small>
-        )}
+        ) : null}
       </div>
     );
   };
@@ -310,29 +359,84 @@ export default function ConfigListManager({
             {/* Edit mode or display mode */}
             {isEditing ? (
               <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {formFields.map(field => (
-                  <div key={field.name}>
-                    <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>
-                      {field.label}
-                    </label>
-                    <input
-                      type={field.type || 'text'}
-                      value={editFormData[field.name] || ''}
-                      onChange={(e) => handleEditFormChange(field.name, e.target.value)}
-                      placeholder={field.placeholder || ''}
-                      style={{
-                        width: '100%',
-                        padding: '6px 10px',
-                        fontSize: '14px',
-                        border: '1px solid #cbd5e0',
-                        borderRadius: '4px',
-                        outline: 'none'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = color}
-                      onBlur={(e) => e.target.style.borderColor = '#cbd5e0'}
-                    />
-                  </div>
-                ))}
+                {formFields.map(field => {
+                  const isIcon = isIconField(field.name);
+
+                  // Para campos de tipo select
+                  if (field.type === 'select' && field.options) {
+                    return (
+                      <div key={field.name}>
+                        <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                          {field.label}
+                        </label>
+                        <select
+                          value={editFormData[field.name] || ''}
+                          onChange={(e) => handleEditFormChange(field.name, e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 10px',
+                            fontSize: '14px',
+                            border: '1px solid #cbd5e0',
+                            borderRadius: '4px',
+                            outline: 'none'
+                          }}
+                        >
+                          <option value="">Seleccionar...</option>
+                          {field.options.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </select>
+                        {field.help && (
+                          <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '11px' }}>
+                            {field.help}
+                          </small>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={field.name}>
+                      <label style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                        {field.label}
+                      </label>
+                      <input
+                        type={field.type || 'text'}
+                        value={editFormData[field.name] || ''}
+                        onChange={(e) => handleEditFormChange(field.name, e.target.value)}
+                        placeholder={field.placeholder || ''}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px',
+                          fontSize: '14px',
+                          border: '1px solid #cbd5e0',
+                          borderRadius: '4px',
+                          outline: 'none'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = color}
+                        onBlur={(e) => e.target.style.borderColor = '#cbd5e0'}
+                      />
+                      {/* Mensaje de ayuda para campos de icono en modo edición */}
+                      {isIcon ? (
+                        <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '11px' }}>
+                          Ej: fa-calculator, fa-book, fa-flask{' '}
+                          <a
+                            href="https://fontawesome.com/search?o=r&m=free"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#667eea', textDecoration: 'underline' }}
+                          >
+                            Ver iconos
+                          </a>
+                        </small>
+                      ) : field.help ? (
+                        <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '11px' }}>
+                          {field.help}
+                        </small>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div style={{ color: '#4a5568', fontSize: '14px', fontWeight: '500' }}>

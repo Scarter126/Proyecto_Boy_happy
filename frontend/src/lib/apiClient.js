@@ -10,18 +10,28 @@ const normalizeURL = (url) => {
 // Obtener configuración dinámica de API (se evalúa cada vez)
 const getBaseURL = () => {
   const apiConfig = getApiConfig();
-  const baseURL = `${normalizeURL(apiConfig.baseURL)}/api`;
-  console.log('[apiClient] baseURL configurado:', baseURL);
+  const normalizedBase = normalizeURL(apiConfig.baseURL);
+
+  // Detectar si estamos en desarrollo local
+  const isLocalhost = typeof window !== 'undefined' &&
+                     (window.location.hostname === 'localhost' ||
+                      window.location.hostname === '127.0.0.1');
+
+  // En desarrollo local: añadir /api (el dev server lo espera así)
+  // En producción (API Gateway): NO añadir /api (las rutas son directas)
+  const baseURL = isLocalhost ? `${normalizedBase}/api` : normalizedBase;
+
+  console.log('[apiClient] baseURL configurado:', baseURL, isLocalhost ? '(dev)' : '(prod)');
   return baseURL;
 };
 
 // Crear cliente axios SIN baseURL inicialmente
+// Nota: NO usar withCredentials ya que usamos Bearer tokens, no cookies
 const apiClient = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 });
 
 // Request interceptor
@@ -39,6 +49,7 @@ apiClient.interceptors.request.use(
 
     // Intentar obtener el token de múltiples fuentes
     let token = localStorage.getItem('idToken') || localStorage.getItem('token');
+    let tokenSource = token ? (localStorage.getItem('idToken') ? 'idToken' : 'token') : null;
 
     // Si no hay token, intentar desde auth-storage (Zustand persist)
     if (!token) {
@@ -47,10 +58,18 @@ apiClient.interceptors.request.use(
         if (authStorage) {
           const parsed = JSON.parse(authStorage);
           token = parsed.state?.token;
+          tokenSource = token ? 'auth-storage' : null;
         }
       } catch (e) {
-        console.warn('Error parseando auth-storage:', e);
+        console.warn('⚠️ [apiClient] Error parseando auth-storage:', e);
       }
+    }
+
+    // Debug: log token status
+    if (!token) {
+      console.warn('⚠️ [apiClient] No se encontró token en ninguna fuente');
+    } else {
+      console.log(`🔑 [apiClient] Token encontrado en: ${tokenSource}`);
     }
 
     // Enviar token en header Authorization si existe

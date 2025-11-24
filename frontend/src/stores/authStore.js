@@ -31,42 +31,65 @@ const useAuthStore = create(
       }
     }
 
+    // Helper para validar y restaurar token
+    const restoreTokenIfValid = (token, source) => {
+      const user = get().decodeToken(token);
+
+      // CRÍTICO: Validar expiración ANTES de restaurar
+      if (!user || !user.exp) {
+        console.warn(`⚠️ [AuthStore] Token inválido desde ${source}`);
+        return false;
+      }
+
+      const isExpired = Date.now() >= user.exp * 1000;
+
+      if (isExpired) {
+        console.warn(`⚠️ [AuthStore] Token expirado desde ${source} (exp: ${new Date(user.exp * 1000).toLocaleString()})`);
+        // Limpiar tokens expirados
+        get().clearAuth();
+        localStorage.removeItem('idToken');
+        localStorage.removeItem('token');
+        document.cookie = 'idToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+        return false;
+      }
+
+      // Token válido, restaurar
+      set({ token, user, isMockUser: false });
+      console.log(`✅ [AuthStore] Sesión restaurada desde ${source}:`, user.name || user.email);
+      return true;
+    };
+
     // Si no hay mock user, proceder con autenticación normal
-    // Usar cognitoAuth para verificar sesión activa
     try {
-      // Verificar si hay una sesión activa en Cognito
+      // 1. Intentar obtener token de Cognito session
       const isAuth = await cognitoAuth.isAuthenticated();
 
       if (isAuth) {
-        // Obtener el token de la sesión activa
         const token = await cognitoAuth.getSessionToken();
-
-        if (token) {
-          const user = get().decodeToken(token);
-          set({ token, user, isMockUser: false });
-          console.log('✅ [AuthStore] Sesión restaurada:', user.name || user.email);
+        if (token && restoreTokenIfValid(token, 'Cognito')) {
           return;
         }
       }
 
-      // Si no hay sesión activa, intentar leer de cookies (fallback)
-      const token = get().getTokenFromCookie();
-      if (token) {
-        const user = get().decodeToken(token);
-        set({ token, user, isMockUser: false });
-        console.log('✅ [AuthStore] Sesión restaurada desde cookies:', user.name || user.email);
-      } else {
-        console.log('ℹ️ [AuthStore] No hay sesión activa');
+      // 2. Fallback: intentar leer de localStorage
+      const tokenFromStorage = localStorage.getItem('idToken') || localStorage.getItem('token');
+      if (tokenFromStorage && restoreTokenIfValid(tokenFromStorage, 'localStorage')) {
+        return;
       }
+
+      // 3. Fallback: intentar leer de cookies
+      const tokenFromCookie = get().getTokenFromCookie();
+      if (tokenFromCookie && restoreTokenIfValid(tokenFromCookie, 'cookies')) {
+        return;
+      }
+
+      // No hay sesión válida
+      console.log('ℹ️ [AuthStore] No hay sesión activa');
+      get().clearAuth();
+
     } catch (error) {
       console.error('❌ [AuthStore] Error al inicializar sesión:', error);
-
-      // Fallback: intentar leer de cookies
-      const token = get().getTokenFromCookie();
-      if (token) {
-        const user = get().decodeToken(token);
-        set({ token, user, isMockUser: false });
-      }
+      get().clearAuth();
     }
   },
 
@@ -284,6 +307,25 @@ const useAuthStore = create(
         token: state.token,
         user: state.user,
       }),
+      // CRÍTICO: Validar token al hidratar desde localStorage
+      onRehydrateStorage: () => (state) => {
+        if (state && state.token && state.user) {
+          // Validar expiración del token al cargar desde persist
+          const isExpired = !state.user.exp || Date.now() >= state.user.exp * 1000;
+
+          if (isExpired) {
+            console.warn('⚠️ [AuthStore Persist] Token expirado detectado al hidratar, limpiando...');
+            // Limpiar inmediatamente si está expirado
+            state.token = null;
+            state.user = null;
+            localStorage.removeItem('idToken');
+            localStorage.removeItem('token');
+            document.cookie = 'idToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+          } else {
+            console.log('✅ [AuthStore Persist] Token válido cargado:', state.user.name || state.user.email);
+          }
+        }
+      }
     }
   )
 );

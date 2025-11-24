@@ -24,29 +24,31 @@ const ALLOWED_ORIGINS = [
  * Si el origen está en la whitelist, se permite; sino, se usa localhost por defecto
  */
 function getCorsHeaders(event) {
-  const origin = event?.headers?.origin || event?.headers?.Origin || 'http://localhost:3005';
+  const origin = event?.headers?.origin || event?.headers?.Origin || '*';
 
   // Verificar si el origen está en la whitelist o es un bucket S3
   const isAllowed = ALLOWED_ORIGINS.includes(origin) ||
                     origin.includes('.s3-website') ||
-                    origin.includes('.s3.amazonaws.com');
+                    origin.includes('.s3.amazonaws.com') ||
+                    origin.includes('amazonaws.com');
 
-  const allowedOrigin = isAllowed ? origin : 'http://localhost:3005';
+  // Usar el origin si está permitido, sino usar * para permitir cualquier origen
+  const allowedOrigin = isAllowed ? origin : '*';
 
   return {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With'
   };
 }
 
-// Headers CORS por defecto (para backwards compatibility)
+// Headers CORS por defecto - usar * para permitir cualquier origen
+// Nota: Access-Control-Allow-Credentials NO puede usarse con Origin: *
+// Como usamos Bearer tokens (no cookies), no necesitamos credentials
 const CORS_HEADERS = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': 'http://localhost:3005',
-  'Access-Control-Allow-Credentials': 'true',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie, X-Amz-Date, X-Api-Key, X-Amz-Security-Token, X-Requested-With'
 };

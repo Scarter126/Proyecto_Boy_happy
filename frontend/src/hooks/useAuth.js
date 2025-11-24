@@ -63,6 +63,16 @@ export function useAuth() {
         user: result.user
       });
 
+      // CRÍTICO: También guardar en localStorage y cookies para compatibilidad
+      localStorage.setItem('idToken', result.tokens.idToken);
+      document.cookie = `idToken=${result.tokens.idToken}; path=/; max-age=3600; samesite=strict`;
+
+      console.log('✅ [useAuth] Token guardado:', {
+        zustand: '✓',
+        localStorage: '✓',
+        cookie: '✓'
+      });
+
       // Mostrar notificación de éxito
       if (showNotification) {
         await Swal.fire({
