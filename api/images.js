@@ -16,19 +16,6 @@ exports.handler = async (event) => {
     const method = event.httpMethod;
     const queryParams = event.queryStringParameters || {};
 
-    // Validación de autenticación para POST y DELETE
-    if (method === 'POST' || method === 'DELETE') {
-      // Verificar que el usuario esté autenticado (el cognito:username debe existir)
-      const user = event.requestContext?.authorizer?.claims?.['cognito:username'];
-      if (!user) {
-        return {
-          statusCode: 401,
-          headers: corsHeaders,
-          body: JSON.stringify({ error: 'No autorizado. Debes iniciar sesión para realizar esta acción.' })
-        };
-      }
-    }
-
     // GET: Listar imágenes o álbumes
     if (method === 'GET') {
       // Si piden lista de álbumes
