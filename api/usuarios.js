@@ -41,11 +41,11 @@ const docClient = DynamoDBDocumentClient.from(ddbClient);
 const TABLE_NAME = TABLE_NAMES.USUARIOS_TABLE;
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
-exports.handler = async (event) => {
-  try {
-    // Obtener headers CORS dinámicos basados en el origen del request
+exports.handler = async (event) => 
+  {// Obtener headers CORS dinámicos basados en el origen del request
     const corsHeaders = getCorsHeaders(event);
 
+  try {
     // Validar autorización - ADMIN para todas las operaciones, PROFESOR y FONO solo para GET
     const { httpMethod } = event;
     const allowedRoles = httpMethod === 'GET' ? [ROLES.ADMIN, ROLES.PROFESOR, ROLES.FONO] : [ROLES.ADMIN];

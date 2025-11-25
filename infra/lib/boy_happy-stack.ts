@@ -130,8 +130,10 @@ function discoverLambdas(lambdaDir: string): DiscoveredLambda[] {
 }
 
 export class BoyHappyStack extends cdk.Stack {
+  private usuariosLambda?: lambda.Function;
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
 
     // ----------------------------
     // Buckets S3
@@ -800,6 +802,22 @@ export class BoyHappyStack extends cdk.Stack {
       console.log('✅ Backup diario configurado correctamente\n');
     }
 
+    const usuariosLambda = autoLambdas.get('UsuariosLambda');
+    if (usuariosLambda) {
+      const userPoolId = process.env.COGNITO_USER_POOL_ID;
+      console.log('User Pool ID:', userPoolId);
+      usuariosLambda.addToRolePolicy(new iam.PolicyStatement({
+        actions: [
+          'cognito-idp:AdminCreateUser',
+          'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:AdminRemoveUserFromGroup'
+        ],
+        resources: [`arn:aws:cognito-idp:${process.env.AWS_REGION}:${process.env.AWS_ACCOUNT_ID}:userpool/${process.env.USER_POOL_ID}`]
+      }));
+      console.log('✅ Cognito policy added to Usuarios Lambda');
+    }
+
+
     // ----------------------------
     // CONFIGURACIÓN DE ROUTING EN API GATEWAY
     // ----------------------------
@@ -815,10 +833,10 @@ const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 const lambdaClient = new LambdaClient({});
 
 const ROUTE_MAP = ${JSON.stringify(
-  Object.fromEntries(
-    Object.entries(routeMap).map(([route, fn]) => [route, fn.functionName])
-  )
-)};
+        Object.fromEntries(
+          Object.entries(routeMap).map(([route, fn]) => [route, fn.functionName])
+        )
+      )};
 
 // Router Lambda - Updated: 2025-11-24T22:00:00Z - Fix /api/ prefix handling
 exports.handler = async (event) => {
