@@ -44,6 +44,7 @@ function PriorityBadge({ prioridad }) {
   };
 
   const config = variantMap[prioridad] || variantMap['baja'];
+  const [anuncios, setAnuncios] = useState([]);
 
   return (
     <span
@@ -170,7 +171,7 @@ function Anuncios() {
     }, {});
 
     return {
-      total: anuncios.length,
+      total: anuncios?.length || 0,
       byPriority,
       byVisibility
     };
@@ -660,7 +661,7 @@ function Anuncios() {
                     maxLength={100}
                   />
                   <small style={{ color: '#9ca3af', fontSize: '12px' }}>
-                    {formData.titulo.length}/100 caracteres
+                    {formData.titulo?.length}/100 caracteres
                   </small>
                 </div>
 
@@ -681,7 +682,7 @@ function Anuncios() {
                     style={{ resize: 'vertical' }}
                   />
                   <small style={{ color: '#9ca3af', fontSize: '12px' }}>
-                    {formData.contenido.length}/500 caracteres
+                    {formData.contenido?.length}/500 caracteres
                   </small>
                 </div>
 

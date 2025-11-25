@@ -1,6 +1,8 @@
 const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const requireLayer = require('./requireLayer');
 const { getCorsHeaders } = requireLayer('responseHelper');
+const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const s3Client = new S3Client({});
 
@@ -206,7 +208,7 @@ async function listarAlbumes() {
   }
 }
 
-// Listar imágenes (opcionalmente por álbum)
+// Listar imágenes (opcionalmente por álbum) con URL firmada
 async function listarImagenes(album = null) {
   try {
     const prefix = album ? `public/${album}/` : 'public/';
@@ -217,18 +219,25 @@ async function listarImagenes(album = null) {
     });
 
     const response = await s3Client.send(command);
-    const imagenes = (response.Contents || [])
-      .filter(obj => obj.Key.match(/\.(jpg|jpeg|png|gif|webp)$/i))
-      .map(obj => {
-        const albumName = obj.Key.split('/')[1] || 'Sin álbum';
-        return {
-          key: obj.Key,
-          url: `https://${IMAGES_BUCKET}.s3.amazonaws.com/${obj.Key}`,
-          album: albumName,
-          size: obj.Size,
-          lastModified: obj.LastModified
-        };
-      });
+    const imagenes = await Promise.all(
+      (response.Contents || [])
+        .filter(obj => obj.Key.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+        .map(async (obj) => {
+          const albumName = obj.Key.split('/')[1] || 'Sin álbum';
+          const getCommand = new GetObjectCommand({
+            Bucket: IMAGES_BUCKET,
+            Key: obj.Key
+          });
+          const signedUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 }); // 1 hora
+          return {
+            key: obj.Key,
+            url: signedUrl,
+            album: albumName,
+            size: obj.Size,
+            lastModified: obj.LastModified
+          };
+        })
+    );
 
     return imagenes;
   } catch (error) {
