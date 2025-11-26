@@ -190,7 +190,7 @@ exports.handler = async (event) => {
           totalRegistros: total,
           presente: contenidoReporte.asistencia.filter(a => a.estado === 'presente').length,
           ausente: contenidoReporte.asistencia.filter(a => a.estado === 'ausente').length,
-          atrasado: contenidoReporte.asistencia.filter(a => a.estado === 'atrasado').length,
+          tarde: contenidoReporte.asistencia.filter(a => a.estado === 'tarde').length,
           porcentajeAsistencia: total > 0
             ? ((contenidoReporte.asistencia.filter(a => a.estado === 'presente').length / total) * 100).toFixed(1)
             : 0
@@ -292,12 +292,12 @@ exports.handler = async (event) => {
       const porAlumno = {};
       registros.forEach(r => {
         if (!porAlumno[r.rutAlumno]) {
-          porAlumno[r.rutAlumno] = { presente: 0, ausente: 0, justificado: 0, atrasado: 0 };
+          porAlumno[r.rutAlumno] = { presente: 0, ausente: 0, justificado: 0, tarde: 0 };
         }
         porAlumno[r.rutAlumno][r.estado]++;
       });
 
-      const totalClases = Math.max(...Object.values(porAlumno).map(a => a.presente + a.ausente + a.justificado + a.atrasado));
+      const totalClases = Math.max(...Object.values(porAlumno).map(a => a.presente + a.ausente + a.justificado + a.tarde));
 
       const alumnos = Object.entries(porAlumno).map(([rut, stats]) => ({
         rut,

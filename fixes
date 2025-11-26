@@ -1,0 +1,8 @@
+- arreglar el modulo de comunicaciones
+
+en gestion de materiales, si selecciono una caja me filtra por la caja seleecionada.
+En materiales no se puede descargar material, borrarlo y editarlo
+
+- en galeria las imagenes no se ven
+- Matriculas hay problemas con la ruta
+- Al poner observaciones en la asistencia no se envía el estado

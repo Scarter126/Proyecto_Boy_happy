@@ -384,6 +384,7 @@ class CognitoAuthService {
 
   /**
    * Refrescar token de sesión usando refresh token
+   * NOTA: Cognito SDK maneja el refresh automáticamente en getSession si el refreshToken es válido
    *
    * @returns {Promise<Object>} Nuevos tokens
    * @throws {Error} Si no hay sesión o refresh token
@@ -402,28 +403,21 @@ class CognitoAuthService {
     }
 
     return new Promise((resolve, reject) => {
+      // getSession automáticamente intenta refrescar el token si está expirado
+      // pero el refreshToken sigue siendo válido (30 días)
       cognitoUser.getSession((err, session) => {
         if (err) {
-          reject(err);
-          return;
-        }
-
-        if (!session.isValid()) {
+          // Si hay error, puede ser que el refreshToken también expiró
+          console.error('Error al refrescar sesión:', err);
           reject({
-            code: 'INVALID_SESSION',
-            message: 'Sesión inválida o expirada'
+            code: err.code || 'REFRESH_ERROR',
+            message: err.message || 'No se pudo refrescar la sesión'
           });
           return;
         }
 
-        const refreshToken = session.getRefreshToken();
-
-        cognitoUser.refreshSession(refreshToken, (err, session) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-
+        // Si llegamos aquí, getSession logró obtener/refrescar la sesión
+        if (session && session.isValid()) {
           const idToken = session.getIdToken().getJwtToken();
           const accessToken = session.getAccessToken().getJwtToken();
 
@@ -438,7 +432,13 @@ class CognitoAuthService {
               accessToken
             }
           });
-        });
+        } else {
+          // Sesión inválida después de intentar refresh
+          reject({
+            code: 'INVALID_SESSION',
+            message: 'Sesión inválida después de intentar refrescar'
+          });
+        }
       });
     });
   }

@@ -143,6 +143,12 @@ export class BoyHappyStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      cors: [{
+        allowedOrigins: ['*'],
+        allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST],
+        allowedHeaders: ['*'],
+        exposedHeaders: ['ETag']
+      }]
     });
 
     const materialesBucket = new s3.Bucket(this, 'MaterialesBucket', {

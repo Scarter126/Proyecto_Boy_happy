@@ -158,6 +158,7 @@ function Asistencia() {
       if (registroExistente) {
         await actualizarMutation.mutateAsync({
           id: registroExistente.id,
+          estado: registroExistente.estado,
           observacion: observaciones
         });
       } else {

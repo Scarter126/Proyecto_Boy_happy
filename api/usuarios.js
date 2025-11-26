@@ -6,7 +6,7 @@ const TABLE_KEYS = require('../shared/table-keys.cjs');
 
 exports.metadata = {
   route: '/usuarios',                    // Ruta HTTP para esta lambda
-  methods: ['GET', 'POST', 'PUT'],       // Métodos HTTP soportados
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],  // Métodos HTTP soportados
   auth: true,                            // Requiere autenticación
   roles: ['admin'],                      // Roles que pueden acceder (ADMIN solamente)
   profile: 'medium',                     // Perfil de lambda (memory/timeout)
@@ -126,6 +126,7 @@ exports.handler = async (event) =>
         const item = {
           rut: data.rut,
           nombre: data.nombre,
+          apellido: data.apellido || '',
           correo: data.correo,
           rol: data.rol,
           telefono: data.telefono || '',
@@ -169,7 +170,22 @@ exports.handler = async (event) =>
     }
 
     // GET - Listar todos los usuarios (activos e inactivos)
+    // Soporta GET /usuarios?rut=xxx para obtener un usuario específico
     if (httpMethod === 'GET') {
+      // Si se especifica un RUT, retornar solo ese usuario
+      if (queryStringParameters?.rut) {
+        const usuario = await docClient.send(new GetCommand({
+          TableName: TABLE_NAME,
+          Key: { rut: queryStringParameters.rut }
+        }));
+
+        if (!usuario.Item) {
+          return notFound('Usuario no encontrado');
+        }
+
+        return success(usuario.Item);
+      }
+
       const result = await docClient.send(new ScanCommand({
         TableName: TABLE_NAME
       }));

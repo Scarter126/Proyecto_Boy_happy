@@ -44,7 +44,6 @@ function PriorityBadge({ prioridad }) {
   };
 
   const config = variantMap[prioridad] || variantMap['baja'];
-  const [anuncios, setAnuncios] = useState([]);
 
   return (
     <span

@@ -24,10 +24,7 @@ exports.handler = async (event) => {
         const albums = await listarAlbumes();
         return {
           statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: corsHeaders,
           body: JSON.stringify({ albums })
         };
       }
@@ -58,10 +55,7 @@ exports.handler = async (event) => {
       if (!imageName || !imageData || !grupo) {
         return {
           statusCode: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'Faltan parámetros requeridos: imageName, imageData, grupo' }),
         };
       }
@@ -69,10 +63,7 @@ exports.handler = async (event) => {
       if (grupo !== 'public' && grupo !== 'private') {
         return {
           statusCode: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'El grupo debe ser "public" o "private"' }),
         };
       }
@@ -81,10 +72,7 @@ exports.handler = async (event) => {
       if (grupo === 'private' && !album) {
         return {
           statusCode: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'Debes especificar un álbum para imágenes privadas' }),
         };
       }
@@ -139,10 +127,7 @@ exports.handler = async (event) => {
       if (!key) {
         return {
           statusCode: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
+          headers: corsHeaders,
           body: JSON.stringify({ message: 'Falta el parámetro requerido: key' }),
         };
       }
@@ -166,10 +151,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 405,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: corsHeaders,
       body: JSON.stringify({ error: 'Método no permitido' })
     };
 
@@ -177,10 +159,7 @@ exports.handler = async (event) => {
     console.error('Error en images handler:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: corsHeaders,
       body: JSON.stringify({ message: 'Error al procesar la solicitud', error: error.message }),
     };
   }

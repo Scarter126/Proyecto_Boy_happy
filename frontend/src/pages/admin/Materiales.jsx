@@ -218,6 +218,20 @@ function Materiales() {
     }
   };
 
+  // Helper: Convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Remove data:mime;base64, prefix
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
   // Submit form (create or update)
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -241,24 +255,34 @@ function Materiales() {
       return;
     }
 
-    // Prepare data
-    const submitData = new FormData();
-    Object.keys(formData).forEach(key => {
-      submitData.append(key, formData[key]);
-    });
-
-    // Add file if selected
-    if (selectedFile) {
-      submitData.append('archivo', selectedFile);
-    }
-
     try {
+      // Prepare data for API (JSON format, not FormData)
+      const submitData = {
+        titulo: formData.titulo,
+        descripcion: formData.descripcion,
+        curso: formData.curso,
+        categorias: formData.categorias,
+        tipo: formData.tipo,
+        activo: formData.activo
+      };
+
+      // If file selected, convert to base64
+      if (selectedFile) {
+        submitData.archivoBase64 = await fileToBase64(selectedFile);
+        submitData.nombreArchivo = selectedFile.name;
+        submitData.tipoArchivo = selectedFile.type;
+      }
+
+      // If it's a link type, include URL
+      if (formData.tipo === 'link' && formData.url) {
+        submitData.urlArchivo = formData.url;
+      }
+
       if (editingMaterial) {
         // Update existing material
         await updateMutation.mutateAsync({
           id: editingMaterial.id,
-          ...formData,
-          archivo: selectedFile
+          ...submitData
         });
       } else {
         // Create new material
@@ -267,6 +291,11 @@ function Materiales() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error submitting form:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.error || 'No se pudo guardar el material'
+      });
     }
   };
 
@@ -761,6 +790,8 @@ function Materiales() {
               material={material}
               showActions={true}
               onVerDetalle={handleVerDetalle}
+              onEdit={handleEditMaterial}
+              onDelete={handleDeleteMaterial}
               onAprobar={handleAprobarMaterial}
               onSolicitarCorreccion={handleSolicitarCorreccion}
               onRechazar={handleRechazarMaterial}

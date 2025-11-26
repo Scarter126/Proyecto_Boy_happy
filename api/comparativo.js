@@ -214,8 +214,8 @@ async function getAsistenciaPromedioPorCurso(cursos, startDate, endDate) {
         cursosMap[registro.curso].presente++;
       } else if (registro.estado === 'ausente') {
         cursosMap[registro.curso].ausente++;
-      } else if (registro.estado === 'atrasado') {
-        cursosMap[registro.curso].atrasado++;
+      } else if (registro.estado === 'tarde') {
+        cursosMap[registro.curso].atrasado++; // 'tarde' en el sistema = 'atrasado' en estadísticas
       } else if (registro.estado === 'justificado') {
         cursosMap[registro.curso].justificado++;
       }

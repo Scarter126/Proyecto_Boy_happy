@@ -66,7 +66,7 @@ exports.handler = async (event) => {
     // ========================================
     // POST /matriculas - Crear solicitud
     // ========================================
-    if (httpMethod === 'POST' && path === '/api/matriculas') {
+    if (httpMethod === 'POST' && path === '/matriculas') {
       const data = JSON.parse(event.body);
 
       if (!data.nombreAlumno || !data.rutAlumno || !data.correoApoderado) {
@@ -106,7 +106,7 @@ exports.handler = async (event) => {
     // ========================================
     // GET /matriculas - Listar SOLO solicitudes (NO matrículas activas)
     // ========================================
-    if (httpMethod === 'GET' && path === '/api/matriculas') {
+    if (httpMethod === 'GET' && path === '/matriculas') {
       // Obtener solicitudes de matrícula (pendientes/aprobadas/rechazadas)
       // NO incluir matrículas que ya fueron convertidas a usuarios
       const solicitudesResult = await docClient.send(new ScanCommand({
@@ -139,7 +139,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /matriculas?alumnoRut=xxx - Actualizar curso de alumno
     // ========================================
-    if (httpMethod === 'PUT' && path === '/api/matriculas' && queryStringParameters?.alumnoRut) {
+    if (httpMethod === 'PUT' && path === '/matriculas' && queryStringParameters?.alumnoRut) {
       console.log('🔥 PUT /matriculas?alumnoRut LLAMADO!', {
         alumnoRut: queryStringParameters.alumnoRut,
         body: event.body
@@ -212,7 +212,7 @@ exports.handler = async (event) => {
     // ========================================
     // PUT /matriculas?id=xxx - Actualizar estado + Email
     // ========================================
-    if (httpMethod === 'PUT' && path === '/api/matriculas' && queryStringParameters?.id) {
+    if (httpMethod === 'PUT' && path === '/matriculas' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
       const data = JSON.parse(event.body);
 
@@ -592,9 +592,54 @@ Equipo Boy Happy`,
     }
 
     // ========================================
+    // DELETE /matriculas?alumnoRut=xxx - Eliminar relación apoderado-alumno
+    // ========================================
+    if (httpMethod === 'DELETE' && path === '/matriculas' && queryStringParameters?.alumnoRut) {
+      const alumnoRut = queryStringParameters.alumnoRut;
+
+      // Buscar la relación en ApoderadoAlumno
+      const scanResult = await docClient.send(new ScanCommand({
+        TableName: APODERADO_ALUMNO_TABLE,
+        FilterExpression: 'alumnoRut = :alumnoRut',
+        ExpressionAttributeValues: { ':alumnoRut': alumnoRut }
+      }));
+
+      if (!scanResult.Items || scanResult.Items.length === 0) {
+        return {
+          statusCode: 404,
+          headers: corsHeaders,
+          body: JSON.stringify({ error: 'No se encontró relación apoderado-alumno para este RUT' })
+        };
+      }
+
+      // Eliminar todas las relaciones del alumno
+      const deletePromises = scanResult.Items.map(item =>
+        docClient.send(new DeleteCommand({
+          TableName: APODERADO_ALUMNO_TABLE,
+          Key: {
+            apoderadoRut: item.apoderadoRut,
+            alumnoRut: item.alumnoRut
+          }
+        }))
+      );
+
+      await Promise.all(deletePromises);
+
+      return {
+        statusCode: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          message: 'Relación apoderado-alumno eliminada correctamente',
+          alumnoRut,
+          eliminados: scanResult.Items.length
+        })
+      };
+    }
+
+    // ========================================
     // DELETE /matriculas?id=xxx - Eliminar
     // ========================================
-    if (httpMethod === 'DELETE' && path === '/api/matriculas' && queryStringParameters?.id) {
+    if (httpMethod === 'DELETE' && path === '/matriculas' && queryStringParameters?.id) {
       const id = queryStringParameters.id;
 
       const getResult = await docClient.send(new ScanCommand({

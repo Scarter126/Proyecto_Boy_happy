@@ -71,8 +71,12 @@ exports.handler = async (event) => {
     if (httpMethod === 'GET') {
       const authResult = authorize(event, []); // Público, pero intentamos extraer user
 
-      // Obtener todos los anuncios
-      const result = await docClient.send(new ScanCommand({ TableName: TABLE_NAME }));
+      // Obtener solo anuncios (filtrar por tipo)
+      const result = await docClient.send(new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: 'tipo = :tipo',
+        ExpressionAttributeValues: { ':tipo': 'anuncio' }
+      }));
       let anuncios = result.Items || [];
 
       // Filtrar por visibilidad según el rol del usuario

@@ -57,6 +57,8 @@ function Users() {
     nombre: '',
     apellido: '',
     correo: '',
+    telefono: '',
+    passwordTemporal: '',
     rol: 'alumno',
     activo: true,
     curso: '',
@@ -140,6 +142,8 @@ function Users() {
       nombre: '',
       apellido: '',
       correo: '',
+      telefono: '',
+      passwordTemporal: '',
       rol: 'alumno',
       activo: true,
       curso: '',
@@ -159,6 +163,8 @@ function Users() {
       nombre: user.nombre,
       apellido: user.apellido,
       correo: user.correo,
+      telefono: user.telefono || '',
+      passwordTemporal: '', // No se muestra al editar
       rol: user.rol,
       activo: user.activo,
       curso: user.curso || '',
@@ -826,6 +832,42 @@ function Users() {
                     required
                   />
                 </div>
+
+                {/* Telefono */}
+                <div className="form-group" style={{ flex: '1 1 50%' }}>
+                  <label htmlFor="telefono">
+                    Telefono
+                  </label>
+                  <input
+                    id="telefono"
+                    type="tel"
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleInputChange}
+                    placeholder="+56 9 1234 5678"
+                  />
+                </div>
+
+                {/* Password Temporal (solo para crear) */}
+                {!editingUser && (
+                  <div className="form-group" style={{ flex: '1 1 50%' }}>
+                    <label htmlFor="passwordTemporal">
+                      Password Temporal <span style={{ color: '#e53e3e' }}>*</span>
+                    </label>
+                    <input
+                      id="passwordTemporal"
+                      type="text"
+                      name="passwordTemporal"
+                      value={formData.passwordTemporal}
+                      onChange={handleInputChange}
+                      placeholder="Ej: Welcome123!"
+                      required
+                    />
+                    <small style={{ fontSize: '12px', color: '#666' }}>
+                      El usuario deberá cambiarla en su primer inicio de sesión
+                    </small>
+                  </div>
+                )}
 
                 {/* Rol */}
                 <div className="form-group" style={{ flex: '1 1 50%' }}>

@@ -70,6 +70,8 @@ export default function MaterialCard({
   material = {},
   showActions = false,
   onVerDetalle,
+  onEdit,
+  onDelete,
   onAprobar,
   onSolicitarCorreccion,
   onRechazar,
@@ -166,7 +168,7 @@ export default function MaterialCard({
       </div>
 
       {/* Archivo adjunto */}
-      {material.archivoUrl && (
+      {(material.archivoUrl || material.urlDescarga || material.urlArchivo) && (
         <div style={{
           marginTop: '12px',
           padding: '10px',
@@ -182,7 +184,7 @@ export default function MaterialCard({
               fontWeight: 600,
               fontSize: '0.9em'
             }}>
-              {material.archivoNombre || 'documento.pdf'}
+              {material.archivoNombre || material.nombreArchivo || 'documento.pdf'}
             </div>
             <div style={{
               fontSize: '0.8em',
@@ -191,15 +193,32 @@ export default function MaterialCard({
               {material.archivoSize || '0 KB'}
             </div>
           </div>
-          <a
-            href={material.archivoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-sm btn-primary"
-            style={{ textDecoration: 'none' }}
-          >
-            <i className="fas fa-download" /> Descargar
-          </a>
+          {/* Solo mostrar botón de descarga si hay URL válida (no s3://) */}
+          {material.urlDescarga ? (
+            <a
+              href={material.urlDescarga}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-sm btn-primary"
+              style={{ textDecoration: 'none' }}
+            >
+              <i className="fas fa-download" /> Descargar
+            </a>
+          ) : material.archivoUrl && !material.archivoUrl.startsWith('s3://') ? (
+            <a
+              href={material.archivoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-sm btn-primary"
+              style={{ textDecoration: 'none' }}
+            >
+              <i className="fas fa-download" /> Descargar
+            </a>
+          ) : (
+            <span className="btn btn-sm btn-secondary disabled" style={{ opacity: 0.6 }}>
+              <i className="fas fa-exclamation-triangle" /> Sin URL
+            </span>
+          )}
         </div>
       )}
 
@@ -208,7 +227,8 @@ export default function MaterialCard({
         <div style={{
           display: 'flex',
           gap: '8px',
-          marginTop: '15px'
+          marginTop: '15px',
+          flexWrap: 'wrap'
         }}>
           <button
             className="btn btn-sm btn-primary"
@@ -216,6 +236,22 @@ export default function MaterialCard({
           >
             <i className="fas fa-eye" /> Ver
           </button>
+          {onEdit && (
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={() => onEdit(material)}
+            >
+              <i className="fas fa-edit" /> Editar
+            </button>
+          )}
+          {onDelete && (
+            <button
+              className="btn btn-sm btn-danger"
+              onClick={() => onDelete(material)}
+            >
+              <i className="fas fa-trash" /> Eliminar
+            </button>
+          )}
           {material.estado === 'pendiente' && (
             <>
               <button
@@ -228,10 +264,10 @@ export default function MaterialCard({
                 className="btn btn-sm btn-warning"
                 onClick={() => onSolicitarCorreccion && onSolicitarCorreccion(material)}
               >
-                <i className="fas fa-edit" /> Corregir
+                <i className="fas fa-pencil-alt" /> Corregir
               </button>
               <button
-                className="btn btn-sm btn-danger"
+                className="btn btn-sm btn-outline-danger"
                 onClick={() => onRechazar && onRechazar(material)}
               >
                 <i className="fas fa-times" /> Rechazar

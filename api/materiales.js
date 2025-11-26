@@ -228,9 +228,33 @@ exports.handler = async (event) => {
     }
 
     // ========================================
-    // GET /materiales - Listar materiales
+    // GET /materiales - Listar materiales o obtener uno por id
     // ========================================
     if (httpMethod === 'GET' && path === '/materiales') {
+      // GET por ID específico
+      if (queryStringParameters?.id) {
+        const material = await getItemById(RECURSOS_TABLE, queryStringParameters.id);
+
+        if (!material) {
+          return notFound('Material no encontrado');
+        }
+
+        // Enriquecer con categorías
+        material.categorias = await getCategoriasDelMaterial(material.id);
+
+        // Generar URL firmada si existe archivo en S3
+        if (material.urlArchivo && material.urlArchivo.startsWith('s3://')) {
+          const s3Key = material.urlArchivo.replace(`s3://${MATERIALES_BUCKET}/`, '');
+          const command = new GetObjectCommand({
+            Bucket: MATERIALES_BUCKET,
+            Key: s3Key
+          });
+          material.urlDescarga = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+        }
+
+        return success(material);
+      }
+
       // SECURITY: Role-based filtering for profesores
       let cursosAutorizados = null;
       if (authResult.user.rol === 'profesor') {

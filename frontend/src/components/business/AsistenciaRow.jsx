@@ -4,7 +4,7 @@
  * Fila interactiva para registrar la asistencia diaria de un alumno:
  * - Avatar del alumno con iniciales
  * - Información del alumno (nombre, RUT)
- * - Botones de estado: Presente, Ausente, Justificado
+ * - Botones de estado: Presente, Ausente, Tarde, Justificado
  * - Indicador visual de estado
  * - Botón para agregar observaciones
  * - Fondo dinámico según estado
@@ -32,7 +32,7 @@ import React, { useState, useEffect } from 'react';
  * @property {string} rut - RUT del alumno
  * @property {string} nombre - Nombre completo del alumno
  * @property {string} [genero] - Género del alumno ('M' o 'F')
- * @property {string} [estadoAsistencia] - Estado inicial: 'presente', 'ausente', 'justificado', 'pendiente'
+ * @property {string} [estadoAsistencia] - Estado inicial: 'presente', 'ausente', 'tarde', 'justificado', 'pendiente'
  */
 
 /**
@@ -51,6 +51,11 @@ const getEstadoConfig = (estado) => {
       bg: '#fef2f2',
       border: '#ef4444',
       indicator: '#ef4444'
+    },
+    tarde: {
+      bg: '#fef3c7',
+      border: '#d97706',
+      indicator: '#d97706'
     },
     justificado: {
       bg: '#fffbeb',
@@ -170,6 +175,15 @@ export default function AsistenciaRow({
           style={{ minWidth: '90px' }}
         >
           <i className="fas fa-times-circle" /> Ausente
+        </button>
+
+        {/* Tarde */}
+        <button
+          onClick={() => handleEstadoChange('tarde')}
+          className={`btn btn-sm ${estado === 'tarde' ? 'btn-secondary' : 'btn-outline-secondary'}`}
+          style={{ minWidth: '80px', backgroundColor: estado === 'tarde' ? '#d97706' : undefined, borderColor: estado === 'tarde' ? '#d97706' : '#d97706', color: estado === 'tarde' ? 'white' : '#d97706' }}
+        >
+          <i className="fas fa-clock" /> Tarde
         </button>
 
         {/* Justificado */}

@@ -45,12 +45,7 @@ const useAuthStore = create(
 
       if (isExpired) {
         console.warn(`⚠️ [AuthStore] Token expirado desde ${source} (exp: ${new Date(user.exp * 1000).toLocaleString()})`);
-        // Limpiar tokens expirados
-        get().clearAuth();
-        localStorage.removeItem('idToken');
-        localStorage.removeItem('token');
-        document.cookie = 'idToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
-        return false;
+        return false; // No limpiar aquí, intentaremos refresh primero
       }
 
       // Token válido, restaurar
@@ -59,14 +54,48 @@ const useAuthStore = create(
       return true;
     };
 
+    // Helper para intentar refrescar el token
+    const tryRefreshToken = async () => {
+      try {
+        console.log('🔄 [AuthStore] Intentando refrescar token...');
+        const result = await cognitoAuth.refreshToken();
+        if (result.success && result.tokens.idToken) {
+          const user = get().decodeToken(result.tokens.idToken);
+          if (user && user.exp && Date.now() < user.exp * 1000) {
+            set({ token: result.tokens.idToken, user, isMockUser: false });
+            localStorage.setItem('idToken', result.tokens.idToken);
+            console.log('✅ [AuthStore] Token refrescado exitosamente:', user.name || user.email);
+            return true;
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [AuthStore] No se pudo refrescar el token:', error.message || error);
+      }
+      return false;
+    };
+
+    // Helper para limpiar todos los tokens
+    const clearAllTokens = () => {
+      get().clearAuth();
+      localStorage.removeItem('idToken');
+      localStorage.removeItem('token');
+      document.cookie = 'idToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+    };
+
     // Si no hay mock user, proceder con autenticación normal
     try {
-      // 1. Intentar obtener token de Cognito session
-      const isAuth = await cognitoAuth.isAuthenticated();
+      // 1. Intentar obtener token de Cognito session (esto usa refreshToken internamente)
+      const cognitoUser = cognitoAuth.getCurrentUser();
 
-      if (isAuth) {
+      if (cognitoUser) {
+        // Cognito maneja el refresh automáticamente en getSession
         const token = await cognitoAuth.getSessionToken();
         if (token && restoreTokenIfValid(token, 'Cognito')) {
+          return;
+        }
+
+        // Si el token de Cognito expiró, intentar refresh explícito
+        if (await tryRefreshToken()) {
           return;
         }
       }
@@ -83,13 +112,18 @@ const useAuthStore = create(
         return;
       }
 
-      // No hay sesión válida
+      // 4. Si hay usuario de Cognito pero tokens expirados, intentar refresh una última vez
+      if (cognitoUser && await tryRefreshToken()) {
+        return;
+      }
+
+      // No hay sesión válida, limpiar todo
       console.log('ℹ️ [AuthStore] No hay sesión activa');
-      get().clearAuth();
+      clearAllTokens();
 
     } catch (error) {
       console.error('❌ [AuthStore] Error al inicializar sesión:', error);
-      get().clearAuth();
+      clearAllTokens();
     }
   },
 
@@ -308,19 +342,15 @@ const useAuthStore = create(
         user: state.user,
       }),
       // CRÍTICO: Validar token al hidratar desde localStorage
+      // NOTA: No limpiamos tokens expirados aquí, init() intentará refrescarlos
       onRehydrateStorage: () => (state) => {
         if (state && state.token && state.user) {
           // Validar expiración del token al cargar desde persist
           const isExpired = !state.user.exp || Date.now() >= state.user.exp * 1000;
 
           if (isExpired) {
-            console.warn('⚠️ [AuthStore Persist] Token expirado detectado al hidratar, limpiando...');
-            // Limpiar inmediatamente si está expirado
-            state.token = null;
-            state.user = null;
-            localStorage.removeItem('idToken');
-            localStorage.removeItem('token');
-            document.cookie = 'idToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+            console.log('ℹ️ [AuthStore Persist] Token expirado detectado, init() intentará refrescar...');
+            // NO limpiar aquí - init() intentará usar refreshToken de Cognito
           } else {
             console.log('✅ [AuthStore Persist] Token válido cargado:', state.user.name || state.user.email);
           }

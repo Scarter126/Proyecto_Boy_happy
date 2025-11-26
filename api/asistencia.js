@@ -48,7 +48,7 @@ exports.handler = async (event) => {
         fecha: data.fecha,
         rutAlumno: alumno.rut,
         nombreAlumno: alumno.nombre,
-        estado: alumno.estado, // 'presente', 'ausente', 'atrasado'
+        estado: alumno.estado, // 'presente', 'ausente', 'tarde', 'justificado'
         observacion: alumno.observacion || '',
         timestamp: new Date().toISOString()
       }));
