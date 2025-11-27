@@ -174,34 +174,30 @@ function Evaluaciones() {
 
     setIsModalOpen(false);
 
-    // Get students from selected course
     const alumnosCurso = alumnos.filter(a => a.curso === formData.curso);
 
-    if (alumnosCurso.length === 0) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Sin alumnos',
-        text: 'No hay alumnos en el curso seleccionado'
-      });
-      return;
-    }
+    //if (alumnosCurso.length === 0) {
+    //  Swal.fire({
+    //    icon: 'warning',
+    //    title: 'Sin alumnos',
+    //    text: 'No hay alumnos en el curso seleccionado'
+    //  });
+    //  return;
+    // }
 
-    // Open grades modal
-    setSelectedEvaluacion(formData);
-    const initialGrades = {};
-    alumnosCurso.forEach(alumno => {
-      initialGrades[alumno.rut] = '';
+    // DEMO: NO inicializamos nada, solo mostramos mensaje
+    Swal.fire({
+      icon: 'success',
+      title: 'Exito',
+      text: `Evaluacion asignada`
     });
-    setStudentGrades(initialGrades);
-    setIsGradesModalOpen(true);
+
+    // No tocar selectedEvaluacion ni studentGrades
+    // setSelectedEvaluacion(formData);
+    // setStudentGrades(...);
+    // setIsGradesModalOpen(true);
   };
 
-  const handleGradeChange = (rut, value) => {
-    setStudentGrades(prev => ({
-      ...prev,
-      [rut]: value
-    }));
-  };
 
   const handleSaveGrades = async () => {
     try {
