@@ -56,10 +56,18 @@ exports.handler = async (event) => {
           ConsistentRead: true
         }));
 
+        // <<< AQUI >>> Normalización de asignaturas
+        if (queryStringParameters.key === 'asignaturas' && result.Item?.asignaturas) {
+          const items = (result.Item.asignaturas || []).map(a => {
+            const val = a.S || a;
+            return { value: val, label: val.charAt(0).toUpperCase() + val.slice(1) };
+          });
+          result.Item.asignaturas = items;
+        }
+
         console.log('DEBUG - DynamoDB GET result for key', queryStringParameters.key, ':', JSON.stringify(result.Item, null, 2));
 
         if (!result.Item) {
-          // Si es información general y no existe, retornar valores por defecto
           if (queryStringParameters.key === 'informacion-general') {
             return success({
               id: 'informacion-general',
