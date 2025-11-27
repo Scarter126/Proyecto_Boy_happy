@@ -810,7 +810,8 @@ export class BoyHappyStack extends cdk.Stack {
 
     const usuariosLambda = autoLambdas.get('UsuariosLambda');
     if (usuariosLambda) {
-      const userPoolId = process.env.COGNITO_USER_POOL_ID;
+      const userPoolId = process.env.COGNITO_USER_POOL_ID ?? "";
+      usuariosLambda.addEnvironment("USER_POOL_ID", userPoolId);
       console.log('User Pool ID:', userPoolId);
       usuariosLambda.addToRolePolicy(new iam.PolicyStatement({
         actions: [
