@@ -782,7 +782,11 @@ export class BoyHappyStack extends cdk.Stack {
         `${name.charAt(0).toUpperCase() + name.slice(1)}Lambda`,
         `api/${name}`,
         'handler',
-        environment,
+        {
+          ...environment,
+          SOURCE_EMAIL: process.env.SOURCE_EMAIL!,
+          CONTACT_EMAIL: process.env.CONTACT_EMAIL!,
+        },
         profile
       );
 
