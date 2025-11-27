@@ -608,7 +608,18 @@ export class BoyHappyStack extends cdk.Stack {
         for (const tableSpec of metadata.tables) {
           // Formato: "TableName" o "TableName:read" o "TableName:write"
           const [tableName, accessType = 'readwrite'] = tableSpec.split(':');
-          const table = tablesMap.get(tableName);
+          // Permite match por key completo o por nombre real
+          let table = tablesMap.get(tableName);
+
+          // Si no existe, intenta buscar por valor (tableName real)
+          if (!table) {
+            for (const [key, tbl] of tablesMap.entries()) {
+              if (tbl.tableName === tableName) {
+                table = tbl;
+                break;
+              }
+            }
+          }
 
           if (table) {
             if (accessType === 'read') {

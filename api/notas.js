@@ -38,6 +38,7 @@ const RECURSOS_TABLE = TABLE_NAMES.RECURSOS_TABLE;
  * CU-30: Eliminar notas
  */
 exports.handler = async (event) => {
+  let corsHeaders = getCorsHeaders(event);
 
   try {
     const corsHeaders = getCorsHeaders(event);

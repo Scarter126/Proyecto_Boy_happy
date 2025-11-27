@@ -97,15 +97,22 @@ async function obtenerAlumnosApoderado(apoderadoRut) {
  */
 async function obtenerCursosProfesor(profesorRut) {
   try {
+    console.log("TIPO RUT:", typeof profesorRut, profesorRut);
+
+    // ⛔ SI viene null, devolvemos [] inmediatamente
+    if (!profesorRut || typeof profesorRut !== "string") {
+      console.warn("⚠️ profesorRut inválido:", profesorRut);
+      return [];
+    }
+
     const result = await docClient.send(new QueryCommand({
       TableName: PROFESOR_CURSO_TABLE,
       KeyConditionExpression: 'profesorRut = :rut',
       ExpressionAttributeValues: {
-        ':rut': profesorRut
+        ':rut': profesorRut.trim()
       }
     }));
 
-    // Parsear cursoTipo para extraer curso, tipo y asignatura
     const cursos = (result.Items || []).map(item => {
       const partes = item.cursoTipo.split('#');
       return {
